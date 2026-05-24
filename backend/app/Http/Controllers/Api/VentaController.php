@@ -41,6 +41,29 @@ class VentaController extends ApiController
         ]);
     }
 
+    /** Devuelve el siguiente número de factura correlativo para la empresa. */
+    public function siguienteNumero(Request $request): JsonResponse
+    {
+        $empresaId = $request->integer('empresa_id');
+
+        $ultima = Venta::where('empresa_id', $empresaId)
+            ->whereNotNull('numero_factura')
+            ->where('numero_factura', 'like', 'FAC-%')
+            ->orderByDesc('id')
+            ->value('numero_factura');
+
+        $siguiente = 1;
+        if ($ultima) {
+            $partes    = explode('-', $ultima);
+            $siguiente = ((int) end($partes)) + 1;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => ['numero_factura' => 'FAC-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT)],
+        ]);
+    }
+
     public function store(StoreVentaRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -51,12 +74,26 @@ class VentaController extends ApiController
                 $descuento = $validated['descuento'] ?? 0;
                 $impuesto  = $validated['impuesto'] ?? 0;
 
+                // Auto-generar número correlativo si no viene en el payload
+                $numeroFactura = $validated['numero_factura'] ?? null;
+                if (! $numeroFactura) {
+                    $ultima = Venta::where('empresa_id', $validated['empresa_id'])
+                        ->whereNotNull('numero_factura')
+                        ->where('numero_factura', 'like', 'FAC-%')
+                        ->lockForUpdate()
+                        ->orderByDesc('id')
+                        ->value('numero_factura');
+
+                    $siguiente     = $ultima ? ((int) end(explode('-', $ultima))) + 1 : 1;
+                    $numeroFactura = 'FAC-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT);
+                }
+
                 $venta = Venta::create([
                     'empresa_id'     => $validated['empresa_id'],
                     'cliente_id'     => $validated['cliente_id'] ?? null,
                     'bodega_id'      => $validated['bodega_id'],
                     'usuario_id'     => $request->user()->id,
-                    'numero_factura' => $validated['numero_factura'] ?? null,
+                    'numero_factura' => $numeroFactura,
                     'fecha_venta'    => $validated['fecha_venta'],
                     'subtotal'       => $subtotal,
                     'descuento'      => $descuento,

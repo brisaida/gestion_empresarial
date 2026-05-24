@@ -1,39 +1,42 @@
 import { NavLink } from 'react-router-dom'
+import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const nav = [
   { group: 'Principal',
     items: [
-      { to: '/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
+      { to: '/dashboard',        label: 'Dashboard',        icon: LayoutDashboard, end: true },
     ]
   },
   { group: 'Inventario',
     items: [
-      { to: '/productos',   label: 'Productos',   icon: Package },
-      { to: '/existencias', label: 'Stock',        icon: BarChart3 },
-      { to: '/movimientos', label: 'Movimientos',  icon: ArrowLeftRight },
+      { to: '/productos',        label: 'Productos',        icon: Package,         end: false },
+      { to: '/existencias',      label: 'Stock',            icon: BarChart3,       end: false },
+      { to: '/movimientos',      label: 'Movimientos',      icon: ArrowLeftRight,  end: false },
     ]
   },
   { group: 'Transacciones',
     items: [
-      { to: '/compras',     label: 'Compras',      icon: ShoppingCart },
-      { to: '/ventas',      label: 'Ventas',        icon: Receipt },
+      { to: '/compras',          label: 'Compras',          icon: ShoppingCart,    end: false },
+      { to: '/ventas',           label: 'Nueva venta',      icon: Receipt,         end: true  },
+      { to: '/ventas/historial', label: 'Historial ventas', icon: ClipboardList,   end: true  },
     ]
   },
   { group: 'Catálogos',
     items: [
-      { to: '/categorias',  label: 'Categorías',   icon: Tags },
-      { to: '/proveedores', label: 'Proveedores',  icon: Truck },
-      { to: '/clientes',    label: 'Clientes',     icon: Users },
-      { to: '/bodegas',     label: 'Bodegas',      icon: Warehouse },
+      { to: '/categorias',       label: 'Categorías',       icon: Tags,            end: false },
+      { to: '/proveedores',      label: 'Proveedores',      icon: Truck,           end: false },
+      { to: '/clientes',         label: 'Clientes',         icon: Users,           end: false },
+      { to: '/bodegas',          label: 'Bodegas',          icon: Warehouse,       end: false },
     ]
   },
 ]
 
+interface NavItem { to: string; label: string; icon: React.ElementType; end: boolean }
 interface Props { collapsed: boolean }
 
 export default function Sidebar({ collapsed }: Props) {
@@ -75,10 +78,11 @@ export default function Sidebar({ collapsed }: Props) {
               </p>
             )}
             <ul className="space-y-0.5">
-              {group.items.map(({ to, label, icon: Icon }) => (
+              {(group.items as NavItem[]).map(({ to, label, icon: Icon, end }) => (
                 <li key={to}>
                   <NavLink
                     to={to}
+                    end={end}
                     className={({ isActive }) => cn(
                       'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
                       isActive

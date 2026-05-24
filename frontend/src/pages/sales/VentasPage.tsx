@@ -1,22 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, XCircle, Search, Minus, Trash2, Receipt, User, Warehouse,
-         CalendarDays, Hash, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react'
+         CalendarDays, Hash, CheckCircle2, Lock } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { ventasApi, clientesApi, bodegasApi, productosApi } from '@/api/recursos'
-import { Table, Pagination, type Column } from '@/components/ui/Table'
-import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import Modal from '@/components/ui/Modal'
 import { formatCurrency, getAxiosError } from '@/lib/utils'
-import type { Venta, EstadoVenta, Producto } from '@/types'
-
-/* ── Helpers ─────────────────────────────────────────────────────── */
-function EstadoBadge({ estado }: { estado: EstadoVenta }) {
-  return estado === 'completada'
-    ? <Badge variant="green">Completada</Badge>
-    : <Badge variant="red">Cancelada</Badge>
-}
+import type { Producto } from '@/types'
 
 interface LineaVenta {
   producto: Producto
@@ -26,15 +16,10 @@ interface LineaVenta {
 
 const ISV_RATE = 0.15
 
-/* ── Component ───────────────────────────────────────────────────── */
 export default function VentasPage() {
   const { state } = useAuth()
   const empresaId = state.empresaActiva?.id ?? 0
   const qc = useQueryClient()
-
-  /* list state */
-  const [page, setPage]             = useState(1)
-  const [showHistory, setShowHistory] = useState(true)
 
   /* form state */
   const [error, setError]           = useState('')
@@ -48,24 +33,25 @@ export default function VentasPage() {
   const [lineas, setLineas]         = useState<LineaVenta[]>([])
 
   /* product search */
-  const [search, setSearch]         = useState('')
-  const [showDrop, setShowDrop]     = useState(false)
+  const [search, setSearch]     = useState('')
+  const [showDrop, setShowDrop] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
 
-  /* cancel confirm */
-  const [cancelarId, setCancelarId]   = useState<number | null>(null)
-  const [actionError, setActionError] = useState('')
-
-  /* data queries */
-  const { data: clientes }  = useQuery({ queryKey: ['clientes-all', empresaId],  queryFn: () => clientesApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data),  enabled: empresaId > 0 })
-  const { data: bodegas }   = useQuery({ queryKey: ['bodegas-all', empresaId],   queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),   enabled: empresaId > 0 })
+  /* queries */
+  const { data: clientes }  = useQuery({ queryKey: ['clientes-all', empresaId],  queryFn: () => clientesApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data), enabled: empresaId > 0 })
+  const { data: bodegas }   = useQuery({ queryKey: ['bodegas-all', empresaId],   queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then(r => r.data.data), enabled: empresaId > 0 })
-  const { data, isLoading } = useQuery({
-    queryKey: ['ventas', empresaId, page],
-    queryFn:  () => ventasApi.list({ empresa_id: empresaId, page, per_page: 10 }).then(r => r.data),
+
+  /* siguiente número correlativo */
+  const { data: numData, refetch: refetchNum } = useQuery({
+    queryKey: ['venta-siguiente-num', empresaId],
+    queryFn:  () => ventasApi.siguienteNumero(empresaId).then(r => r.data.data.numero_factura),
     enabled:  empresaId > 0,
-    placeholderData: p => p,
   })
+
+  useEffect(() => {
+    if (numData) setNFactura(numData)
+  }, [numData])
 
   /* mutations */
   const crear = useMutation({
@@ -76,25 +62,20 @@ export default function VentasPage() {
       qc.invalidateQueries({ queryKey: ['productos'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       resetForm()
+      refetchNum()           // actualiza el número para la próxima factura
       setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
+      setTimeout(() => setSuccess(false), 4000)
     },
     onError: (err) => setError(getAxiosError(err)),
   })
 
-  const cancelar = useMutation({
-    mutationFn: (id: number) => ventasApi.cancelar(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ventas'] }); setCancelarId(null); setActionError('') },
-    onError: (err) => setActionError(getAxiosError(err)),
-  })
-
-  /* close dropdown on outside click */
+  /* dropdown outside click */
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const h = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowDrop(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
   }, [])
 
   /* computed */
@@ -111,7 +92,7 @@ export default function VentasPage() {
   /* actions */
   const resetForm = () => {
     setClienteId(''); setBodegaId(''); setFecha(new Date().toISOString().slice(0, 10))
-    setNFactura(''); setDescuento(0); setAplicarISV(false); setLineas([])
+    setDescuento(0); setAplicarISV(false); setLineas([])
     setSearch(''); setError('')
   }
 
@@ -153,32 +134,10 @@ export default function VentasPage() {
     })
   }
 
-  /* list columns */
-  const columns: Column<Venta>[] = [
-    { key: 'numero_factura', header: 'N° Factura', cell: r => <span className="font-mono text-xs text-[#5F6B7A]">{r.numero_factura ?? '—'}</span>, width: '110px' },
-    { key: 'cliente',        header: 'Cliente',    cell: r => <span className="font-semibold text-[#072B5A]">{r.cliente?.nombre ?? 'Consumidor final'}</span> },
-    { key: 'bodega',         header: 'Bodega',     cell: r => <span className="text-[#5F6B7A]">{r.bodega?.nombre ?? '—'}</span> },
-    { key: 'fecha_venta',    header: 'Fecha',      cell: r => <span className="text-[#5F6B7A]">{r.fecha_venta}</span>, align: 'center' },
-    { key: 'total',          header: 'Total',      cell: r => <span className="font-bold text-emerald-600">{formatCurrency(r.total)}</span>, align: 'right' },
-    { key: 'estado',         header: 'Estado',     cell: r => <EstadoBadge estado={r.estado} />, align: 'center', width: '110px' },
-    {
-      key: 'acciones', header: '', align: 'right', width: '60px',
-      cell: r => r.estado === 'completada' ? (
-        <button
-          onClick={() => { setCancelarId(r.id); setActionError('') }}
-          className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-          title="Cancelar venta"
-        >
-          <XCircle size={15} />
-        </button>
-      ) : null,
-    },
-  ]
-
   const fieldCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
   const labelCls = "text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide flex items-center gap-1.5 mb-1.5"
 
-  /* ── Render ───────────────────────────────────────────────────── */
+  /* ── Render ─────────────────────────────────────────────────────── */
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
 
@@ -192,15 +151,15 @@ export default function VentasPage() {
       {success && (
         <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm font-medium">
           <CheckCircle2 size={18} className="shrink-0" />
-          Venta registrada exitosamente. El inventario ha sido actualizado.
+          Venta registrada exitosamente — el inventario ha sido actualizado.
         </div>
       )}
 
-      {/* ── Main billing layout ───────────────────────────────────── */}
+      {/* ── Billing layout ──────────────────────────────────────────── */}
       <form onSubmit={handleSubmit}>
         <div className="flex gap-5 items-start">
 
-          {/* ══ LEFT PANEL — product search + line items ══════════════ */}
+          {/* ══ LEFT — product search + line items ══════════════════ */}
           <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
 
             {/* Panel header */}
@@ -232,20 +191,16 @@ export default function VentasPage() {
                   )}
                 </div>
 
-                {/* Dropdown resultados */}
+                {/* Dropdown */}
                 {showDrop && filteredProducts.length > 0 && (
                   <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
                     {filteredProducts.map(p => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => addProduct(p)}
-                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group"
-                      >
+                      <button key={p.id} type="button" onClick={() => addProduct(p)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
                         <div className="flex items-center gap-3">
                           {p.imagen_url
-                            ? <img src={p.imagen_url} className="w-8 h-8 rounded-lg object-cover border border-gray-100" />
-                            : <div className="w-8 h-8 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-300">IMG</div>
+                            ? <img src={p.imagen_url} className="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" />
+                            : <div className="w-8 h-8 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center text-[9px] font-bold text-gray-300">IMG</div>
                           }
                           <div>
                             <p className="text-sm font-semibold text-[#072B5A] group-hover:text-[#0E78D8] transition-colors">{p.nombre}</p>
@@ -253,9 +208,7 @@ export default function VentasPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          {p.stock_total !== undefined && (
-                            <span className="text-xs text-[#5F6B7A]">Stock: {p.stock_total}</span>
-                          )}
+                          {p.stock_total !== undefined && <span className="text-xs text-[#5F6B7A]">Stock: {p.stock_total}</span>}
                           <span className="text-sm font-bold text-[#0E78D8]">{formatCurrency(p.precio_venta)}</span>
                           <span className="w-6 h-6 bg-[#0E78D8] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <Plus size={13} />
@@ -274,9 +227,8 @@ export default function VentasPage() {
               </div>
             </div>
 
-            {/* Line items table */}
+            {/* Line items */}
             <div className="min-h-[260px]">
-              {/* Table header */}
               {lineas.length > 0 && (
                 <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/60 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100">
                   <div className="col-span-5">Producto</div>
@@ -287,7 +239,6 @@ export default function VentasPage() {
                 </div>
               )}
 
-              {/* Empty state */}
               {lineas.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-[260px] text-center px-8">
                   <div className="w-16 h-16 rounded-2xl bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-3">
@@ -298,13 +249,10 @@ export default function VentasPage() {
                 </div>
               )}
 
-              {/* Line rows */}
               {lineas.map((l, i) => (
-                <div
-                  key={l.producto.id}
-                  className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/30'} hover:bg-[#F4F7FA]/60 transition-colors`}
-                >
-                  {/* Producto */}
+                <div key={l.producto.id}
+                  className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/30'} hover:bg-[#F4F7FA]/60 transition-colors`}>
+
                   <div className="col-span-5 flex items-center gap-2.5">
                     {l.producto.imagen_url
                       ? <img src={l.producto.imagen_url} className="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" />
@@ -316,54 +264,33 @@ export default function VentasPage() {
                     </div>
                   </div>
 
-                  {/* Cantidad */}
                   <div className="col-span-3 flex items-center justify-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => updateCantidad(i, -1)}
-                      className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all"
-                    >
+                    <button type="button" onClick={() => updateCantidad(i, -1)}
+                      className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
                       <Minus size={11} />
                     </button>
-                    <input
-                      type="number" min="1" step="1"
-                      value={l.cantidad}
+                    <input type="number" min="1" step="1" value={l.cantidad}
                       onChange={e => setLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: Math.max(1, Number(e.target.value) || 1) } : ln))}
-                      className="w-12 text-center rounded-lg border border-gray-200 py-1 text-sm font-bold text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => updateCantidad(i, +1)}
-                      className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all"
-                    >
+                      className="w-12 text-center rounded-lg border border-gray-200 py-1 text-sm font-bold text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
+                    <button type="button" onClick={() => updateCantidad(i, +1)}
+                      className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
                       <Plus size={11} />
                     </button>
                   </div>
 
-                  {/* Precio unitario */}
                   <div className="col-span-2">
-                    <input
-                      type="number" min="0" step="0.01"
-                      value={l.precio_unitario}
+                    <input type="number" min="0" step="0.01" value={l.precio_unitario}
                       onChange={e => updatePrecio(i, e.target.value)}
-                      className="w-full text-right rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]"
-                    />
+                      className="w-full text-right rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
                   </div>
 
-                  {/* Subtotal */}
                   <div className="col-span-1 text-right">
-                    <span className="text-sm font-bold text-[#072B5A]">
-                      {formatCurrency(l.cantidad * l.precio_unitario)}
-                    </span>
+                    <span className="text-sm font-bold text-[#072B5A]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
                   </div>
 
-                  {/* Eliminar */}
                   <div className="col-span-1 flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() => removeLinea(i)}
-                      className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    >
+                    <button type="button" onClick={() => removeLinea(i)}
+                      className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -372,12 +299,26 @@ export default function VentasPage() {
             </div>
           </div>
 
-          {/* ══ RIGHT PANEL — invoice details + totals + submit ═══════ */}
+          {/* ══ RIGHT — invoice details + totals + submit ═══════════ */}
           <div className="w-72 shrink-0 space-y-4">
 
-            {/* Invoice metadata card */}
+            {/* Metadata card */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
               <p className="text-xs font-bold text-[#072B5A] uppercase tracking-wider">Datos de la factura</p>
+
+              {/* N° Factura — read-only correlativo */}
+              <div>
+                <label className={labelCls}><Hash size={12} /> N° de factura</label>
+                <div className="relative">
+                  <input
+                    readOnly
+                    value={nFactura}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-9 text-sm font-bold text-[#0E78D8] bg-[#F4F7FA] cursor-default select-none tracking-wide"
+                  />
+                  <Lock size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">Generado automáticamente</p>
+              </div>
 
               {/* Cliente */}
               <div>
@@ -402,16 +343,6 @@ export default function VentasPage() {
                 <label className={labelCls}><CalendarDays size={12} /> Fecha *</label>
                 <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} required className={fieldCls} />
               </div>
-
-              {/* N° Factura */}
-              <div>
-                <label className={labelCls}><Hash size={12} /> N° de factura</label>
-                <input
-                  type="text" placeholder="FAC-0001"
-                  value={nFactura} onChange={e => setNFactura(e.target.value)}
-                  className={fieldCls}
-                />
-              </div>
             </div>
 
             {/* Totals card */}
@@ -423,8 +354,7 @@ export default function VentasPage() {
                 <label className="text-sm text-[#5F6B7A] font-medium shrink-0">Descuento</label>
                 <div className="relative w-32">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#5F6B7A] font-bold pointer-events-none">L</span>
-                  <input
-                    type="number" min="0" step="0.01"
+                  <input type="number" min="0" step="0.01"
                     value={descuento || ''}
                     onChange={e => setDescuento(Number(e.target.value) || 0)}
                     placeholder="0.00"
@@ -436,12 +366,9 @@ export default function VentasPage() {
               {/* ISV toggle */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-[#5F6B7A] font-medium">ISV (15%)</span>
-                <button
-                  type="button"
-                  onClick={() => setAplicarISV(v => !v)}
-                  className={`w-10 h-5.5 rounded-full transition-all flex items-center px-0.5 ${aplicarISV ? 'bg-[#0E78D8]' : 'bg-gray-200'}`}
+                <button type="button" onClick={() => setAplicarISV(v => !v)}
                   style={{ height: '22px', width: '40px' }}
-                >
+                  className={`rounded-full transition-all flex items-center px-0.5 ${aplicarISV ? 'bg-[#0E78D8]' : 'bg-gray-200'}`}>
                   <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${aplicarISV ? 'translate-x-[18px]' : 'translate-x-0'}`} />
                 </button>
               </div>
@@ -467,10 +394,8 @@ export default function VentasPage() {
               </div>
 
               {/* Total box */}
-              <div
-                className="flex justify-between items-center px-4 py-3.5 rounded-xl text-white font-bold"
-                style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 60%, #38D6D4 100%)' }}
-              >
+              <div className="flex justify-between items-center px-4 py-3.5 rounded-xl text-white font-bold"
+                style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 60%, #38D6D4 100%)' }}>
                 <span className="text-sm">TOTAL</span>
                 <span className="text-xl tracking-tight">{formatCurrency(total)}</span>
               </div>
@@ -483,63 +408,18 @@ export default function VentasPage() {
 
             {/* Actions */}
             <div className="flex flex-col gap-2">
-              <Button
-                type="submit"
-                loading={crear.isPending}
-                icon={<Receipt size={15} />}
-                disabled={lineas.length === 0}
-                className="w-full justify-center"
-              >
+              <Button type="submit" loading={crear.isPending} icon={<Receipt size={15} />}
+                disabled={lineas.length === 0} className="w-full justify-center">
                 Registrar venta
               </Button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="w-full py-2 rounded-lg text-sm text-[#5F6B7A] hover:text-red-500 hover:bg-red-50 transition-colors font-medium"
-              >
+              <button type="button" onClick={resetForm}
+                className="w-full py-2 rounded-lg text-sm text-[#5F6B7A] hover:text-red-500 hover:bg-red-50 transition-colors font-medium">
                 Limpiar formulario
               </button>
             </div>
           </div>
         </div>
       </form>
-
-      {/* ── Historial de ventas ───────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowHistory(v => !v)}
-          className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-[#F4F7FA]/60 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-[#0E78D8] inline-block" />
-            <span className="text-sm font-semibold text-[#072B5A]">Historial de ventas</span>
-            {data?.meta?.total !== undefined && (
-              <span className="ml-1 text-xs text-[#5F6B7A]">({data.meta.total} registros)</span>
-            )}
-          </div>
-          {showHistory ? <ChevronUp size={16} className="text-[#5F6B7A]" /> : <ChevronDown size={16} className="text-[#5F6B7A]" />}
-        </button>
-        {showHistory && (
-          <>
-            <Table columns={columns} data={data?.data ?? []} loading={isLoading} emptyMessage="No hay ventas registradas." />
-            {data?.meta && <Pagination currentPage={data.meta.current_page} lastPage={data.meta.last_page} total={data.meta.total} onPage={setPage} />}
-          </>
-        )}
-      </div>
-
-      {/* ── Modal confirmar cancelar venta ─────────────────────────── */}
-      <Modal open={cancelarId !== null} onClose={() => setCancelarId(null)} title="Cancelar venta" size="sm">
-        <p className="text-sm text-[#5F6B7A] mb-4">
-          ¿Cancelar esta venta? El stock <strong>no</strong> se revertirá automáticamente — registra un movimiento de entrada si es necesario.
-        </p>
-        {actionError && <p className="mb-4 text-sm text-red-600">{actionError}</p>}
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setCancelarId(null)}>Volver</Button>
-          <Button variant="danger" loading={cancelar.isPending} onClick={() => cancelar.mutate(cancelarId!)}>Cancelar venta</Button>
-        </div>
-      </Modal>
-
     </div>
   )
 }

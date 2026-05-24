@@ -58,6 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('compras/{compra}/cancelar',  [CompraController::class, 'cancelar']);
 
     // Ventas
+    Route::get('ventas/siguiente-numero',  [VentaController::class, 'siguienteNumero']);
     Route::apiResource('ventas', VentaController::class)->only(['index', 'store', 'show']);
     Route::post('ventas/{venta}/cancelar', [VentaController::class, 'cancelar']);
 

@@ -119,8 +119,10 @@ export const comprasApi = {
 
 // ── Ventas ─────────────────────────────────────────────────────────────────
 export const ventasApi = {
-  list:     (params: Record<string, unknown>) => list<Venta>('/ventas', params),
-  get:      (id: number) => get<Venta>(`/ventas/${id}`),
-  create:   (data: unknown) => create<Venta>('/ventas', data),
-  cancelar: (id: number) => client.post<ApiResponse<Venta>>(`/ventas/${id}/cancelar`),
+  list:             (params: Record<string, unknown>) => list<Venta>('/ventas', params),
+  get:              (id: number) => get<Venta>(`/ventas/${id}`),
+  create:           (data: unknown) => create<Venta>('/ventas', data),
+  cancelar:         (id: number) => client.post<ApiResponse<Venta>>(`/ventas/${id}/cancelar`),
+  siguienteNumero:  (empresaId: number) =>
+    client.get<ApiResponse<{ numero_factura: string }>>('/ventas/siguiente-numero', { params: { empresa_id: empresaId } }),
 }
