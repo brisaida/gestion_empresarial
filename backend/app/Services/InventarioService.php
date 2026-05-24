@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Existencia;
 use App\Models\MovimientoInventario;
 use App\Models\DetalleMovimientoInventario;
+use App\Models\Producto;
 use Illuminate\Support\Facades\DB;
 
 class InventarioService
@@ -91,10 +92,33 @@ class InventarioService
     }
 
     /**
-     * Procesa una compra recibida: crea movimiento de entrada por cada línea.
+     * Procesa una compra recibida: crea movimiento de entrada y actualiza
+     * el costo promedio ponderado de cada producto.
      */
     public function procesarCompra(\App\Models\Compra $compra, int $usuarioId): void
     {
+        // Actualizar costo promedio ponderado antes de registrar el movimiento
+        foreach ($compra->detalles as $det) {
+            $producto = Producto::lockForUpdate()->find($det->producto_id);
+            if (! $producto) continue;
+
+            // Stock total actual en toda la empresa (antes de esta entrada)
+            $stockActual = Existencia::where('empresa_id', $compra->empresa_id)
+                ->where('producto_id', $det->producto_id)
+                ->sum('cantidad');
+
+            $costoActual   = (float) $producto->costo;
+            $costoNuevo    = (float) $det->costo_unitario;
+            $cantidadNueva = (float) $det->cantidad;
+
+            if ($stockActual + $cantidadNueva > 0) {
+                $costoPromedio = (($stockActual * $costoActual) + ($cantidadNueva * $costoNuevo))
+                               / ($stockActual + $cantidadNueva);
+
+                $producto->update(['costo' => round($costoPromedio, 4)]);
+            }
+        }
+
         $detalles = $compra->detalles->map(fn($d) => [
             'producto_id'    => $d->producto_id,
             'cantidad'       => $d->cantidad,
@@ -118,13 +142,14 @@ class InventarioService
 
     /**
      * Procesa una venta: crea movimiento de salida por cada línea.
+     * Usa costo_unitario (costo real del producto) — no el precio de venta.
      */
     public function procesarVenta(\App\Models\Venta $venta, int $usuarioId): void
     {
         $detalles = $venta->detalles->map(fn($d) => [
             'producto_id'    => $d->producto_id,
             'cantidad'       => $d->cantidad,
-            'costo_unitario' => $d->precio_unitario,
+            'costo_unitario' => (float) $d->costo_unitario,   // ← costo real, no precio
         ])->toArray();
 
         $this->registrarMovimiento([

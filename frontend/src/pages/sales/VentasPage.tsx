@@ -21,7 +21,6 @@ export default function VentasPage() {
   const empresaId = state.empresaActiva?.id ?? 0
   const qc = useQueryClient()
 
-  /* form state */
   const [error, setError]           = useState('')
   const [success, setSuccess]       = useState(false)
   const [clienteId, setClienteId]   = useState('')
@@ -32,28 +31,21 @@ export default function VentasPage() {
   const [aplicarISV, setAplicarISV] = useState(false)
   const [lineas, setLineas]         = useState<LineaVenta[]>([])
 
-  /* product search */
   const [search, setSearch]     = useState('')
   const [showDrop, setShowDrop] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
 
-  /* queries */
   const { data: clientes }  = useQuery({ queryKey: ['clientes-all', empresaId],  queryFn: () => clientesApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: bodegas }   = useQuery({ queryKey: ['bodegas-all', empresaId],   queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then(r => r.data.data), enabled: empresaId > 0 })
 
-  /* siguiente número correlativo */
   const { data: numData, refetch: refetchNum } = useQuery({
     queryKey: ['venta-siguiente-num', empresaId],
     queryFn:  () => ventasApi.siguienteNumero(empresaId).then(r => r.data.data.numero_factura),
     enabled:  empresaId > 0,
   })
+  useEffect(() => { if (numData) setNFactura(numData) }, [numData])
 
-  useEffect(() => {
-    if (numData) setNFactura(numData)
-  }, [numData])
-
-  /* mutations */
   const crear = useMutation({
     mutationFn: (payload: unknown) => ventasApi.create(payload),
     onSuccess: () => {
@@ -61,15 +53,13 @@ export default function VentasPage() {
       qc.invalidateQueries({ queryKey: ['existencias'] })
       qc.invalidateQueries({ queryKey: ['productos'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
-      resetForm()
-      refetchNum()           // actualiza el número para la próxima factura
+      resetForm(); refetchNum()
       setSuccess(true)
       setTimeout(() => setSuccess(false), 4000)
     },
     onError: (err) => setError(getAxiosError(err)),
   })
 
-  /* dropdown outside click */
   useEffect(() => {
     const h = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowDrop(false)
@@ -78,7 +68,6 @@ export default function VentasPage() {
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  /* computed */
   const filteredProducts = (productos ?? []).filter(p =>
     search.length > 0 &&
     (p.nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -89,7 +78,6 @@ export default function VentasPage() {
   const isv      = aplicarISV ? (subtotal - descuento) * ISV_RATE : 0
   const total    = subtotal - descuento + isv
 
-  /* actions */
   const resetForm = () => {
     setClienteId(''); setBodegaId(''); setFecha(new Date().toISOString().slice(0, 10))
     setDescuento(0); setAplicarISV(false); setLineas([])
@@ -134,12 +122,11 @@ export default function VentasPage() {
     })
   }
 
-  const fieldCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
-  const labelCls = "text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide flex items-center gap-1.5 mb-1.5"
+  const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
+  const labelCls  = "block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5"
 
-  /* ── Render ─────────────────────────────────────────────────────── */
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-4 max-w-6xl mx-auto">
 
       {/* Page header */}
       <div>
@@ -155,23 +142,59 @@ export default function VentasPage() {
         </div>
       )}
 
-      {/* ── Billing layout ──────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit}>
-        <div className="flex gap-5 items-start">
+      <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* ══ LEFT — product search + line items ══════════════════ */}
-          <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* ── FILA 1: datos de cabecera ───────────────────────────── */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
-            {/* Panel header */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-[#F4F7FA]/60">
-              <div className="flex items-center gap-2">
-                <Receipt size={16} className="text-[#0E78D8]" />
-                <span className="text-sm font-semibold text-[#072B5A]">Líneas de la factura</span>
+            <div>
+              <label className={labelCls}>
+                <span className="flex items-center gap-1.5"><Hash size={11} /> N° Factura</span>
+              </label>
+              <div className="relative">
+                <input readOnly value={nFactura}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-8 text-sm font-bold text-[#0E78D8] bg-[#F4F7FA] cursor-default select-none tracking-wide" />
+                <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300" />
               </div>
-              <span className="text-xs text-[#5F6B7A]">{lineas.length} producto{lineas.length !== 1 ? 's' : ''}</span>
             </div>
 
-            {/* Product search */}
+            <div>
+              <label className={labelCls}>
+                <span className="flex items-center gap-1.5"><User size={11} /> Cliente</span>
+              </label>
+              <select value={clienteId} onChange={e => setClienteId(e.target.value)} className={selectCls}>
+                <option value="">— Consumidor final —</option>
+                {clientes?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className={labelCls}>
+                <span className="flex items-center gap-1.5"><Warehouse size={11} /> Bodega *</span>
+              </label>
+              <select value={bodegaId} onChange={e => setBodegaId(e.target.value)} required className={selectCls}>
+                <option value="">Seleccionar</option>
+                {bodegas?.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className={labelCls}>
+                <span className="flex items-center gap-1.5"><CalendarDays size={11} /> Fecha *</span>
+              </label>
+              <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} required className={selectCls} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── FILA 2: detalle (izq) + totales (der) ──────────────── */}
+        <div className="flex gap-4 items-start">
+
+          {/* Tabla de detalle */}
+          <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+
+            {/* Buscador */}
             <div className="p-4 border-b border-gray-100" ref={searchRef}>
               <div className="relative">
                 <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F4F7FA] border border-gray-200 rounded-xl focus-within:border-[#0E78D8] focus-within:ring-2 focus-within:ring-[#0E78D8]/20 transition-all">
@@ -191,7 +214,6 @@ export default function VentasPage() {
                   )}
                 </div>
 
-                {/* Dropdown */}
                 {showDrop && filteredProducts.length > 0 && (
                   <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
                     {filteredProducts.map(p => (
@@ -227,197 +249,151 @@ export default function VentasPage() {
               </div>
             </div>
 
-            {/* Line items */}
-            <div className="min-h-[260px]">
-              {lineas.length > 0 && (
-                <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/60 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100">
-                  <div className="col-span-5">Producto</div>
-                  <div className="col-span-3 text-center">Cantidad</div>
-                  <div className="col-span-2 text-right">Precio unit.</div>
-                  <div className="col-span-1 text-right">Subtotal</div>
-                  <div className="col-span-1" />
+            {/* Encabezado tabla */}
+            {lineas.length > 0 && (
+              <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/70 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100">
+                <div className="col-span-4">Producto</div>
+                <div className="col-span-3 text-center">Cantidad</div>
+                <div className="col-span-2 text-right">Precio unit.</div>
+                <div className="col-span-2 text-right">Subtotal</div>
+                <div className="col-span-1" />
+              </div>
+            )}
+
+            {/* Empty state */}
+            {lineas.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-14 text-center px-8">
+                <div className="w-14 h-14 rounded-2xl bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-3">
+                  <Receipt size={24} className="text-gray-300" />
                 </div>
-              )}
+                <p className="text-sm font-medium text-[#5F6B7A]">Sin productos aún</p>
+                <p className="text-xs text-gray-400 mt-1">Usa el buscador de arriba para agregar productos</p>
+              </div>
+            )}
 
-              {lineas.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-[260px] text-center px-8">
-                  <div className="w-16 h-16 rounded-2xl bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-3">
-                    <Receipt size={28} className="text-gray-300" />
-                  </div>
-                  <p className="text-sm font-medium text-[#5F6B7A]">Sin productos aún</p>
-                  <p className="text-xs text-gray-400 mt-1">Busca y agrega productos usando el campo de arriba</p>
-                </div>
-              )}
+            {/* Filas */}
+            {lineas.map((l, i) => (
+              <div key={l.producto.id}
+                className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
 
-              {lineas.map((l, i) => (
-                <div key={l.producto.id}
-                  className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/30'} hover:bg-[#F4F7FA]/60 transition-colors`}>
-
-                  <div className="col-span-5 flex items-center gap-2.5">
-                    {l.producto.imagen_url
-                      ? <img src={l.producto.imagen_url} className="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" />
-                      : <div className="w-8 h-8 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />
-                    }
-                    <div>
-                      <p className="text-sm font-semibold text-[#072B5A] leading-tight">{l.producto.nombre}</p>
-                      {l.producto.codigo && <p className="text-xs text-gray-400 font-mono">{l.producto.codigo}</p>}
-                    </div>
-                  </div>
-
-                  <div className="col-span-3 flex items-center justify-center gap-1.5">
-                    <button type="button" onClick={() => updateCantidad(i, -1)}
-                      className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
-                      <Minus size={11} />
-                    </button>
-                    <input type="number" min="1" step="1" value={l.cantidad}
-                      onChange={e => setLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: Math.max(1, Number(e.target.value) || 1) } : ln))}
-                      className="w-12 text-center rounded-lg border border-gray-200 py-1 text-sm font-bold text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
-                    <button type="button" onClick={() => updateCantidad(i, +1)}
-                      className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
-                      <Plus size={11} />
-                    </button>
-                  </div>
-
-                  <div className="col-span-2">
-                    <input type="number" min="0" step="0.01" value={l.precio_unitario}
-                      onChange={e => updatePrecio(i, e.target.value)}
-                      className="w-full text-right rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
-                  </div>
-
-                  <div className="col-span-1 text-right">
-                    <span className="text-sm font-bold text-[#072B5A]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
-                  </div>
-
-                  <div className="col-span-1 flex justify-center">
-                    <button type="button" onClick={() => removeLinea(i)}
-                      className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
+                <div className="col-span-4 flex items-center gap-2.5">
+                  {l.producto.imagen_url
+                    ? <img src={l.producto.imagen_url} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
+                    : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />
+                  }
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[#072B5A] leading-tight truncate">{l.producto.nombre}</p>
+                    {l.producto.codigo && <p className="text-xs text-gray-400 font-mono">{l.producto.codigo}</p>}
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="col-span-3 flex items-center justify-center gap-1.5">
+                  <button type="button" onClick={() => updateCantidad(i, -1)}
+                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
+                    <Minus size={12} />
+                  </button>
+                  <input type="number" min="1" step="1" value={l.cantidad}
+                    onChange={e => setLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: Math.max(1, Number(e.target.value) || 1) } : ln))}
+                    className="w-14 text-center rounded-lg border border-gray-200 py-1.5 text-sm font-bold text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
+                  <button type="button" onClick={() => updateCantidad(i, +1)}
+                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
+                    <Plus size={12} />
+                  </button>
+                </div>
+
+                <div className="col-span-2">
+                  <input type="number" min="0" step="0.01" value={l.precio_unitario}
+                    onChange={e => updatePrecio(i, e.target.value)}
+                    className="w-full text-right rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
+                </div>
+
+                <div className="col-span-2 text-right">
+                  <span className="text-sm font-bold text-[#072B5A]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
+                </div>
+
+                <div className="col-span-1 flex justify-center">
+                  <button type="button" onClick={() => removeLinea(i)}
+                    className="p-1.5 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* ══ RIGHT — invoice details + totals + submit ═══════════ */}
-          <div className="w-72 shrink-0 space-y-4">
+          {/* Panel de totales */}
+          <div className="w-64 shrink-0 bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
 
-            {/* Metadata card */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-              <p className="text-xs font-bold text-[#072B5A] uppercase tracking-wider">Datos de la factura</p>
+            <p className="text-xs font-bold text-[#072B5A] uppercase tracking-wider">Resumen</p>
 
-              {/* N° Factura — read-only correlativo */}
-              <div>
-                <label className={labelCls}><Hash size={12} /> N° de factura</label>
-                <div className="relative">
-                  <input
-                    readOnly
-                    value={nFactura}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-9 text-sm font-bold text-[#0E78D8] bg-[#F4F7FA] cursor-default select-none tracking-wide"
-                  />
-                  <Lock size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300" />
-                </div>
-                <p className="text-[10px] text-gray-400 mt-1">Generado automáticamente</p>
-              </div>
-
-              {/* Cliente */}
-              <div>
-                <label className={labelCls}><User size={12} /> Cliente</label>
-                <select value={clienteId} onChange={e => setClienteId(e.target.value)} className={fieldCls}>
-                  <option value="">— Consumidor final —</option>
-                  {clientes?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                </select>
-              </div>
-
-              {/* Bodega */}
-              <div>
-                <label className={labelCls}><Warehouse size={12} /> Bodega *</label>
-                <select value={bodegaId} onChange={e => setBodegaId(e.target.value)} required className={fieldCls}>
-                  <option value="">Seleccionar</option>
-                  {bodegas?.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
-                </select>
-              </div>
-
-              {/* Fecha */}
-              <div>
-                <label className={labelCls}><CalendarDays size={12} /> Fecha *</label>
-                <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} required className={fieldCls} />
+            {/* Descuento */}
+            <div>
+              <label className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5 block">Descuento</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#5F6B7A] font-bold pointer-events-none">L</span>
+                <input type="number" min="0" step="0.01"
+                  value={descuento || ''} onChange={e => setDescuento(Number(e.target.value) || 0)}
+                  placeholder="0.00"
+                  className="w-full pl-7 pr-3 py-2 rounded-lg border border-gray-200 text-sm text-right text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
+                />
               </div>
             </div>
 
-            {/* Totals card */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
-              <p className="text-xs font-bold text-[#072B5A] uppercase tracking-wider">Totales</p>
+            {/* ISV toggle */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-[#5F6B7A]">ISV (15%)</span>
+              <button type="button" onClick={() => setAplicarISV(v => !v)}
+                style={{ height: '22px', width: '40px' }}
+                className={`rounded-full transition-all flex items-center px-0.5 ${aplicarISV ? 'bg-[#0E78D8]' : 'bg-gray-200'}`}>
+                <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${aplicarISV ? 'translate-x-[18px]' : 'translate-x-0'}`} />
+              </button>
+            </div>
 
-              {/* Descuento */}
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm text-[#5F6B7A] font-medium shrink-0">Descuento</label>
-                <div className="relative w-32">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#5F6B7A] font-bold pointer-events-none">L</span>
-                  <input type="number" min="0" step="0.01"
-                    value={descuento || ''}
-                    onChange={e => setDescuento(Number(e.target.value) || 0)}
-                    placeholder="0.00"
-                    className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-gray-200 text-sm text-right text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
-                  />
-                </div>
+            {/* Desglose */}
+            <div className="border-t border-gray-100 pt-3 space-y-2">
+              <div className="flex justify-between text-sm text-[#5F6B7A]">
+                <span>Subtotal</span>
+                <span className="font-medium">{formatCurrency(subtotal)}</span>
               </div>
-
-              {/* ISV toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-[#5F6B7A] font-medium">ISV (15%)</span>
-                <button type="button" onClick={() => setAplicarISV(v => !v)}
-                  style={{ height: '22px', width: '40px' }}
-                  className={`rounded-full transition-all flex items-center px-0.5 ${aplicarISV ? 'bg-[#0E78D8]' : 'bg-gray-200'}`}>
-                  <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${aplicarISV ? 'translate-x-[18px]' : 'translate-x-0'}`} />
-                </button>
-              </div>
-
-              {/* Breakdown */}
-              <div className="border-t border-gray-100 pt-3 space-y-1.5">
+              {descuento > 0 && (
                 <div className="flex justify-between text-sm text-[#5F6B7A]">
-                  <span>Subtotal</span>
-                  <span className="font-medium">{formatCurrency(subtotal)}</span>
+                  <span>Descuento</span>
+                  <span className="font-medium text-red-500">− {formatCurrency(descuento)}</span>
                 </div>
-                {descuento > 0 && (
-                  <div className="flex justify-between text-sm text-[#5F6B7A]">
-                    <span>Descuento</span>
-                    <span className="font-medium text-red-500">− {formatCurrency(descuento)}</span>
-                  </div>
-                )}
-                {aplicarISV && (
-                  <div className="flex justify-between text-sm text-[#5F6B7A]">
-                    <span>ISV (15%)</span>
-                    <span className="font-medium">{formatCurrency(isv)}</span>
-                  </div>
-                )}
-              </div>
+              )}
+              {aplicarISV && (
+                <div className="flex justify-between text-sm text-[#5F6B7A]">
+                  <span>ISV (15%)</span>
+                  <span className="font-medium">{formatCurrency(isv)}</span>
+                </div>
+              )}
+            </div>
 
-              {/* Total box */}
-              <div className="flex justify-between items-center px-4 py-3.5 rounded-xl text-white font-bold"
-                style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 60%, #38D6D4 100%)' }}>
-                <span className="text-sm">TOTAL</span>
-                <span className="text-xl tracking-tight">{formatCurrency(total)}</span>
-              </div>
+            {/* Total */}
+            <div className="flex justify-between items-center px-4 py-3.5 rounded-xl text-white font-bold"
+              style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 60%, #38D6D4 100%)' }}>
+              <span className="text-sm">TOTAL</span>
+              <span className="text-lg tracking-tight">{formatCurrency(total)}</span>
             </div>
 
             {/* Error */}
             {error && (
-              <div className="px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>
+              <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{error}</p>
             )}
 
-            {/* Actions */}
-            <div className="flex flex-col gap-2">
+            {/* Acciones */}
+            <div className="space-y-2 pt-1">
               <Button type="submit" loading={crear.isPending} icon={<Receipt size={15} />}
                 disabled={lineas.length === 0} className="w-full justify-center">
                 Registrar venta
               </Button>
               <button type="button" onClick={resetForm}
-                className="w-full py-2 rounded-lg text-sm text-[#5F6B7A] hover:text-red-500 hover:bg-red-50 transition-colors font-medium">
+                className="w-full py-1.5 rounded-lg text-xs text-[#5F6B7A] hover:text-red-500 hover:bg-red-50 transition-colors font-medium text-center">
                 Limpiar formulario
               </button>
             </div>
           </div>
+
         </div>
       </form>
     </div>

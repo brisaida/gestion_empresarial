@@ -10,7 +10,7 @@ class DetalleVenta extends Model
 
     protected $fillable = [
         'venta_id', 'producto_id',
-        'cantidad', 'precio_unitario', 'subtotal',
+        'cantidad', 'precio_unitario', 'costo_unitario', 'subtotal',
     ];
 
     protected function casts(): array
@@ -18,6 +18,7 @@ class DetalleVenta extends Model
         return [
             'cantidad'        => 'decimal:4',
             'precio_unitario' => 'decimal:4',
+            'costo_unitario'  => 'decimal:4',
             'subtotal'        => 'decimal:4',
         ];
     }

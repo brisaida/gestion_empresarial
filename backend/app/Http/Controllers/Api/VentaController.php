@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Inventory\StoreVentaRequest;
 use App\Http\Resources\VentaResource;
+use App\Models\Producto;
 use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Services\InventarioService;
@@ -102,12 +103,19 @@ class VentaController extends ApiController
                     'estado'         => 'completada',
                 ]);
 
+                // Cargar costos actuales de todos los productos en una sola consulta
+                $productoIds = collect($validated['detalles'])->pluck('producto_id')->unique();
+                $costos = Producto::whereIn('id', $productoIds)
+                    ->pluck('costo', 'id');   // [producto_id => costo_promedio_ponderado]
+
                 foreach ($validated['detalles'] as $det) {
                     DetalleVenta::create([
                         'venta_id'        => $venta->id,
                         'producto_id'     => $det['producto_id'],
                         'cantidad'        => $det['cantidad'],
                         'precio_unitario' => $det['precio_unitario'],
+                        // Capturar el costo al momento de la venta (snapshot para COGS)
+                        'costo_unitario'  => $costos[$det['producto_id']] ?? 0,
                         'subtotal'        => $det['cantidad'] * $det['precio_unitario'],
                     ]);
                 }
