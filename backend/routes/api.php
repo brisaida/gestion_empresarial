@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Productos
     Route::apiResource('productos', ProductoController::class);
+    Route::post('productos/{producto}/imagen', [ProductoController::class, 'uploadImagen']);
 
     // Inventario — stock
     Route::get('existencias',                   [ExistenciaController::class, 'index']);

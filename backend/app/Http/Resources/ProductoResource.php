@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class ProductoResource extends JsonResource
 {
@@ -26,6 +27,7 @@ class ProductoResource extends JsonResource
             'maneja_vencimiento' => $this->maneja_vencimiento,
             'maneja_serie'       => $this->maneja_serie,
             'activo'             => $this->activo,
+            'imagen_url'         => $this->imagen ? Storage::disk('public')->url($this->imagen) : null,
             // relaciones opcionales
             'categoria'          => $this->whenLoaded('categoria', fn() => ['id' => $this->categoria->id, 'nombre' => $this->categoria->nombre]),
             'marca'              => $this->whenLoaded('marca', fn() => ['id' => $this->marca->id, 'nombre' => $this->marca->nombre]),

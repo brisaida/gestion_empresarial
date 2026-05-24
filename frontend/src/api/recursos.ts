@@ -85,6 +85,13 @@ export const productosApi = {
   create:  (data: unknown) => create<Producto>('/productos', data),
   update:  (id: number, data: unknown) => update<Producto>(`/productos/${id}`, data),
   delete:  (id: number) => remove(`/productos/${id}`),
+  uploadImagen: (id: number, file: File) => {
+    const formData = new FormData()
+    formData.append('imagen', file)
+    return client.post<ApiResponse<Producto>>(`/productos/${id}/imagen`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
 }
 
 // ── Existencias ────────────────────────────────────────────────────────────

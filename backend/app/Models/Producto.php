@@ -13,7 +13,7 @@ class Producto extends Model
         'empresa_id', 'categoria_id', 'marca_id', 'unidad_medida_id',
         'codigo', 'codigo_barra', 'nombre', 'descripcion',
         'costo', 'precio_venta', 'stock_minimo',
-        'maneja_lote', 'maneja_vencimiento', 'maneja_serie', 'activo',
+        'maneja_lote', 'maneja_vencimiento', 'maneja_serie', 'activo', 'imagen',
     ];
 
     protected function casts(): array

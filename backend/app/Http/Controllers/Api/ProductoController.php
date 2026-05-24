@@ -8,6 +8,7 @@ use App\Http\Resources\ProductoResource;
 use App\Models\Producto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends ApiController
 {
@@ -71,6 +72,27 @@ class ProductoController extends ApiController
             'success' => true,
             'message' => 'Producto actualizado.',
             'data'    => new ProductoResource($producto),
+        ]);
+    }
+
+    public function uploadImagen(Request $request, Producto $producto): JsonResponse
+    {
+        $request->validate([
+            'imagen' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+        ]);
+
+        // Eliminar imagen anterior si existe
+        if ($producto->imagen) {
+            Storage::disk('public')->delete($producto->imagen);
+        }
+
+        $path = $request->file('imagen')->store('productos', 'public');
+        $producto->update(['imagen' => $path]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Imagen actualizada correctamente.',
+            'data'    => new ProductoResource($producto->load(['categoria', 'marca', 'unidadMedida'])),
         ]);
     }
 

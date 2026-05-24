@@ -106,6 +106,7 @@ export interface Producto {
   maneja_vencimiento: boolean
   maneja_serie: boolean
   activo: boolean
+  imagen_url?: string | null
   categoria?: { id: number; nombre: string }
   marca?: { id: number; nombre: string }
   unidad_medida?: { id: number; nombre: string; abreviatura: string }
