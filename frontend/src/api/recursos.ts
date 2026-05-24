@@ -2,7 +2,7 @@ import client from './client'
 import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
-  Producto, Existencia, DashboardData, Movimiento, Compra, Venta,
+  Producto, Existencia, DashboardData, Movimiento, Compra, Venta, Cotizacion,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -115,6 +115,19 @@ export const comprasApi = {
   create:   (data: unknown) => create<Compra>('/compras', data),
   recibir:  (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/recibir`),
   cancelar: (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/cancelar`),
+}
+
+// ── Cotizaciones ───────────────────────────────────────────────────────────
+export const cotizacionesApi = {
+  list:             (params: Record<string, unknown>) => list<Cotizacion>('/cotizaciones', params),
+  get:              (id: number) => get<Cotizacion>(`/cotizaciones/${id}`),
+  create:           (data: unknown) => create<Cotizacion>('/cotizaciones', data),
+  update:           (id: number, data: unknown) => update<Cotizacion>(`/cotizaciones/${id}`, data),
+  cambiarEstado:    (id: number, estado: string) => client.post<ApiResponse<Cotizacion>>(`/cotizaciones/${id}/estado`, { estado }),
+  convertir:        (id: number, data: { bodega_id: number; fecha_venta?: string }) =>
+    client.post<ApiResponse<Venta>>(`/cotizaciones/${id}/convertir`, data),
+  siguienteNumero:  (empresaId: number) =>
+    client.get<ApiResponse<{ numero_cotizacion: string }>>('/cotizaciones/siguiente-numero', { params: { empresa_id: empresaId } }),
 }
 
 // ── Ventas ─────────────────────────────────────────────────────────────────

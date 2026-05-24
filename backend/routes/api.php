@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\ProductoController;
 use App\Http\Controllers\Api\ProveedorController;
 use App\Http\Controllers\Api\TransferenciaController;
 use App\Http\Controllers\Api\UnidadMedidaController;
+use App\Http\Controllers\Api\CotizacionController;
 use App\Http\Controllers\Api\VentaController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('compras', CompraController::class)->only(['index', 'store', 'show']);
     Route::post('compras/{compra}/recibir',   [CompraController::class, 'recibir']);
     Route::post('compras/{compra}/cancelar',  [CompraController::class, 'cancelar']);
+
+    // Cotizaciones
+    Route::get('cotizaciones/siguiente-numero',           [CotizacionController::class, 'siguienteNumero']);
+    Route::apiResource('cotizaciones', CotizacionController::class)->only(['index', 'store', 'show', 'update']);
+    Route::post('cotizaciones/{cotizacion}/estado',       [CotizacionController::class, 'cambiarEstado']);
+    Route::post('cotizaciones/{cotizacion}/convertir',    [CotizacionController::class, 'convertirAVenta']);
 
     // Ventas
     Route::get('ventas/siguiente-numero',  [VentaController::class, 'siguienteNumero']);

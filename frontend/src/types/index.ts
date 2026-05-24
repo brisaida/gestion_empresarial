@@ -193,6 +193,37 @@ export interface Compra {
   detalles?: DetalleCompra[]
 }
 
+// ── Cotizaciones ──────────────────────────────────────────────────────────
+export type EstadoCotizacion = 'borrador' | 'enviada' | 'aprobada' | 'rechazada' | 'convertida' | 'vencida'
+
+export interface DetalleCotizacion {
+  id: number
+  producto_id: number
+  cantidad: number
+  precio_unitario: number
+  subtotal: number
+  producto?: { id: number; codigo?: string; nombre: string }
+}
+
+export interface Cotizacion {
+  id: number
+  empresa_id: number
+  cliente_id?: number
+  usuario_id: number
+  venta_id?: number
+  numero_cotizacion: string
+  fecha_cotizacion: string
+  fecha_vencimiento?: string
+  observaciones?: string
+  subtotal: number
+  descuento: number
+  impuesto: number
+  total: number
+  estado: EstadoCotizacion
+  cliente?: { id: number; nombre: string }
+  detalles?: DetalleCotizacion[]
+}
+
 // ── Ventas ────────────────────────────────────────────────────────────────
 export type EstadoVenta = 'completada' | 'cancelada'
 

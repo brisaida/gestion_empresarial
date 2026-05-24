@@ -12,8 +12,10 @@ import BodegasPage    from '@/pages/warehouses/BodegasPage'
 import ExistenciasPage from '@/pages/inventory/ExistenciasPage'
 import MovimientosPage from '@/pages/movements/MovimientosPage'
 import ComprasPage    from '@/pages/purchases/ComprasPage'
-import VentasPage          from '@/pages/sales/VentasPage'
-import HistorialVentasPage from '@/pages/sales/HistorialVentasPage'
+import CotizacionesPage        from '@/pages/quotations/CotizacionesPage'
+import HistorialCotizacionesPage from '@/pages/quotations/HistorialCotizacionesPage'
+import VentasPage               from '@/pages/sales/VentasPage'
+import HistorialVentasPage      from '@/pages/sales/HistorialVentasPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -38,8 +40,10 @@ export default function App() {
               <Route path="existencias" element={<ExistenciasPage />} />
               <Route path="movimientos" element={<MovimientosPage />} />
               <Route path="compras"     element={<ComprasPage />} />
-              <Route path="ventas"          element={<VentasPage />} />
-              <Route path="ventas/historial" element={<HistorialVentasPage />} />
+              <Route path="cotizaciones"           element={<CotizacionesPage />} />
+              <Route path="cotizaciones/historial" element={<HistorialCotizacionesPage />} />
+              <Route path="ventas"                 element={<VentasPage />} />
+              <Route path="ventas/historial"       element={<HistorialVentasPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

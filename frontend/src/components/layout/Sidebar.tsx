@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -21,9 +21,11 @@ const nav = [
   },
   { group: 'Transacciones',
     items: [
-      { to: '/compras',          label: 'Compras',          icon: ShoppingCart,    end: false },
-      { to: '/ventas',           label: 'Nueva venta',      icon: Receipt,         end: true  },
-      { to: '/ventas/historial', label: 'Historial ventas', icon: ClipboardList,   end: true  },
+      { to: '/compras',                  label: 'Compras',            icon: ShoppingCart,  end: false },
+      { to: '/cotizaciones',             label: 'Nueva cotización',   icon: FileText,      end: true  },
+      { to: '/cotizaciones/historial',   label: 'Cotizaciones',       icon: ClipboardList, end: true  },
+      { to: '/ventas',                   label: 'Nueva venta',        icon: Receipt,       end: true  },
+      { to: '/ventas/historial',         label: 'Historial ventas',   icon: ClipboardList, end: true  },
     ]
   },
   { group: 'Catálogos',
