@@ -9,13 +9,16 @@ import CategoriasPage from '@/pages/categories/CategoriasPage'
 import ProveedoresPage from '@/pages/suppliers/ProveedoresPage'
 import ClientesPage   from '@/pages/clients/ClientesPage'
 import BodegasPage    from '@/pages/warehouses/BodegasPage'
-import ExistenciasPage from '@/pages/inventory/ExistenciasPage'
+import ExistenciasPage  from '@/pages/inventory/ExistenciasPage'
+import StockBajoPage   from '@/pages/inventory/StockBajoPage'
 import MovimientosPage from '@/pages/movements/MovimientosPage'
 import ComprasPage    from '@/pages/purchases/ComprasPage'
 import CotizacionesPage        from '@/pages/quotations/CotizacionesPage'
 import HistorialCotizacionesPage from '@/pages/quotations/HistorialCotizacionesPage'
 import VentasPage               from '@/pages/sales/VentasPage'
 import HistorialVentasPage      from '@/pages/sales/HistorialVentasPage'
+import TrasladosPage             from '@/pages/transfers/TrasladosPage'
+import HistorialTrasladosPage   from '@/pages/transfers/HistorialTrasladosPage'
 import ConfiguracionPage        from '@/pages/settings/ConfiguracionPage'
 import SuperAdminLayout         from '@/pages/super-admin/SuperAdminLayout'
 import DashboardSAPage          from '@/pages/super-admin/DashboardSAPage'
@@ -43,9 +46,12 @@ export default function App() {
               <Route path="proveedores" element={<ProveedoresPage />} />
               <Route path="clientes"    element={<ClientesPage />} />
               <Route path="bodegas"     element={<BodegasPage />} />
-              <Route path="existencias" element={<ExistenciasPage />} />
+              <Route path="existencias"         element={<ExistenciasPage />} />
+              <Route path="existencias/stock-bajo" element={<StockBajoPage />} />
               <Route path="movimientos" element={<MovimientosPage />} />
               <Route path="compras"     element={<ComprasPage />} />
+              <Route path="traslados"           element={<TrasladosPage />} />
+              <Route path="traslados/historial" element={<HistorialTrasladosPage />} />
               <Route path="cotizaciones"           element={<CotizacionesPage />} />
               <Route path="cotizaciones/historial" element={<HistorialCotizacionesPage />} />
               <Route path="ventas"                 element={<VentasPage />} />

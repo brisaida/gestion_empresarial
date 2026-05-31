@@ -31,7 +31,18 @@ class BodegaController extends ApiController
 
     public function store(StoreBodegaRequest $request): JsonResponse
     {
-        $bodega = Bodega::create($request->validated());
+        $data = $request->validated();
+
+        if (empty($data['codigo'])) {
+            $count = Bodega::where('empresa_id', $data['empresa_id'])->count();
+            do {
+                $count++;
+                $candidate = 'BOD-' . str_pad($count, 2, '0', STR_PAD_LEFT);
+            } while (Bodega::where('empresa_id', $data['empresa_id'])->where('codigo', $candidate)->exists());
+            $data['codigo'] = $candidate;
+        }
+
+        $bodega = Bodega::create($data);
         $bodega->load('sucursal');
         return $this->created(new BodegaResource($bodega));
     }

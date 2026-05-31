@@ -27,7 +27,7 @@ export default function ConfiguracionPage() {
     enabled:  empresaId > 0,
   })
 
-  const [form, setForm] = useState({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '' })
+  const [form, setForm] = useState({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', isv_rate: '15' })
 
   // Inicializar form cuando llegan los datos
   const initialized = useRef(false)
@@ -40,12 +40,13 @@ export default function ConfiguracionPage() {
       correo:       empresa.correo       ?? '',
       telefono:     empresa.telefono     ?? '',
       direccion:    empresa.direccion    ?? '',
+      isv_rate:     String(empresa.isv_rate ?? 15),
     })
   }
 
   /* ── Guardar datos ──────────────────────────────────────────── */
   const guardar = useMutation({
-    mutationFn: () => empresaApi.update(empresaId, form),
+    mutationFn: () => empresaApi.update(empresaId, { ...form, isv_rate: parseFloat(form.isv_rate) || 0 }),
     onSuccess: (res) => {
       setSaveOk(true); setSaveError('')
       setTimeout(() => setSaveOk(false), 3000)
@@ -163,6 +164,13 @@ export default function ConfiguracionPage() {
           <div className="sm:col-span-2">
             <Input label="Dirección" value={form.direccion}
               onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} />
+          </div>
+          <div>
+            <Input label="ISV / Impuesto (%)" type="number" min="0" max="100" step="0.01"
+              value={form.isv_rate}
+              onChange={e => setForm(f => ({ ...f, isv_rate: e.target.value }))}
+              placeholder="15" />
+            <p className="mt-1 text-xs text-[#5F6B7A]">Se aplica a ventas y cotizaciones. Ej: 15 para ISV hondureño.</p>
           </div>
         </div>
 

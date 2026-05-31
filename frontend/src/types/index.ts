@@ -22,6 +22,7 @@ export interface EmpresaConfig {
   correo?: string
   telefono?: string
   direccion?: string
+  isv_rate?: number
   logo_url?: string | null
 }
 
@@ -119,6 +120,7 @@ export interface Producto {
   alto?: number | null
   costo: number
   precio_venta: number
+  tasa_isv: number | null
   stock_minimo: number
   maneja_lote: boolean
   maneja_vencimiento: boolean
@@ -292,6 +294,33 @@ export interface DashboardData {
     nombre: string
     total_vendido: number
   }>
+}
+
+// ── Traslados ─────────────────────────────────────────────────────────────
+export type EstadoTraslado = 'pendiente' | 'completada' | 'cancelada'
+
+export interface DetalleTransferencia {
+  id: number
+  producto_id: number
+  cantidad: number
+  lote?: string
+  fecha_vencimiento?: string
+  numero_serie?: string
+  producto?: { id: number; codigo?: string; nombre: string }
+}
+
+export interface Transferencia {
+  id: number
+  empresa_id: number
+  bodega_origen_id: number
+  bodega_destino_id: number
+  usuario_id: number
+  fecha_transferencia: string
+  estado: EstadoTraslado
+  observaciones?: string
+  bodega_origen?: string
+  bodega_destino?: string
+  detalles?: DetalleTransferencia[]
 }
 
 // ── Super Admin ───────────────────────────────────────────────────────────

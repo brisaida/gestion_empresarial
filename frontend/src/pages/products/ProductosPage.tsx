@@ -27,6 +27,7 @@ const schema = z.object({
   unidad_medida_id:   z.string().optional(),
   costo:              z.coerce.number().min(0),
   precio_venta:       z.coerce.number().min(0),
+  tasa_isv:           z.coerce.number().min(0).max(100).optional().or(z.literal('')),
   stock_minimo:       z.coerce.number().min(0).optional(),
   tamaño:             z.string().max(50).optional(),
   peso:               z.coerce.number().min(0).optional().or(z.literal('')),
@@ -111,7 +112,7 @@ export default function ProductosPage() {
   }
 
   const openCreate = () => {
-    reset({ nombre: '', costo: 0, precio_venta: 0, stock_minimo: 0, activo: true })
+    reset({ nombre: '', costo: 0, precio_venta: 0, tasa_isv: '', stock_minimo: 0, activo: true })
     clearImage()
     setModal('create')
   }
@@ -123,7 +124,7 @@ export default function ProductosPage() {
       descripcion: p.descripcion ?? '',
       categoria_id: String(p.categoria_id ?? ''), marca_id: String(p.marca_id ?? ''),
       unidad_medida_id: String(p.unidad_medida_id ?? ''),
-      costo: p.costo, precio_venta: p.precio_venta, stock_minimo: p.stock_minimo,
+      costo: p.costo, precio_venta: p.precio_venta, tasa_isv: p.tasa_isv ?? '', stock_minimo: p.stock_minimo,
       tamaño: p.tamaño ?? '', peso: p.peso ?? '', largo: p.largo ?? '', ancho: p.ancho ?? '', alto: p.alto ?? '',
       maneja_lote: p.maneja_lote, maneja_vencimiento: p.maneja_vencimiento,
       maneja_serie: p.maneja_serie, activo: p.activo,
@@ -276,9 +277,13 @@ export default function ProductosPage() {
             <Select label="Unidad de medida" options={unidades?.map((u) => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? []} placeholder="Sin unidad" {...register('unidad_medida_id')} />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Input label="Costo *" type="number" step="0.01" error={errors.costo?.message} {...register('costo')} />
             <Input label="Precio de venta *" type="number" step="0.01" error={errors.precio_venta?.message} {...register('precio_venta')} />
+            <div>
+              <Input label="ISV (%)" type="number" step="0.01" min="0" max="100" placeholder={`default empresa`} {...register('tasa_isv')} />
+              <p className="mt-0.5 text-[10px] text-[#5F6B7A]">Vacío = usa el ISV de la empresa</p>
+            </div>
             <Input label="Stock mínimo" type="number" step="0.01" {...register('stock_minimo')} />
           </div>
 

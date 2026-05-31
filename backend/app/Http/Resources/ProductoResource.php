@@ -4,8 +4,6 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
-
 class ProductoResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -27,12 +25,13 @@ class ProductoResource extends JsonResource
             'alto'               => $this->alto !== null ? (float) $this->alto : null,
             'costo'              => (float) $this->costo,
             'precio_venta'       => (float) $this->precio_venta,
+            'tasa_isv'           => $this->tasa_isv !== null ? (float) $this->tasa_isv : null,
             'stock_minimo'       => (float) $this->stock_minimo,
             'maneja_lote'        => $this->maneja_lote,
             'maneja_vencimiento' => $this->maneja_vencimiento,
             'maneja_serie'       => $this->maneja_serie,
             'activo'             => $this->activo,
-            'imagen_url'         => $this->imagen ? Storage::disk('public')->url($this->imagen) : null,
+            'imagen_url'         => $this->imagen ? '/storage/' . $this->imagen : null,
             // relaciones opcionales
             'categoria'          => $this->whenLoaded('categoria', fn() => ['id' => $this->categoria->id, 'nombre' => $this->categoria->nombre]),
             'marca'              => $this->whenLoaded('marca', fn() => ['id' => $this->marca->id, 'nombre' => $this->marca->nombre]),

@@ -13,7 +13,7 @@ class Producto extends Model
         'empresa_id', 'categoria_id', 'marca_id', 'unidad_medida_id',
         'codigo', 'codigo_barra', 'nombre', 'descripcion',
         'tamaño', 'peso', 'largo', 'ancho', 'alto',
-        'costo', 'precio_venta', 'stock_minimo',
+        'costo', 'precio_venta', 'tasa_isv', 'stock_minimo',
         'maneja_lote', 'maneja_vencimiento', 'maneja_serie', 'activo', 'imagen',
     ];
 
@@ -22,6 +22,7 @@ class Producto extends Model
         return [
             'costo'              => 'decimal:4',
             'precio_venta'       => 'decimal:4',
+            'tasa_isv'           => 'decimal:2',
             'stock_minimo'       => 'decimal:4',
             'peso'               => 'decimal:3',
             'largo'              => 'decimal:2',

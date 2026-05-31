@@ -15,8 +15,6 @@ interface LineaCot {
   precio_unitario: number
 }
 
-const ISV_RATE = 0.15
-
 export default function CotizacionesPage() {
   const { state } = useAuth()
   const empresaId = state.empresaActiva?.id ?? 0
@@ -37,6 +35,12 @@ export default function CotizacionesPage() {
   const [showDrop, setShowDrop] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
 
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn:  () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
   const { data: clientes }  = useQuery({ queryKey: ['clientes-all', empresaId],  queryFn: () => clientesApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then(r => r.data.data), enabled: empresaId > 0 })
 
@@ -81,7 +85,14 @@ export default function CotizacionesPage() {
   ).slice(0, 8)
 
   const subtotal = lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0)
-  const isv      = aplicarISV ? (subtotal - descuento) * ISV_RATE : 0
+  const isv = aplicarISV && subtotal > 0
+    ? lineas.reduce((sum, l) => {
+        const rate = (l.producto.tasa_isv != null ? l.producto.tasa_isv : (empresaConfig?.isv_rate ?? 15)) / 100
+        const lineaBase = l.cantidad * l.precio_unitario
+        const lineaDescontada = descuento > 0 ? lineaBase * (1 - descuento / subtotal) : lineaBase
+        return sum + lineaDescontada * rate
+      }, 0)
+    : 0
   const total    = subtotal - descuento + isv
 
   const resetForm = () => {
@@ -329,7 +340,7 @@ export default function CotizacionesPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-[#5F6B7A]">ISV (15%)</span>
+                <span className="text-sm font-medium text-[#5F6B7A]">ISV ({empresaConfig?.isv_rate ?? 15}%)</span>
                 <button type="button" onClick={() => setAplicarISV(v => !v)}
                   style={{ height: '22px', width: '40px' }}
                   className={`rounded-full transition-all flex items-center px-0.5 ${aplicarISV ? 'bg-[#0E78D8]' : 'bg-gray-200'}`}>
@@ -348,7 +359,7 @@ export default function CotizacionesPage() {
                 )}
                 {aplicarISV && (
                   <div className="flex justify-between text-sm text-[#5F6B7A]">
-                    <span>ISV (15%)</span><span className="font-medium">{formatCurrency(isv)}</span>
+                    <span>ISV ({empresaConfig?.isv_rate ?? 15}%)</span><span className="font-medium">{formatCurrency(isv)}</span>
                   </div>
                 )}
               </div>

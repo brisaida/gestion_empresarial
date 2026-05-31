@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -17,9 +17,12 @@ const nav = [
   },
   { group: 'Inventario',
     items: [
-      { to: '/existencias',      label: 'Stock',            icon: BarChart3,       end: false },
-      { to: '/compras',          label: 'Compras',          icon: ShoppingCart,    end: false },
-      { to: '/movimientos',      label: 'Movimientos',      icon: ArrowLeftRight,  end: false },
+      { to: '/existencias',           label: 'Stock',            icon: BarChart3,       end: true  },
+      { to: '/existencias/stock-bajo', label: 'Alertas de stock',  icon: AlertTriangle,   end: true  },
+      { to: '/compras',              label: 'Compras',           icon: ShoppingCart,   end: false },
+      { to: '/traslados',           label: 'Nuevo traslado',    icon: MoveRight,      end: true  },
+      { to: '/traslados/historial', label: 'Historial traslados', icon: ClipboardList, end: true  },
+      { to: '/movimientos',         label: 'Movimientos',       icon: ArrowLeftRight, end: false },
     ]
   },
   { group: 'Cotizaciones',

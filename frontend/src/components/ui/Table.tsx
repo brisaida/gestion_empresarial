@@ -17,9 +17,10 @@ interface TableProps<T> {
   data: T[]
   loading?: boolean
   emptyMessage?: string
+  expandedRow?: { id: number; content: ReactNode }
 }
 
-export function Table<T extends { id: number }>({ columns, data, loading, emptyMessage = 'No hay registros.' }: TableProps<T>) {
+export function Table<T extends { id: number }>({ columns, data, loading, emptyMessage = 'No hay registros.', expandedRow }: TableProps<T>) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -57,18 +58,27 @@ export function Table<T extends { id: number }>({ columns, data, loading, emptyM
             </tr>
           ) : (
             data.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                {columns.map((col) => (
-                  <td
-                    key={col.key}
-                    className={cn('px-4 py-3 text-gray-700',
-                      col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
-                    )}
-                  >
-                    {col.cell(row)}
-                  </td>
-                ))}
-              </tr>
+              <>
+                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                  {columns.map((col) => (
+                    <td
+                      key={col.key}
+                      className={cn('px-4 py-3 text-gray-700',
+                        col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
+                      )}
+                    >
+                      {col.cell(row)}
+                    </td>
+                  ))}
+                </tr>
+                {expandedRow?.id === row.id && (
+                  <tr key={`${row.id}-expanded`}>
+                    <td colSpan={columns.length} className="px-4 pb-3">
+                      {expandedRow.content}
+                    </td>
+                  </tr>
+                )}
+              </>
             ))
           )}
         </tbody>

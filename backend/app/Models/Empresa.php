@@ -11,12 +11,15 @@ class Empresa extends Model
 
     protected $fillable = [
         'nombre', 'nombre_legal', 'rtn', 'correo',
-        'telefono', 'direccion', 'logo', 'activo',
+        'telefono', 'direccion', 'isv_rate', 'logo', 'activo',
     ];
 
     protected function casts(): array
     {
-        return ['activo' => 'boolean'];
+        return [
+            'activo'   => 'boolean',
+            'isv_rate' => 'decimal:2',
+        ];
     }
 
     public function sucursales()

@@ -3,7 +3,7 @@ import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
   Producto, Existencia, DashboardData, Movimiento, Compra, Venta, Cotizacion,
-  EmpresaConfig,
+  Transferencia, EmpresaConfig,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -149,6 +149,13 @@ export const cotizacionesApi = {
     client.post<ApiResponse<Venta>>(`/cotizaciones/${id}/convertir`, data),
   siguienteNumero:  (empresaId: number) =>
     client.get<ApiResponse<{ numero_cotizacion: string }>>('/cotizaciones/siguiente-numero', { params: { empresa_id: empresaId } }),
+}
+
+// ── Transferencias ────────────────────────────────────────────────────────
+export const transferenciasApi = {
+  list:   (params: Record<string, unknown>) => list<Transferencia>('/transferencias', params),
+  get:    (id: number) => get<Transferencia>(`/transferencias/${id}`),
+  create: (data: unknown) => create<Transferencia>('/transferencias', data),
 }
 
 // ── Ventas ─────────────────────────────────────────────────────────────────

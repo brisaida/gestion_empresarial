@@ -42,13 +42,15 @@ export default function DashboardPage() {
           icon={<Truck size={20} />}
           color="cyan"
         />
-        <MetricCard
-          title="Stock Bajo"
-          value={isLoading ? '—' : (resumen?.productos_stock_bajo ?? 0)}
-          subtitle="Productos por reabastecer"
-          icon={<AlertTriangle size={20} />}
-          color={resumen?.productos_stock_bajo ? 'red' : 'emerald'}
-        />
+        <Link to="/existencias/stock-bajo" className="block">
+          <MetricCard
+            title="Stock Bajo"
+            value={isLoading ? '—' : (resumen?.productos_stock_bajo ?? 0)}
+            subtitle="Ver alertas →"
+            icon={<AlertTriangle size={20} />}
+            color={resumen?.productos_stock_bajo ? 'red' : 'emerald'}
+          />
+        </Link>
         <MetricCard
           title="Ventas del Mes"
           value={isLoading ? '—' : formatCurrency(resumen?.ventas_mes ?? 0)}

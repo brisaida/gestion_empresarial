@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Models\Empresa;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class EmpresaController extends ApiController
@@ -30,6 +29,7 @@ class EmpresaController extends ApiController
             'correo'       => ['nullable', 'email', 'max:255'],
             'telefono'     => ['nullable', 'string', 'max:30'],
             'direccion'    => ['nullable', 'string', 'max:500'],
+            'isv_rate'     => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $empresa->update($validated);
@@ -113,6 +113,7 @@ class EmpresaController extends ApiController
             'correo'      => $e->correo,
             'telefono'    => $e->telefono,
             'direccion'   => $e->direccion,
+            'isv_rate'    => (float) ($e->isv_rate ?? 15),
             'logo_url'    => $e->logo ? '/' . ltrim($e->logo, '/') : null,
         ];
     }
