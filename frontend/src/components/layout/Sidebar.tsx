@@ -7,59 +7,49 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/stores/authStore'
+import { usePermisos } from '@/lib/permisos'
 import { empresaApi } from '@/api/recursos'
 
 const nav = [
-  { group: 'Principal',
-    items: [
-      { to: '/dashboard',        label: 'Dashboard',        icon: LayoutDashboard, end: true },
-    ]
-  },
-  { group: 'Inventario',
-    items: [
-      { to: '/existencias',           label: 'Stock',            icon: BarChart3,       end: true  },
-      { to: '/existencias/stock-bajo', label: 'Alertas de stock',  icon: AlertTriangle,   end: true  },
-      { to: '/compras',              label: 'Compras',           icon: ShoppingCart,   end: false },
-      { to: '/traslados',           label: 'Nuevo traslado',    icon: MoveRight,      end: true  },
-      { to: '/traslados/historial', label: 'Historial traslados', icon: ClipboardList, end: true  },
-      { to: '/movimientos',         label: 'Movimientos',       icon: ArrowLeftRight, end: false },
-    ]
-  },
-  { group: 'Cotizaciones',
-    items: [
-      { to: '/cotizaciones',           label: 'Nueva cotización', icon: FileText,      end: true },
-      { to: '/cotizaciones/historial', label: 'Historial',        icon: ClipboardList, end: true },
-    ]
-  },
-  { group: 'Ventas',
-    items: [
-      { to: '/ventas',           label: 'Nueva venta',      icon: Receipt,         end: true },
-      { to: '/ventas/historial', label: 'Historial',        icon: ClipboardList,   end: true },
-    ]
-  },
-  { group: 'Catálogos',
-    items: [
-      { to: '/productos',        label: 'Productos',        icon: Package,         end: false },
-      { to: '/categorias',       label: 'Categorías',       icon: Tags,            end: false },
-      { to: '/proveedores',      label: 'Proveedores',      icon: Truck,           end: false },
-      { to: '/clientes',         label: 'Clientes',         icon: Users,           end: false },
-      { to: '/bodegas',          label: 'Bodegas',          icon: Warehouse,       end: false },
-    ]
-  },
-  { group: 'Sistema',
-    items: [
-      { to: '/configuracion',    label: 'Configuración',    icon: Settings,        end: true  },
-    ]
-  },
+  { group: 'Principal', items: [
+    { to: '/dashboard',              label: 'Dashboard',           icon: LayoutDashboard, end: true,  permiso: 'dashboard'     },
+  ]},
+  { group: 'Inventario', items: [
+    { to: '/existencias',            label: 'Stock',               icon: BarChart3,       end: true,  permiso: 'inventario'    },
+    { to: '/existencias/stock-bajo', label: 'Alertas de stock',    icon: AlertTriangle,   end: true,  permiso: 'inventario'    },
+    { to: '/compras',                label: 'Compras',             icon: ShoppingCart,    end: false, permiso: 'compras'       },
+    { to: '/traslados',              label: 'Nuevo traslado',      icon: MoveRight,       end: true,  permiso: 'traslados'     },
+    { to: '/traslados/historial',    label: 'Historial traslados', icon: ClipboardList,   end: true,  permiso: 'traslados'     },
+    { to: '/movimientos',            label: 'Movimientos',         icon: ArrowLeftRight,  end: false, permiso: 'inventario'    },
+  ]},
+  { group: 'Cotizaciones', items: [
+    { to: '/cotizaciones',           label: 'Nueva cotización',    icon: FileText,        end: true,  permiso: 'cotizaciones'  },
+    { to: '/cotizaciones/historial', label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'cotizaciones'  },
+  ]},
+  { group: 'Ventas', items: [
+    { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas'        },
+    { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas'        },
+  ]},
+  { group: 'Catálogos', items: [
+    { to: '/productos',              label: 'Productos',           icon: Package,         end: false, permiso: 'catalogos'     },
+    { to: '/categorias',             label: 'Categorías',          icon: Tags,            end: false, permiso: 'catalogos'     },
+    { to: '/proveedores',            label: 'Proveedores',         icon: Truck,           end: false, permiso: 'catalogos'     },
+    { to: '/clientes',               label: 'Clientes',            icon: Users,           end: false, permiso: 'catalogos'     },
+    { to: '/bodegas',                label: 'Bodegas',             icon: Warehouse,       end: false, permiso: 'catalogos'     },
+  ]},
+  { group: 'Sistema', items: [
+    { to: '/configuracion',          label: 'Configuración',       icon: Settings,        end: true,  permiso: 'configuracion' },
+  ]},
 ]
 
-interface NavItem { to: string; label: string; icon: React.ElementType; end: boolean }
+interface NavItem { to: string; label: string; icon: React.ElementType; end: boolean; permiso: string }
 interface Props { collapsed: boolean }
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 export default function Sidebar({ collapsed }: Props) {
   const { state } = useAuth()
+  const { hasPerm } = usePermisos()
   const empresaId = state.empresaActiva?.id ?? 0
 
   const { data: empresaConfig } = useQuery({
@@ -109,7 +99,10 @@ export default function Sidebar({ collapsed }: Props) {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto scrollbar-dark py-3 space-y-4 px-2">
-        {nav.map((group) => (
+        {nav.map((group) => {
+          const visibles = (group.items as NavItem[]).filter(i => hasPerm(i.permiso))
+          if (visibles.length === 0) return null
+          return (
           <div key={group.group}>
             {!collapsed && (
               <p className="px-2 mb-1.5 text-[10px] font-bold text-[#38D6D4]/70 uppercase tracking-[0.15em]">
@@ -117,7 +110,7 @@ export default function Sidebar({ collapsed }: Props) {
               </p>
             )}
             <ul className="space-y-0.5">
-              {(group.items as NavItem[]).map(({ to, label, icon: Icon, end }) => (
+              {visibles.map(({ to, label, icon: Icon, end }) => (
                 <li key={to}>
                   <NavLink
                     to={to}
@@ -138,7 +131,8 @@ export default function Sidebar({ collapsed }: Props) {
               ))}
             </ul>
           </div>
-        ))}
+          )
+        })}
       </nav>
 
       {/* Footer */}

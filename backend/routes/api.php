@@ -27,90 +27,96 @@ Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
 });
 
-// ── Rutas protegidas (requieren token Sanctum) ─────────────────────────────
+// ── Rutas protegidas ───────────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
 
     // Auth
-    Route::get('auth/me',       [AuthController::class, 'me']);
-    Route::post('auth/logout',  [AuthController::class, 'logout']);
+    Route::get('auth/me',      [AuthController::class, 'me']);
+    Route::post('auth/logout', [AuthController::class, 'logout']);
+
+    // Empresa — GET siempre accesible (sidebar, PDFs); mutaciones requieren configuracion
+    Route::get('empresa',             [EmpresaController::class, 'show']);
+    Route::get('empresa/logo-base64', [EmpresaController::class, 'logoBase64']);
+    Route::middleware('permiso:configuracion')->group(function () {
+        Route::put('empresa',         [EmpresaController::class, 'update']);
+        Route::post('empresa/logo',   [EmpresaController::class, 'uploadLogo']);
+        Route::delete('empresa/logo', [EmpresaController::class, 'deleteLogo']);
+    });
 
     // Dashboard
-    Route::get('dashboard', [DashboardController::class, 'index']);
-
-    // Empresa (configuración)
-    Route::get('empresa',             [EmpresaController::class, 'show']);
-    Route::put('empresa',             [EmpresaController::class, 'update']);
-    Route::get('empresa/logo-base64', [EmpresaController::class, 'logoBase64']);
-    Route::post('empresa/logo',       [EmpresaController::class, 'uploadLogo']);
-    Route::delete('empresa/logo',     [EmpresaController::class, 'deleteLogo']);
+    Route::middleware('permiso:dashboard')->group(function () {
+        Route::get('dashboard', [DashboardController::class, 'index']);
+    });
 
     // Catálogos
-    Route::apiResource('categorias',     CategoriaController::class);
-    Route::apiResource('marcas',         MarcaController::class);
-    Route::apiResource('unidades-medida', UnidadMedidaController::class);
-    Route::apiResource('proveedores',    ProveedorController::class);
-    Route::apiResource('clientes',       ClienteController::class);
-    Route::apiResource('bodegas',        BodegaController::class);
+    Route::middleware('permiso:catalogos')->group(function () {
+        Route::apiResource('categorias',      CategoriaController::class);
+        Route::apiResource('marcas',          MarcaController::class);
+        Route::apiResource('unidades-medida', UnidadMedidaController::class);
+        Route::apiResource('proveedores',     ProveedorController::class);
+        Route::apiResource('clientes',        ClienteController::class);
+        Route::apiResource('bodegas',         BodegaController::class);
+        Route::apiResource('productos',       ProductoController::class);
+        Route::post('productos/{producto}/imagen', [ProductoController::class, 'uploadImagen']);
+    });
 
-    // Productos
-    Route::apiResource('productos', ProductoController::class);
-    Route::post('productos/{producto}/imagen', [ProductoController::class, 'uploadImagen']);
-
-    // Inventario — stock
-    Route::get('existencias',                   [ExistenciaController::class, 'index']);
-    Route::get('existencias/resumen-por-producto', [ExistenciaController::class, 'resumenPorProducto']);
-
-    // Movimientos manuales (entradas/salidas/ajustes)
-    Route::get('movimientos',       [MovimientoController::class, 'index']);
-    Route::post('movimientos',      [MovimientoController::class, 'store']);
-    Route::get('movimientos/{movimientoInventario}', [MovimientoController::class, 'show']);
+    // Inventario
+    Route::middleware('permiso:inventario')->group(function () {
+        Route::get('existencias',                       [ExistenciaController::class, 'index']);
+        Route::get('existencias/resumen-por-producto',  [ExistenciaController::class, 'resumenPorProducto']);
+        Route::get('movimientos',                       [MovimientoController::class, 'index']);
+        Route::post('movimientos',                      [MovimientoController::class, 'store']);
+        Route::get('movimientos/{movimientoInventario}', [MovimientoController::class, 'show']);
+    });
 
     // Compras
-    Route::apiResource('compras', CompraController::class)->only(['index', 'store', 'show']);
-    Route::post('compras/{compra}/recibir',   [CompraController::class, 'recibir']);
-    Route::post('compras/{compra}/cancelar',  [CompraController::class, 'cancelar']);
+    Route::middleware('permiso:compras')->group(function () {
+        Route::apiResource('compras', CompraController::class)->only(['index', 'store', 'show']);
+        Route::post('compras/{compra}/recibir',  [CompraController::class, 'recibir']);
+        Route::post('compras/{compra}/cancelar', [CompraController::class, 'cancelar']);
+    });
 
     // Cotizaciones
-    // Nota: ->parameters(['cotizaciones' => 'cotizacion']) corrige la singularización
-    // incorrecta de Laravel para palabras en español (cotizaciones → cotizacione → WRONG)
-    Route::get('cotizaciones/siguiente-numero',           [CotizacionController::class, 'siguienteNumero']);
-    Route::apiResource('cotizaciones', CotizacionController::class)
-        ->only(['index', 'store', 'show', 'update'])
-        ->parameters(['cotizaciones' => 'cotizacion']);
-    Route::post('cotizaciones/{cotizacion}/estado',       [CotizacionController::class, 'cambiarEstado']);
-    Route::post('cotizaciones/{cotizacion}/convertir',    [CotizacionController::class, 'convertirAVenta']);
+    Route::middleware('permiso:cotizaciones')->group(function () {
+        Route::get('cotizaciones/siguiente-numero', [CotizacionController::class, 'siguienteNumero']);
+        Route::apiResource('cotizaciones', CotizacionController::class)
+            ->only(['index', 'store', 'show', 'update'])
+            ->parameters(['cotizaciones' => 'cotizacion']);
+        Route::post('cotizaciones/{cotizacion}/estado',    [CotizacionController::class, 'cambiarEstado']);
+        Route::post('cotizaciones/{cotizacion}/convertir', [CotizacionController::class, 'convertirAVenta']);
+    });
 
     // Ventas
-    Route::get('ventas/siguiente-numero',  [VentaController::class, 'siguienteNumero']);
-    Route::apiResource('ventas', VentaController::class)->only(['index', 'store', 'show']);
-    Route::post('ventas/{venta}/cancelar', [VentaController::class, 'cancelar']);
+    Route::middleware('permiso:ventas')->group(function () {
+        Route::get('ventas/siguiente-numero', [VentaController::class, 'siguienteNumero']);
+        Route::apiResource('ventas', VentaController::class)->only(['index', 'store', 'show']);
+        Route::post('ventas/{venta}/cancelar', [VentaController::class, 'cancelar']);
+    });
 
-    // Transferencias
-    Route::apiResource('transferencias', TransferenciaController::class)->only(['index', 'store', 'show']);
+    // Traslados
+    Route::middleware('permiso:traslados')->group(function () {
+        Route::apiResource('transferencias', TransferenciaController::class)->only(['index', 'store', 'show']);
+    });
 });
 
 // ── Super Admin ────────────────────────────────────────────────────────────
 Route::middleware(['auth:sanctum', 'super.admin'])->prefix('sa')->group(function () {
 
-    // Dashboard
     Route::get('dashboard', [DashboardAdminController::class, 'index']);
 
-    // Empresas
     Route::get('empresas',                    [EmpresaAdminController::class, 'index']);
     Route::post('empresas',                   [EmpresaAdminController::class, 'store']);
     Route::put('empresas/{empresa}',          [EmpresaAdminController::class, 'update']);
     Route::patch('empresas/{empresa}/toggle', [EmpresaAdminController::class, 'toggle']);
 
-    // Usuarios
-    Route::get('usuarios',                                      [UsuarioAdminController::class, 'index']);
-    Route::post('usuarios',                                     [UsuarioAdminController::class, 'store']);
-    Route::put('usuarios/{usuario}',                            [UsuarioAdminController::class, 'update']);
-    Route::patch('usuarios/{usuario}/toggle',                   [UsuarioAdminController::class, 'toggle']);
-    Route::get('usuarios/{usuario}/empresas',                   [UsuarioAdminController::class, 'empresas']);
-    Route::post('usuarios/{usuario}/empresas',                  [UsuarioAdminController::class, 'asignarEmpresa']);
-    Route::delete('usuarios/{usuario}/empresas/{empresa}',      [UsuarioAdminController::class, 'quitarEmpresa']);
+    Route::get('usuarios',                                    [UsuarioAdminController::class, 'index']);
+    Route::post('usuarios',                                   [UsuarioAdminController::class, 'store']);
+    Route::put('usuarios/{usuario}',                          [UsuarioAdminController::class, 'update']);
+    Route::patch('usuarios/{usuario}/toggle',                 [UsuarioAdminController::class, 'toggle']);
+    Route::get('usuarios/{usuario}/empresas',                 [UsuarioAdminController::class, 'empresas']);
+    Route::post('usuarios/{usuario}/empresas',                [UsuarioAdminController::class, 'asignarEmpresa']);
+    Route::delete('usuarios/{usuario}/empresas/{empresa}',    [UsuarioAdminController::class, 'quitarEmpresa']);
 
-    // Roles
     Route::get('roles',             [RolAdminController::class, 'index']);
     Route::post('roles',            [RolAdminController::class, 'store']);
     Route::put('roles/{rol}',       [RolAdminController::class, 'update']);

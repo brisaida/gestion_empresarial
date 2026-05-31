@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'super.admin' => \App\Http\Middleware\EsSuperAdmin::class,
+            'permiso'     => \App\Http\Middleware\TienePermiso::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

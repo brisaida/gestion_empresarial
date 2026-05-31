@@ -12,6 +12,7 @@ export interface EmpresaResumen {
   nombre: string
   rol: number
   logo_url?: string | null
+  modulos: string[] | null  // null = acceso total; array = módulos permitidos
 }
 
 export interface EmpresaConfig {
@@ -383,6 +384,7 @@ export interface RolAdmin {
   id: number
   nombre: string
   descripcion?: string
+  modulos: string[] | null
   asignaciones: number
 }
 

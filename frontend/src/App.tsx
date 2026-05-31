@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/stores/authStore'
+import { usePermisos } from '@/lib/permisos'
+import { Lock } from 'lucide-react'
+import type { ReactNode } from 'react'
 import AppLayout      from '@/components/layout/AppLayout'
 import LoginPage      from '@/pages/auth/LoginPage'
 import DashboardPage  from '@/pages/dashboard/DashboardPage'
@@ -26,6 +29,21 @@ import EmpresasAdminPage        from '@/pages/super-admin/EmpresasAdminPage'
 import UsuariosAdminPage        from '@/pages/super-admin/UsuariosAdminPage'
 import RolesAdminPage           from '@/pages/super-admin/RolesAdminPage'
 
+function SinPermiso() {
+  return (
+    <div className="flex flex-col items-center justify-center h-64 text-center">
+      <Lock size={40} className="text-gray-200 mb-4" />
+      <h2 className="text-lg font-bold text-[#072B5A]">Sin permiso</h2>
+      <p className="text-sm text-[#5F6B7A] mt-1">Tu rol no tiene acceso a esta sección.<br />Contacta al administrador si crees que es un error.</p>
+    </div>
+  )
+}
+
+function Guard({ perm, children }: { perm: string; children: ReactNode }) {
+  const { hasPerm } = usePermisos()
+  return hasPerm(perm) ? <>{children}</> : <SinPermiso />
+}
+
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 })
@@ -40,23 +58,23 @@ export default function App() {
 
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard"   element={<DashboardPage />} />
-              <Route path="productos"   element={<ProductosPage />} />
-              <Route path="categorias"  element={<CategoriasPage />} />
-              <Route path="proveedores" element={<ProveedoresPage />} />
-              <Route path="clientes"    element={<ClientesPage />} />
-              <Route path="bodegas"     element={<BodegasPage />} />
-              <Route path="existencias"         element={<ExistenciasPage />} />
-              <Route path="existencias/stock-bajo" element={<StockBajoPage />} />
-              <Route path="movimientos" element={<MovimientosPage />} />
-              <Route path="compras"     element={<ComprasPage />} />
-              <Route path="traslados"           element={<TrasladosPage />} />
-              <Route path="traslados/historial" element={<HistorialTrasladosPage />} />
-              <Route path="cotizaciones"           element={<CotizacionesPage />} />
-              <Route path="cotizaciones/historial" element={<HistorialCotizacionesPage />} />
-              <Route path="ventas"                 element={<VentasPage />} />
-              <Route path="ventas/historial"       element={<HistorialVentasPage />} />
-              <Route path="configuracion"          element={<ConfiguracionPage />} />
+              <Route path="dashboard"   element={<Guard perm="dashboard"><DashboardPage /></Guard>} />
+              <Route path="productos"   element={<Guard perm="catalogos"><ProductosPage /></Guard>} />
+              <Route path="categorias"  element={<Guard perm="catalogos"><CategoriasPage /></Guard>} />
+              <Route path="proveedores" element={<Guard perm="catalogos"><ProveedoresPage /></Guard>} />
+              <Route path="clientes"    element={<Guard perm="catalogos"><ClientesPage /></Guard>} />
+              <Route path="bodegas"     element={<Guard perm="catalogos"><BodegasPage /></Guard>} />
+              <Route path="existencias"            element={<Guard perm="inventario"><ExistenciasPage /></Guard>} />
+              <Route path="existencias/stock-bajo" element={<Guard perm="inventario"><StockBajoPage /></Guard>} />
+              <Route path="movimientos" element={<Guard perm="inventario"><MovimientosPage /></Guard>} />
+              <Route path="compras"     element={<Guard perm="compras"><ComprasPage /></Guard>} />
+              <Route path="traslados"           element={<Guard perm="traslados"><TrasladosPage /></Guard>} />
+              <Route path="traslados/historial" element={<Guard perm="traslados"><HistorialTrasladosPage /></Guard>} />
+              <Route path="cotizaciones"           element={<Guard perm="cotizaciones"><CotizacionesPage /></Guard>} />
+              <Route path="cotizaciones/historial" element={<Guard perm="cotizaciones"><HistorialCotizacionesPage /></Guard>} />
+              <Route path="ventas"                 element={<Guard perm="ventas"><VentasPage /></Guard>} />
+              <Route path="ventas/historial"       element={<Guard perm="ventas"><HistorialVentasPage /></Guard>} />
+              <Route path="configuracion"          element={<Guard perm="configuracion"><ConfiguracionPage /></Guard>} />
             </Route>
 
             <Route element={<SuperAdminLayout />}>

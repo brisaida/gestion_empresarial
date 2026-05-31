@@ -9,17 +9,23 @@ use Illuminate\Http\Request;
 
 class RolAdminController extends ApiController
 {
+    private function formatRol(Rol $r): array
+    {
+        return [
+            'id'          => $r->id,
+            'nombre'      => $r->nombre,
+            'descripcion' => $r->descripcion,
+            'modulos'     => $r->modulos,
+            'asignaciones'=> $r->asignaciones ?? 0,
+        ];
+    }
+
     public function index(): JsonResponse
     {
         $roles = Rol::withCount('usuariosEmpresas as asignaciones')
             ->orderBy('nombre')
             ->get()
-            ->map(fn($r) => [
-                'id'          => $r->id,
-                'nombre'      => $r->nombre,
-                'descripcion' => $r->descripcion,
-                'asignaciones'=> $r->asignaciones,
-            ]);
+            ->map(fn($r) => $this->formatRol($r));
 
         return response()->json(['success' => true, 'data' => $roles]);
     }
@@ -29,16 +35,13 @@ class RolAdminController extends ApiController
         $validated = $request->validate([
             'nombre'      => ['required', 'string', 'max:100', 'unique:roles,nombre'],
             'descripcion' => ['nullable', 'string', 'max:255'],
+            'modulos'     => ['nullable', 'array'],
+            'modulos.*'   => ['string'],
         ]);
 
         $rol = Rol::create($validated);
 
-        return $this->created([
-            'id'          => $rol->id,
-            'nombre'      => $rol->nombre,
-            'descripcion' => $rol->descripcion,
-            'asignaciones'=> 0,
-        ], 'Rol creado correctamente.');
+        return $this->created($this->formatRol($rol), 'Rol creado correctamente.');
     }
 
     public function update(Request $request, Rol $rol): JsonResponse
@@ -46,11 +49,13 @@ class RolAdminController extends ApiController
         $validated = $request->validate([
             'nombre'      => ['required', 'string', 'max:100', "unique:roles,nombre,{$rol->id}"],
             'descripcion' => ['nullable', 'string', 'max:255'],
+            'modulos'     => ['nullable', 'array'],
+            'modulos.*'   => ['string'],
         ]);
 
         $rol->update($validated);
 
-        return response()->json(['success' => true, 'message' => 'Rol actualizado.']);
+        return response()->json(['success' => true, 'data' => $this->formatRol($rol->fresh()), 'message' => 'Rol actualizado.']);
     }
 
     public function destroy(Rol $rol): JsonResponse

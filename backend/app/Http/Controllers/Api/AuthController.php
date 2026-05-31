@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UsuarioResource;
+use App\Models\Rol;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class AuthController extends ApiController
 {
@@ -26,17 +26,25 @@ class AuthController extends ApiController
 
         $token = $user->createToken('api-token')->plainTextToken;
 
+        $empresasCollection = $user->empresas()
+            ->where('usuarios_empresas.activo', true)
+            ->get();
+
+        $rolIds = $empresasCollection->pluck('pivot.rol_id')->filter()->unique()->values()->toArray();
+        $roles  = Rol::whereIn('id', $rolIds)->get()->keyBy('id');
+
         return response()->json([
             'success' => true,
             'message' => 'Sesión iniciada correctamente.',
             'data'    => [
-                'token'  => $token,
+                'token'   => $token,
                 'usuario' => new UsuarioResource($user),
-                'empresas' => $user->empresas()->where('usuarios_empresas.activo', true)->get()->map(fn($e) => [
+                'empresas' => $empresasCollection->map(fn($e) => [
                     'id'      => $e->id,
                     'nombre'  => $e->nombre,
                     'rol'     => $e->pivot->rol_id,
-                    'logo_url'=> $e->logo ? Storage::url($e->logo) : null,
+                    'logo_url'=> $e->logo ? '/' . ltrim($e->logo, '/') : null,
+                    'modulos' => $roles->get($e->pivot->rol_id)?->modulos ?? null,
                 ]),
             ],
         ]);

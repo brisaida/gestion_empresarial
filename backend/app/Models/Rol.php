@@ -11,7 +11,12 @@ class Rol extends Model
 
     protected $table = 'roles';
 
-    protected $fillable = ['nombre', 'descripcion'];
+    protected $fillable = ['nombre', 'descripcion', 'modulos'];
+
+    protected function casts(): array
+    {
+        return ['modulos' => 'array'];
+    }
 
     public function usuariosEmpresas()
     {
