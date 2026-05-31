@@ -157,38 +157,60 @@ export default function ComprasPage() {
               </button>
             </div>
             <div className="space-y-2">
-              {lineas.map((l, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-end p-3 bg-[#F4F7FA] rounded-lg">
-                  <div className="col-span-4">
-                    {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Producto *</p>}
-                    <select value={l.producto_id} onChange={(e) => setLinea(i, 'producto_id', e.target.value)} required className="w-full rounded-lg border border-gray-200 px-2 py-2 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all">
-                      <option value="">Seleccionar</option>
-                      {productos?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                    </select>
-                  </div>
-                  <div className="col-span-2">
-                    {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Cantidad *</p>}
-                    <input type="number" step="0.01" min="0.0001" value={l.cantidad} onChange={(e) => setLinea(i, 'cantidad', e.target.value)} required placeholder="0" className="w-full rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all" />
-                  </div>
-                  <div className="col-span-2">
-                    {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Costo unit. *</p>}
-                    <input type="number" step="0.01" min="0" value={l.costo_unitario} onChange={(e) => setLinea(i, 'costo_unitario', e.target.value)} required placeholder="0.00" className="w-full rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all" />
-                  </div>
-                  <div className="col-span-2">
-                    {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Subtotal</p>}
-                    <div className="px-2 py-2 text-sm font-semibold text-[#072B5A] bg-white border border-gray-100 rounded-lg">
-                      {formatCurrency(Number(l.cantidad) * Number(l.costo_unitario) || 0)}
+              {lineas.map((l, i) => {
+                const prod = productos?.find((p) => String(p.id) === l.producto_id)
+                const inputCls = 'w-full rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all'
+                return (
+                  <div key={i} className="bg-[#F4F7FA] rounded-lg">
+                    <div className="grid grid-cols-12 gap-2 items-end p-3">
+                      <div className="col-span-4">
+                        {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Producto *</p>}
+                        <select value={l.producto_id} onChange={(e) => setLinea(i, 'producto_id', e.target.value)} required className={`${inputCls} text-[#072B5A]`}>
+                          <option value="">Seleccionar</option>
+                          {productos?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Cantidad *</p>}
+                        <input type="number" step="any" min="0.0001" value={l.cantidad} onChange={(e) => setLinea(i, 'cantidad', e.target.value)} required placeholder="0" className={inputCls} />
+                      </div>
+                      <div className="col-span-2">
+                        {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Costo unit. *</p>}
+                        <input type="number" step="0.01" min="0" value={l.costo_unitario} onChange={(e) => setLinea(i, 'costo_unitario', e.target.value)} required placeholder="0.00" className={inputCls} />
+                      </div>
+                      <div className="col-span-2">
+                        {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Subtotal</p>}
+                        <div className="px-2 py-2 text-sm font-semibold text-[#072B5A] bg-white border border-gray-100 rounded-lg">
+                          {formatCurrency(Number(l.cantidad) * Number(l.costo_unitario) || 0)}
+                        </div>
+                      </div>
+                      <div className="col-span-1 flex items-end justify-center pb-0.5">
+                        {lineas.length > 1 && (
+                          <button type="button" onClick={() => setLineas((p) => p.filter((_, idx) => idx !== i))} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="col-span-1 flex items-end justify-center pb-0.5">
-                    {lineas.length > 1 && (
-                      <button type="button" onClick={() => setLineas((p) => p.filter((_, idx) => idx !== i))} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                        <Trash2 size={15} />
-                      </button>
+                    {prod && (prod.maneja_lote || prod.maneja_vencimiento) && (
+                      <div className="flex gap-3 px-3 pb-3 -mt-1">
+                        {prod.maneja_lote && (
+                          <div className="w-40">
+                            <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Lote</p>
+                            <input value={l.lote} onChange={(e) => setLinea(i, 'lote', e.target.value)} placeholder="LOT-001" className={inputCls} />
+                          </div>
+                        )}
+                        {prod.maneja_vencimiento && (
+                          <div className="w-44">
+                            <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Fecha vencimiento</p>
+                            <input type="date" value={l.fecha_vencimiento} onChange={(e) => setLinea(i, 'fecha_vencimiento', e.target.value)} className={inputCls} />
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Totales */}

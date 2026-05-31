@@ -3,6 +3,7 @@ import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
   Producto, Existencia, DashboardData, Movimiento, Compra, Venta, Cotizacion,
+  EmpresaConfig,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -19,6 +20,26 @@ const update = <T>(url: string, data: unknown) =>
 
 const remove = (url: string) =>
   client.delete<ApiResponse<null>>(url)
+
+// ── Empresa (configuración) ────────────────────────────────────────────────
+export const empresaApi = {
+  get: (empresaId: number) =>
+    client.get<ApiResponse<EmpresaConfig>>('/empresa', { params: { empresa_id: empresaId } }),
+  update: (empresaId: number, data: Partial<EmpresaConfig>) =>
+    client.put<ApiResponse<EmpresaConfig>>('/empresa', { ...data, empresa_id: empresaId }),
+  uploadLogo: (empresaId: number, file: File) => {
+    const form = new FormData()
+    form.append('logo', file)
+    form.append('empresa_id', String(empresaId))
+    return client.post<ApiResponse<{ logo_url: string }>>('/empresa/logo', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  deleteLogo: (empresaId: number) =>
+    client.delete<ApiResponse<null>>('/empresa/logo', { params: { empresa_id: empresaId } }),
+  logoBase64: (empresaId: number) =>
+    client.get<ApiResponse<{ logo_base64: string | null }>>('/empresa/logo-base64', { params: { empresa_id: empresaId } }),
+}
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
 export const dashboardApi = {

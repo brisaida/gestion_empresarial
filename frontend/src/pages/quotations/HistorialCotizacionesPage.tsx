@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ArrowRightCircle, CheckCircle, XCircle, Send, RotateCcw, Download, Loader2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { cotizacionesApi, bodegasApi } from '@/api/recursos'
+import { cotizacionesApi, bodegasApi, empresaApi } from '@/api/recursos'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -36,21 +36,6 @@ const acciones: Record<string, { estado: string; label: string; icon: React.Reac
   aprobada: [{ estado: 'rechazada', label: 'Rechazar', icon: <XCircle size={13} />, variant: 'danger' }],
 }
 
-/* ── Descarga PDF (lazy — carga la librería solo cuando se necesita) ── */
-async function descargarPDF(cot: Cotizacion, empresaNombre: string) {
-  // Importaciones dinámicas para no inflar el bundle principal
-  const [{ pdf }, { default: CotizacionPDF }] = await Promise.all([
-    import('@react-pdf/renderer'),
-    import('@/components/pdf/CotizacionPDF'),
-  ])
-  const blob = await pdf(<CotizacionPDF cotizacion={cot} empresaNombre={empresaNombre} />).toBlob()
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href     = url
-  a.download = `${cot.numero_cotizacion}.pdf`
-  a.click()
-  URL.revokeObjectURL(url)
-}
 
 export default function HistorialCotizacionesPage() {
   const { state } = useAuth()
@@ -58,9 +43,10 @@ export default function HistorialCotizacionesPage() {
   const empresaNombre = state.empresaActiva?.nombre ?? 'Mi empresa'
   const qc = useQueryClient()
 
-  const [page, setPage]     = useState(1)
-  const [search, setSearch] = useState('')
+  const [page, setPage]           = useState(1)
+  const [search, setSearch]       = useState('')
   const [loadingPdf, setLoadingPdf] = useState<number | null>(null)
+  const [pdfError, setPdfError]   = useState('')
 
   /* modal estado */
   const [estadoModal, setEstadoModal]   = useState<{ cot: Cotizacion; nuevoEstado: string; label: string } | null>(null)
@@ -102,17 +88,25 @@ export default function HistorialCotizacionesPage() {
     onError: (err) => setConvertirError(getAxiosError(err)),
   })
 
-  /* ── Botón PDF: carga el detalle completo antes de generar ── */
+  /* ── Botón PDF: carga detalle completo y abre ventana de impresión ── */
   const handlePdf = async (cot: Cotizacion) => {
+    setPdfError('')
     setLoadingPdf(cot.id)
     try {
-      // Si ya tiene detalles cargados los usa, si no los pide
-      let full = cot
-      if (!cot.detalles) {
-        const res = await cotizacionesApi.get(cot.id)
-        full = res.data.data
-      }
-      await descargarPDF(full, empresaNombre)
+      const [cotRes, empresaRes, logoRes, { printCotizacion }] = await Promise.all([
+        cotizacionesApi.get(cot.id),
+        empresaApi.get(empresaId),
+        empresaApi.logoBase64(empresaId),
+        import('@/lib/printCotizacion'),
+      ])
+      printCotizacion(
+        cotRes.data.data,
+        empresaRes.data.data,
+        logoRes.data.data.logo_base64 ?? undefined,
+      )
+    } catch (err) {
+      console.error('Error generando PDF:', err)
+      setPdfError('No se pudo generar el documento.')
     } finally {
       setLoadingPdf(null)
     }
@@ -187,7 +181,7 @@ export default function HistorialCotizacionesPage() {
             <button
               onClick={() => { setConvertirCot(r); setBodegaId(''); setConvertirError('') }}
               className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-purple-600 hover:bg-purple-50 transition-colors">
-              <ArrowRightCircle size={13} /> Convertir
+              <ArrowRightCircle size={13} /> Crear factura
             </button>
           )}
 
@@ -206,6 +200,12 @@ export default function HistorialCotizacionesPage() {
         <h1 className="text-xl font-bold text-[#072B5A]">Historial de Cotizaciones</h1>
         <p className="text-sm text-[#5F6B7A]">Gestiona y da seguimiento a tus propuestas</p>
       </div>
+
+      {pdfError && (
+        <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2">
+          <XCircle size={16} className="shrink-0" />{pdfError}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-gray-100">

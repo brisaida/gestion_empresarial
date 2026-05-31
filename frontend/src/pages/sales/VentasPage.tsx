@@ -3,7 +3,9 @@ import { Plus, XCircle, Search, Minus, Trash2, Receipt, User, Warehouse,
          CalendarDays, Hash, CheckCircle2, Lock } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { ventasApi, clientesApi, bodegasApi, productosApi } from '@/api/recursos'
+import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi } from '@/api/recursos'
+import { printVenta } from '@/lib/printVenta'
+import type { Venta } from '@/types'
 import Button from '@/components/ui/Button'
 import { formatCurrency, getAxiosError } from '@/lib/utils'
 import type { Producto } from '@/types'
@@ -22,13 +24,13 @@ export default function VentasPage() {
   const qc = useQueryClient()
 
   const [error, setError]           = useState('')
-  const [success, setSuccess]       = useState(false)
+  const [success, setSuccess]       = useState('')
   const [clienteId, setClienteId]   = useState('')
   const [bodegaId, setBodegaId]     = useState('')
   const [fecha, setFecha]           = useState(new Date().toISOString().slice(0, 10))
   const [nFactura, setNFactura]     = useState('')
   const [descuento, setDescuento]   = useState(0)
-  const [aplicarISV, setAplicarISV] = useState(false)
+  const [aplicarISV, setAplicarISV] = useState(true)
   const [lineas, setLineas]         = useState<LineaVenta[]>([])
 
   const [search, setSearch]     = useState('')
@@ -48,14 +50,22 @@ export default function VentasPage() {
 
   const crear = useMutation({
     mutationFn: (payload: unknown) => ventasApi.create(payload),
-    onSuccess: () => {
+    onSuccess: async (res) => {
       qc.invalidateQueries({ queryKey: ['ventas'] })
       qc.invalidateQueries({ queryKey: ['existencias'] })
       qc.invalidateQueries({ queryKey: ['productos'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      const venta = (res.data as { data: Venta }).data
       resetForm(); refetchNum()
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 4000)
+      setSuccess(`Factura ${venta.numero_factura} registrada correctamente.`)
+      setTimeout(() => setSuccess(''), 6000)
+      try {
+        const [empresaRes, logoRes] = await Promise.all([
+          empresaApi.get(empresaId),
+          empresaApi.logoBase64(empresaId),
+        ])
+        printVenta(venta, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined)
+      } catch { /* PDF es opcional */ }
     },
     onError: (err) => setError(getAxiosError(err)),
   })
@@ -80,7 +90,7 @@ export default function VentasPage() {
 
   const resetForm = () => {
     setClienteId(''); setBodegaId(''); setFecha(new Date().toISOString().slice(0, 10))
-    setDescuento(0); setAplicarISV(false); setLineas([])
+    setDescuento(0); setAplicarISV(true); setLineas([])
     setSearch(''); setError('')
   }
 
@@ -126,7 +136,7 @@ export default function VentasPage() {
   const labelCls  = "block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5"
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto">
+    <div className="space-y-4 max-w-7xl mx-auto">
 
       {/* Page header */}
       <div>
@@ -137,8 +147,7 @@ export default function VentasPage() {
       {/* Success banner */}
       {success && (
         <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm font-medium">
-          <CheckCircle2 size={18} className="shrink-0" />
-          Venta registrada exitosamente — el inventario ha sido actualizado.
+          <CheckCircle2 size={18} className="shrink-0" />{success}
         </div>
       )}
 

@@ -12,6 +12,7 @@ class Producto extends Model
     protected $fillable = [
         'empresa_id', 'categoria_id', 'marca_id', 'unidad_medida_id',
         'codigo', 'codigo_barra', 'nombre', 'descripcion',
+        'tamaño', 'peso', 'largo', 'ancho', 'alto',
         'costo', 'precio_venta', 'stock_minimo',
         'maneja_lote', 'maneja_vencimiento', 'maneja_serie', 'activo', 'imagen',
     ];
@@ -22,6 +23,10 @@ class Producto extends Model
             'costo'              => 'decimal:4',
             'precio_venta'       => 'decimal:4',
             'stock_minimo'       => 'decimal:4',
+            'peso'               => 'decimal:3',
+            'largo'              => 'decimal:2',
+            'ancho'              => 'decimal:2',
+            'alto'               => 'decimal:2',
             'maneja_lote'        => 'boolean',
             'maneja_vencimiento' => 'boolean',
             'maneja_serie'       => 'boolean',

@@ -3,10 +3,11 @@ import { Plus, XCircle, Search, Minus, Trash2, FileText, User,
          CalendarDays, Hash, CheckCircle2, Lock, AlignLeft } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { cotizacionesApi, clientesApi, productosApi } from '@/api/recursos'
+import { cotizacionesApi, clientesApi, productosApi, empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
 import { formatCurrency, getAxiosError } from '@/lib/utils'
-import type { Producto } from '@/types'
+import type { Cotizacion, Producto } from '@/types'
+import { printCotizacion } from '@/lib/printCotizacion'
 
 interface LineaCot {
   producto: Producto
@@ -29,7 +30,7 @@ export default function CotizacionesPage() {
   const [observaciones, setObservaciones] = useState('')
   const [nCot, setNCot]               = useState('')
   const [descuento, setDescuento]     = useState(0)
-  const [aplicarISV, setAplicarISV]   = useState(false)
+  const [aplicarISV, setAplicarISV]   = useState(true)
   const [lineas, setLineas]           = useState<LineaCot[]>([])
 
   const [search, setSearch]     = useState('')
@@ -48,11 +49,19 @@ export default function CotizacionesPage() {
 
   const crear = useMutation({
     mutationFn: (payload: unknown) => cotizacionesApi.create(payload),
-    onSuccess: () => {
+    onSuccess: async (res) => {
       qc.invalidateQueries({ queryKey: ['cotizaciones'] })
+      const cotizacion = (res.data as { data: Cotizacion }).data
       resetForm(); refetchNum()
-      setSuccess('Cotización creada correctamente.')
-      setTimeout(() => setSuccess(''), 4000)
+      setSuccess(`Cotización ${cotizacion.numero_cotizacion} guardada correctamente.`)
+      setTimeout(() => setSuccess(''), 6000)
+      try {
+        const [empresaRes, logoRes] = await Promise.all([
+          empresaApi.get(empresaId),
+          empresaApi.logoBase64(empresaId),
+        ])
+        printCotizacion(cotizacion, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined)
+      } catch { /* PDF es opcional */ }
     },
     onError: (err) => setError(getAxiosError(err)),
   })
@@ -77,7 +86,7 @@ export default function CotizacionesPage() {
 
   const resetForm = () => {
     setClienteId(''); setFecha(new Date().toISOString().slice(0, 10)); setVencimiento('')
-    setObservaciones(''); setDescuento(0); setAplicarISV(false); setLineas([])
+    setObservaciones(''); setDescuento(0); setAplicarISV(true); setLineas([])
     setSearch(''); setError('')
   }
 
@@ -122,7 +131,7 @@ export default function CotizacionesPage() {
   const labelCls  = "block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5"
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto">
+    <div className="space-y-4 max-w-7xl mx-auto">
 
       <div>
         <h1 className="text-xl font-bold text-[#072B5A]">Nueva Cotización</h1>

@@ -16,6 +16,12 @@ import CotizacionesPage        from '@/pages/quotations/CotizacionesPage'
 import HistorialCotizacionesPage from '@/pages/quotations/HistorialCotizacionesPage'
 import VentasPage               from '@/pages/sales/VentasPage'
 import HistorialVentasPage      from '@/pages/sales/HistorialVentasPage'
+import ConfiguracionPage        from '@/pages/settings/ConfiguracionPage'
+import SuperAdminLayout         from '@/pages/super-admin/SuperAdminLayout'
+import DashboardSAPage          from '@/pages/super-admin/DashboardSAPage'
+import EmpresasAdminPage        from '@/pages/super-admin/EmpresasAdminPage'
+import UsuariosAdminPage        from '@/pages/super-admin/UsuariosAdminPage'
+import RolesAdminPage           from '@/pages/super-admin/RolesAdminPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -44,6 +50,15 @@ export default function App() {
               <Route path="cotizaciones/historial" element={<HistorialCotizacionesPage />} />
               <Route path="ventas"                 element={<VentasPage />} />
               <Route path="ventas/historial"       element={<HistorialVentasPage />} />
+              <Route path="configuracion"          element={<ConfiguracionPage />} />
+            </Route>
+
+            <Route element={<SuperAdminLayout />}>
+              <Route path="super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
+              <Route path="super-admin/dashboard" element={<DashboardSAPage />} />
+              <Route path="super-admin/empresas"  element={<EmpresasAdminPage />} />
+              <Route path="super-admin/usuarios"  element={<UsuariosAdminPage />} />
+              <Route path="super-admin/roles"     element={<RolesAdminPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

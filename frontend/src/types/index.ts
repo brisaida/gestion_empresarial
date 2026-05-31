@@ -4,12 +4,25 @@ export interface Usuario {
   nombre: string
   correo: string
   activo: boolean
+  es_super_admin: boolean
 }
 
 export interface EmpresaResumen {
   id: number
   nombre: string
   rol: number
+  logo_url?: string | null
+}
+
+export interface EmpresaConfig {
+  id: number
+  nombre: string
+  nombre_legal?: string
+  rtn?: string
+  correo?: string
+  telefono?: string
+  direccion?: string
+  logo_url?: string | null
 }
 
 export interface AuthState {
@@ -99,6 +112,11 @@ export interface Producto {
   codigo_barra?: string
   nombre: string
   descripcion?: string
+  tamaño?: string | null
+  peso?: number | null
+  largo?: number | null
+  ancho?: number | null
+  alto?: number | null
   costo: number
   precio_venta: number
   stock_minimo: number
@@ -274,6 +292,77 @@ export interface DashboardData {
     nombre: string
     total_vendido: number
   }>
+}
+
+// ── Super Admin ───────────────────────────────────────────────────────────
+export interface SaDashboardData {
+  stats: {
+    total_empresas:   number
+    empresas_activas: number
+    total_usuarios:   number
+    usuarios_activos: number
+    super_admins:     number
+    total_roles:      number
+  }
+  empresas_recientes: Array<{
+    id: number
+    nombre: string
+    nombre_legal?: string
+    activo: boolean
+    usuarios_count: number
+    created_at: string
+  }>
+  usuarios_recientes: Array<{
+    id: number
+    nombre: string
+    correo: string
+    activo: boolean
+    es_super_admin: boolean
+    created_at: string
+  }>
+}
+
+export interface EmpresaAdmin {
+  id: number
+  nombre: string
+  nombre_legal?: string
+  rtn?: string
+  correo?: string
+  telefono?: string
+  direccion?: string
+  activo: boolean
+  usuarios_count: number
+  created_at: string
+}
+
+export interface UsuarioAdmin {
+  id: number
+  nombre: string
+  correo: string
+  activo: boolean
+  es_super_admin: boolean
+  empresas_count: number
+  created_at: string
+}
+
+export interface RolSimple {
+  id: number
+  nombre: string
+}
+
+export interface RolAdmin {
+  id: number
+  nombre: string
+  descripcion?: string
+  asignaciones: number
+}
+
+export interface UsuarioEmpresaItem {
+  empresa_id: number
+  empresa_nombre: string
+  rol_id: number
+  rol_nombre: string
+  activo: boolean
 }
 
 // ── API response wrappers ─────────────────────────────────────────────────

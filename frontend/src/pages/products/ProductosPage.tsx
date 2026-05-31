@@ -28,6 +28,11 @@ const schema = z.object({
   costo:              z.coerce.number().min(0),
   precio_venta:       z.coerce.number().min(0),
   stock_minimo:       z.coerce.number().min(0).optional(),
+  tamaño:             z.string().max(50).optional(),
+  peso:               z.coerce.number().min(0).optional().or(z.literal('')),
+  largo:              z.coerce.number().min(0).optional().or(z.literal('')),
+  ancho:              z.coerce.number().min(0).optional().or(z.literal('')),
+  alto:               z.coerce.number().min(0).optional().or(z.literal('')),
   maneja_lote:        z.boolean().optional(),
   maneja_vencimiento: z.boolean().optional(),
   maneja_serie:       z.boolean().optional(),
@@ -119,6 +124,7 @@ export default function ProductosPage() {
       categoria_id: String(p.categoria_id ?? ''), marca_id: String(p.marca_id ?? ''),
       unidad_medida_id: String(p.unidad_medida_id ?? ''),
       costo: p.costo, precio_venta: p.precio_venta, stock_minimo: p.stock_minimo,
+      tamaño: p.tamaño ?? '', peso: p.peso ?? '', largo: p.largo ?? '', ancho: p.ancho ?? '', alto: p.alto ?? '',
       maneja_lote: p.maneja_lote, maneja_vencimiento: p.maneja_vencimiento,
       maneja_serie: p.maneja_serie, activo: p.activo,
     })
@@ -274,6 +280,19 @@ export default function ProductosPage() {
             <Input label="Costo *" type="number" step="0.01" error={errors.costo?.message} {...register('costo')} />
             <Input label="Precio de venta *" type="number" step="0.01" error={errors.precio_venta?.message} {...register('precio_venta')} />
             <Input label="Stock mínimo" type="number" step="0.01" {...register('stock_minimo')} />
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide mb-2">Medidas físicas <span className="normal-case font-normal text-gray-400">(opcional)</span></p>
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <Input label="Talla / Tamaño" placeholder="S, M, L, XL, 42…" {...register('tamaño')} />
+              <Input label="Peso (kg)" type="number" step="0.001" placeholder="0.500" {...register('peso')} />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <Input label="Largo (cm)" type="number" step="0.01" placeholder="0.00" {...register('largo')} />
+              <Input label="Ancho (cm)" type="number" step="0.01" placeholder="0.00" {...register('ancho')} />
+              <Input label="Alto (cm)"  type="number" step="0.01" placeholder="0.00" {...register('alto')} />
+            </div>
           </div>
 
           <div>

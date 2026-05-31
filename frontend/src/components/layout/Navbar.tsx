@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Bell, ChevronDown, LogOut, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, PanelLeftClose, PanelLeft, ShieldCheck } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/stores/authStore'
 import { authApi } from '@/api/auth'
 
@@ -10,7 +11,9 @@ interface Props {
 
 export default function Navbar({ collapsed, onToggle }: Props) {
   const { state, logout } = useAuth()
+  const navigate = useNavigate()
   const [userMenu, setUserMenu] = useState(false)
+  const esSuperAdmin = state.usuario?.es_super_admin ?? false
 
   const handleLogout = async () => {
     try { await authApi.logout() } catch {}
@@ -71,6 +74,18 @@ export default function Navbar({ collapsed, onToggle }: Props) {
                   <p className="text-sm font-semibold text-[#072B5A] truncate">{state.usuario?.nombre}</p>
                   <p className="text-xs text-[#5F6B7A] truncate">{state.usuario?.correo}</p>
                 </div>
+                {esSuperAdmin && (
+                  <>
+                    <button
+                      onClick={() => { setUserMenu(false); navigate('/super-admin') }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-purple-600 hover:bg-purple-50 transition-colors font-medium"
+                    >
+                      <ShieldCheck size={15} />
+                      Panel Super Admin
+                    </button>
+                    <div className="border-t border-gray-100 my-1" />
+                  </>
+                )}
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"

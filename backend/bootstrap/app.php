@@ -16,7 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Token-based auth via Sanctum — no stateful/CSRF middleware needed
+        $middleware->alias([
+            'super.admin' => \App\Http\Middleware\EsSuperAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 

@@ -28,7 +28,8 @@ class CotizacionController extends ApiController
             ->orderByDesc('id')
             ->value('numero_cotizacion');
 
-        $siguiente = $ultima ? ((int) end(explode('-', $ultima))) + 1 : 1;
+        $partes    = $ultima ? explode('-', $ultima) : [];
+        $siguiente = $partes ? ((int) end($partes)) + 1 : 1;
 
         return response()->json([
             'success' => true,
@@ -83,7 +84,8 @@ class CotizacionController extends ApiController
             $ultima    = Cotizacion::where('empresa_id', $validated['empresa_id'])
                 ->where('numero_cotizacion', 'like', 'COT-%')
                 ->lockForUpdate()->orderByDesc('id')->value('numero_cotizacion');
-            $siguiente = $ultima ? ((int) end(explode('-', $ultima))) + 1 : 1;
+            $partes    = $ultima ? explode('-', $ultima) : [];
+            $siguiente = $partes ? ((int) end($partes)) + 1 : 1;
             $numero    = 'COT-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT);
 
             $cotizacion = Cotizacion::create([
@@ -218,7 +220,8 @@ class CotizacionController extends ApiController
                 $ultima    = Venta::where('empresa_id', $cotizacion->empresa_id)
                     ->where('numero_factura', 'like', 'FAC-%')
                     ->lockForUpdate()->orderByDesc('id')->value('numero_factura');
-                $siguiente = $ultima ? ((int) end(explode('-', $ultima))) + 1 : 1;
+                $partes    = $ultima ? explode('-', $ultima) : [];
+                $siguiente = $partes ? ((int) end($partes)) + 1 : 1;
                 $numero    = 'FAC-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT);
 
                 // Costos actuales

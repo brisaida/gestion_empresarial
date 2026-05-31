@@ -18,6 +18,7 @@ class User extends Authenticatable
         'correo',
         'password',
         'activo',
+        'es_super_admin',
     ];
 
     protected $hidden = [
@@ -31,6 +32,7 @@ class User extends Authenticatable
             'correo_verificado_en' => 'datetime',
             'password'             => 'hashed',
             'activo'               => 'boolean',
+            'es_super_admin'       => 'boolean',
         ];
     }
 

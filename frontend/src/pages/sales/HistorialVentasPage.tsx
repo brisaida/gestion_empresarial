@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { XCircle } from 'lucide-react'
+import { XCircle, Download, Loader2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { ventasApi } from '@/api/recursos'
+import { ventasApi, empresaApi } from '@/api/recursos'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -19,13 +19,16 @@ function EstadoBadge({ estado }: { estado: EstadoVenta }) {
 
 export default function HistorialVentasPage() {
   const { state } = useAuth()
-  const empresaId = state.empresaActiva?.id ?? 0
+  const empresaId     = state.empresaActiva?.id ?? 0
+  const empresaNombre = state.empresaActiva?.nombre ?? 'Mi empresa'
   const qc = useQueryClient()
 
-  const [page, setPage]           = useState(1)
-  const [search, setSearch]       = useState('')
-  const [cancelarId, setCancelarId] = useState<number | null>(null)
+  const [page, setPage]               = useState(1)
+  const [search, setSearch]           = useState('')
+  const [cancelarId, setCancelarId]   = useState<number | null>(null)
   const [actionError, setActionError] = useState('')
+  const [loadingPdf, setLoadingPdf]   = useState<number | null>(null)
+  const [pdfError, setPdfError]       = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['ventas', empresaId, page, search],
@@ -43,6 +46,29 @@ export default function HistorialVentasPage() {
     },
     onError: (err) => setActionError(getAxiosError(err)),
   })
+
+  /* ── Botón PDF ────────────────────────────────────────────────── */
+  const handlePdf = async (venta: Venta) => {
+    setPdfError('')
+    setLoadingPdf(venta.id)
+    try {
+      const [ventaRes, logoRes, { printVenta }] = await Promise.all([
+        ventasApi.get(venta.id),
+        empresaApi.logoBase64(empresaId),
+        import('@/lib/printVenta'),
+      ])
+      printVenta(
+        ventaRes.data.data,
+        empresaNombre,
+        logoRes.data.data.logo_base64 ?? undefined,
+      )
+    } catch (err) {
+      console.error('Error generando PDF:', err)
+      setPdfError('No se pudo generar el documento.')
+    } finally {
+      setLoadingPdf(null)
+    }
+  }
 
   const columns: Column<Venta>[] = [
     {
@@ -74,29 +100,52 @@ export default function HistorialVentasPage() {
       align: 'center', width: '110px',
     },
     {
-      key: 'acciones', header: '', align: 'right', width: '60px',
-      cell: r => r.estado === 'completada' ? (
-        <button
-          onClick={() => { setCancelarId(r.id); setActionError('') }}
-          className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-          title="Cancelar venta"
-        >
-          <XCircle size={15} />
-        </button>
-      ) : null,
+      key: 'acciones', header: '', align: 'right', width: '100px',
+      cell: r => (
+        <div className="flex items-center justify-end gap-1">
+          {/* Botón PDF */}
+          <button
+            onClick={() => handlePdf(r)}
+            disabled={loadingPdf === r.id}
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-[#5F6B7A] hover:bg-gray-100 transition-colors disabled:opacity-50"
+            title="Descargar PDF"
+          >
+            {loadingPdf === r.id
+              ? <Loader2 size={13} className="animate-spin" />
+              : <Download size={13} />
+            }
+            PDF
+          </button>
+
+          {/* Cancelar */}
+          {r.estado === 'completada' && (
+            <button
+              onClick={() => { setCancelarId(r.id); setActionError('') }}
+              className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              title="Cancelar venta"
+            >
+              <XCircle size={15} />
+            </button>
+          )}
+        </div>
+      ),
     },
   ]
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
 
-      {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-[#072B5A]">Historial de Ventas</h1>
         <p className="text-sm text-[#5F6B7A]">Consulta y gestiona todas las facturas emitidas</p>
       </div>
 
-      {/* Table card */}
+      {pdfError && (
+        <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2">
+          <XCircle size={16} className="shrink-0" />{pdfError}
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-gray-100">
           <SearchBar

@@ -40,8 +40,13 @@ body {
   background-clip: text;
 }
 
-/* Scrollbar styling */
+/* Scrollbar — default (light backgrounds) */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* Scrollbar — dark sidebar */
+.scrollbar-dark::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+.scrollbar-dark::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+.scrollbar-dark::-webkit-scrollbar-track { background: transparent; }

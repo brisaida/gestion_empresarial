@@ -37,10 +37,11 @@ class DatabaseSeeder extends Seeder
 
         // ── Usuario admin ──────────────────────────────────────────────────
         $admin = User::create([
-            'nombre'   => 'Administrador',
-            'correo'   => 'admin@inventario.com',
-            'password' => Hash::make('password'),
-            'activo'   => true,
+            'nombre'         => 'Administrador',
+            'correo'         => 'admin@inventario.com',
+            'password'       => Hash::make('password'),
+            'activo'         => true,
+            'es_super_admin' => true,
         ]);
 
         UsuarioEmpresa::create([

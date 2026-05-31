@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BodegaController;
+use App\Http\Controllers\Api\SuperAdmin\DashboardAdminController;
+use App\Http\Controllers\Api\SuperAdmin\EmpresaAdminController;
+use App\Http\Controllers\Api\SuperAdmin\RolAdminController;
+use App\Http\Controllers\Api\SuperAdmin\UsuarioAdminController;
 use App\Http\Controllers\Api\CategoriaController;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\CompraController;
@@ -14,6 +18,7 @@ use App\Http\Controllers\Api\ProveedorController;
 use App\Http\Controllers\Api\TransferenciaController;
 use App\Http\Controllers\Api\UnidadMedidaController;
 use App\Http\Controllers\Api\CotizacionController;
+use App\Http\Controllers\Api\EmpresaController;
 use App\Http\Controllers\Api\VentaController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +36,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index']);
+
+    // Empresa (configuración)
+    Route::get('empresa',             [EmpresaController::class, 'show']);
+    Route::put('empresa',             [EmpresaController::class, 'update']);
+    Route::get('empresa/logo-base64', [EmpresaController::class, 'logoBase64']);
+    Route::post('empresa/logo',       [EmpresaController::class, 'uploadLogo']);
+    Route::delete('empresa/logo',     [EmpresaController::class, 'deleteLogo']);
 
     // Catálogos
     Route::apiResource('categorias',     CategoriaController::class);
@@ -59,8 +71,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('compras/{compra}/cancelar',  [CompraController::class, 'cancelar']);
 
     // Cotizaciones
+    // Nota: ->parameters(['cotizaciones' => 'cotizacion']) corrige la singularización
+    // incorrecta de Laravel para palabras en español (cotizaciones → cotizacione → WRONG)
     Route::get('cotizaciones/siguiente-numero',           [CotizacionController::class, 'siguienteNumero']);
-    Route::apiResource('cotizaciones', CotizacionController::class)->only(['index', 'store', 'show', 'update']);
+    Route::apiResource('cotizaciones', CotizacionController::class)
+        ->only(['index', 'store', 'show', 'update'])
+        ->parameters(['cotizaciones' => 'cotizacion']);
     Route::post('cotizaciones/{cotizacion}/estado',       [CotizacionController::class, 'cambiarEstado']);
     Route::post('cotizaciones/{cotizacion}/convertir',    [CotizacionController::class, 'convertirAVenta']);
 
@@ -71,4 +87,32 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Transferencias
     Route::apiResource('transferencias', TransferenciaController::class)->only(['index', 'store', 'show']);
+});
+
+// ── Super Admin ────────────────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'super.admin'])->prefix('sa')->group(function () {
+
+    // Dashboard
+    Route::get('dashboard', [DashboardAdminController::class, 'index']);
+
+    // Empresas
+    Route::get('empresas',                    [EmpresaAdminController::class, 'index']);
+    Route::post('empresas',                   [EmpresaAdminController::class, 'store']);
+    Route::put('empresas/{empresa}',          [EmpresaAdminController::class, 'update']);
+    Route::patch('empresas/{empresa}/toggle', [EmpresaAdminController::class, 'toggle']);
+
+    // Usuarios
+    Route::get('usuarios',                                      [UsuarioAdminController::class, 'index']);
+    Route::post('usuarios',                                     [UsuarioAdminController::class, 'store']);
+    Route::put('usuarios/{usuario}',                            [UsuarioAdminController::class, 'update']);
+    Route::patch('usuarios/{usuario}/toggle',                   [UsuarioAdminController::class, 'toggle']);
+    Route::get('usuarios/{usuario}/empresas',                   [UsuarioAdminController::class, 'empresas']);
+    Route::post('usuarios/{usuario}/empresas',                  [UsuarioAdminController::class, 'asignarEmpresa']);
+    Route::delete('usuarios/{usuario}/empresas/{empresa}',      [UsuarioAdminController::class, 'quitarEmpresa']);
+
+    // Roles
+    Route::get('roles',             [RolAdminController::class, 'index']);
+    Route::post('roles',            [RolAdminController::class, 'store']);
+    Route::put('roles/{rol}',       [RolAdminController::class, 'update']);
+    Route::delete('roles/{rol}',    [RolAdminController::class, 'destroy']);
 });

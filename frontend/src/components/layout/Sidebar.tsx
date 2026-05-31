@@ -2,9 +2,12 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/stores/authStore'
+import { empresaApi } from '@/api/recursos'
 
 const nav = [
   { group: 'Principal',
@@ -14,26 +17,35 @@ const nav = [
   },
   { group: 'Inventario',
     items: [
-      { to: '/productos',        label: 'Productos',        icon: Package,         end: false },
       { to: '/existencias',      label: 'Stock',            icon: BarChart3,       end: false },
+      { to: '/compras',          label: 'Compras',          icon: ShoppingCart,    end: false },
       { to: '/movimientos',      label: 'Movimientos',      icon: ArrowLeftRight,  end: false },
     ]
   },
-  { group: 'Transacciones',
+  { group: 'Cotizaciones',
     items: [
-      { to: '/compras',                  label: 'Compras',            icon: ShoppingCart,  end: false },
-      { to: '/cotizaciones',             label: 'Nueva cotización',   icon: FileText,      end: true  },
-      { to: '/cotizaciones/historial',   label: 'Cotizaciones',       icon: ClipboardList, end: true  },
-      { to: '/ventas',                   label: 'Nueva venta',        icon: Receipt,       end: true  },
-      { to: '/ventas/historial',         label: 'Historial ventas',   icon: ClipboardList, end: true  },
+      { to: '/cotizaciones',           label: 'Nueva cotización', icon: FileText,      end: true },
+      { to: '/cotizaciones/historial', label: 'Historial',        icon: ClipboardList, end: true },
+    ]
+  },
+  { group: 'Ventas',
+    items: [
+      { to: '/ventas',           label: 'Nueva venta',      icon: Receipt,         end: true },
+      { to: '/ventas/historial', label: 'Historial',        icon: ClipboardList,   end: true },
     ]
   },
   { group: 'Catálogos',
     items: [
+      { to: '/productos',        label: 'Productos',        icon: Package,         end: false },
       { to: '/categorias',       label: 'Categorías',       icon: Tags,            end: false },
       { to: '/proveedores',      label: 'Proveedores',      icon: Truck,           end: false },
       { to: '/clientes',         label: 'Clientes',         icon: Users,           end: false },
       { to: '/bodegas',          label: 'Bodegas',          icon: Warehouse,       end: false },
+    ]
+  },
+  { group: 'Sistema',
+    items: [
+      { to: '/configuracion',    label: 'Configuración',    icon: Settings,        end: true  },
     ]
   },
 ]
@@ -41,7 +53,25 @@ const nav = [
 interface NavItem { to: string; label: string; icon: React.ElementType; end: boolean }
 interface Props { collapsed: boolean }
 
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+
 export default function Sidebar({ collapsed }: Props) {
+  const { state } = useAuth()
+  const empresaId = state.empresaActiva?.id ?? 0
+
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn:  () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
+
+  const nombre  = empresaConfig?.nombre ?? state.empresaActiva?.nombre ?? 'Inventario'
+  const rawLogo = empresaConfig?.logo_url
+  const logoUrl = rawLogo
+    ? (rawLogo.startsWith('http') ? rawLogo : `${API_BASE}${rawLogo}`)
+    : null
+
   return (
     <aside
       className={cn(
@@ -55,23 +85,27 @@ export default function Sidebar({ collapsed }: Props) {
         'flex items-center border-b border-white/8 shrink-0',
         collapsed ? 'justify-center py-4 px-2' : 'gap-3 px-4 py-4',
       )}>
-        {/* Icon */}
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg"
-          style={{ background: 'linear-gradient(135deg, #0E78D8 0%, #38D6D4 100%)' }}
+        {/* Logo / inicial */}
+        <div className="w-8 h-8 rounded-lg shrink-0 shadow-lg overflow-hidden flex items-center justify-center"
+          style={!logoUrl ? { background: 'linear-gradient(135deg, #0E78D8 0%, #38D6D4 100%)' } : undefined}
         >
-          <Package size={16} className="text-white" />
+          {logoUrl
+            ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+            : <span className="text-white text-sm font-bold">
+                {nombre[0].toUpperCase()}
+              </span>
+          }
         </div>
         {!collapsed && (
-          <div>
-            <p className="font-bold text-white text-sm leading-tight">Inventario</p>
-            <p className="text-[10px] text-[#38D6D4] font-medium tracking-widest uppercase leading-tight">Vilena Dev</p>
+          <div className="min-w-0">
+            <p className="font-bold text-white text-sm leading-tight truncate">{nombre}</p>
+            <p className="text-[10px] text-[#38D6D4] font-medium tracking-widest uppercase leading-tight">Inventario</p>
           </div>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 space-y-4 px-2">
+      <nav className="flex-1 overflow-y-auto scrollbar-dark py-3 space-y-4 px-2">
         {nav.map((group) => (
           <div key={group.group}>
             {!collapsed && (

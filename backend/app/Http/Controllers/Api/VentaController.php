@@ -85,7 +85,8 @@ class VentaController extends ApiController
                         ->orderByDesc('id')
                         ->value('numero_factura');
 
-                    $siguiente     = $ultima ? ((int) end(explode('-', $ultima))) + 1 : 1;
+                    $partes        = $ultima ? explode('-', $ultima) : [];
+                    $siguiente     = $partes ? ((int) end($partes)) + 1 : 1;
                     $numeroFactura = 'FAC-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT);
                 }
 

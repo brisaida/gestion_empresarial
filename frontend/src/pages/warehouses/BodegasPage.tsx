@@ -54,7 +54,7 @@ export default function BodegasPage() {
   ]
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[#072B5A]">Bodegas</h1>
