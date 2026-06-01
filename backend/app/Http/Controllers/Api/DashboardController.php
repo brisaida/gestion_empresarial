@@ -41,6 +41,44 @@ class DashboardController extends ApiController
             ->whereBetween('fecha_venta', [$inicioMes, $finMes])
             ->sum('total');
 
+        // Ventas mes anterior (para variación %)
+        $inicioMesAnt = now()->subMonth()->startOfMonth()->toDateString();
+        $finMesAnt    = now()->subMonth()->endOfMonth()->toDateString();
+
+        $ventasMesAnterior = Venta::where('empresa_id', $empresaId)
+            ->where('estado', 'completada')
+            ->whereBetween('fecha_venta', [$inicioMesAnt, $finMesAnt])
+            ->sum('total');
+
+        $variacionVentas = $ventasMesAnterior > 0
+            ? round((((float) $ventasMes - (float) $ventasMesAnterior) / (float) $ventasMesAnterior) * 100, 1)
+            : null;
+
+        // Margen bruto del mes (ventas - costo de lo vendido)
+        $costoVentasMes = DB::table('detalle_ventas as dv')
+            ->join('ventas as v', 'dv.venta_id', '=', 'v.id')
+            ->where('v.empresa_id', $empresaId)
+            ->where('v.estado', 'completada')
+            ->whereBetween('v.fecha_venta', [$inicioMes, $finMes])
+            ->sum(DB::raw('dv.cantidad * dv.costo_unitario'));
+
+        $margenBruto = (float) $ventasMes - (float) $costoVentasMes;
+        $margenPct   = (float) $ventasMes > 0
+            ? round($margenBruto / (float) $ventasMes * 100, 1)
+            : 0;
+
+        // Valor del inventario actual (stock × costo)
+        $valorInventario = DB::table('existencias as e')
+            ->join('productos as p', 'e.producto_id', '=', 'p.id')
+            ->where('p.empresa_id', $empresaId)
+            ->sum(DB::raw('e.cantidad * p.costo'));
+
+        // Compras pendientes
+        $comprasPendientes = Compra::where('empresa_id', $empresaId)
+            ->where('estado', 'pendiente')
+            ->selectRaw('COUNT(*) as cantidad, COALESCE(SUM(total), 0) as monto')
+            ->first();
+
         // Últimas 5 ventas
         $ultimasVentas = Venta::with('cliente')
             ->where('empresa_id', $empresaId)
@@ -72,11 +110,18 @@ class DashboardController extends ApiController
             'success' => true,
             'data'    => [
                 'resumen' => [
-                    'total_productos'      => $totalProductos,
-                    'total_proveedores'    => $totalProveedores,
-                    'productos_stock_bajo' => $productosStockBajo,
-                    'compras_mes'          => (float) $comprasMes,
-                    'ventas_mes'           => (float) $ventasMes,
+                    'total_productos'           => $totalProductos,
+                    'total_proveedores'         => $totalProveedores,
+                    'productos_stock_bajo'      => $productosStockBajo,
+                    'compras_mes'               => (float) $comprasMes,
+                    'ventas_mes'                => (float) $ventasMes,
+                    'ventas_mes_anterior'       => (float) $ventasMesAnterior,
+                    'variacion_ventas_pct'      => $variacionVentas,
+                    'margen_bruto_mes'          => $margenBruto,
+                    'margen_pct'                => $margenPct,
+                    'valor_inventario'          => (float) $valorInventario,
+                    'compras_pendientes_count'  => (int) $comprasPendientes->cantidad,
+                    'compras_pendientes_monto'  => (float) $comprasPendientes->monto,
                 ],
                 'ultimas_ventas' => $ultimasVentas,
                 'top_productos'  => $topProductos,

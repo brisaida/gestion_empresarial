@@ -28,6 +28,14 @@ class CompraController extends ApiController
             $query->where('proveedor_id', $request->integer('proveedor_id'));
         }
 
+        if ($request->filled('search')) {
+            $q = '%' . $request->search . '%';
+            $query->where(function ($sub) use ($q) {
+                $sub->where('numero_factura', 'ilike', $q)
+                    ->orWhereHas('proveedor', fn($p) => $p->where('nombre', 'ilike', $q));
+            });
+        }
+
         if ($request->filled('fecha_desde')) {
             $query->whereDate('fecha_compra', '>=', $request->fecha_desde);
         }

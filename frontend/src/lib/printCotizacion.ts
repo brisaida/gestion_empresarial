@@ -46,8 +46,9 @@ export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: 
     ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">Descuento</td><td style="padding:4px 12px;text-align:right;color:#dc2626;font-weight:600">− ${fmt(c.descuento)}</td></tr>`
     : ''
 
+  const isvPct = empresa.isv_rate ?? 15
   const filaISV = c.impuesto > 0
-    ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">ISV (15%)</td><td style="padding:4px 12px;text-align:right;color:#555">${fmt(c.impuesto)}</td></tr>`
+    ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">ISV (${isvPct}%)</td><td style="padding:4px 12px;text-align:right;color:#555">${fmt(c.impuesto)}</td></tr>`
     : ''
 
   const obsBlock = c.observaciones ? `
@@ -114,7 +115,7 @@ export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: 
       </td>
       <td style="width:33%;padding:10px 12px;background:#F4F7FA;border-radius:0 6px 6px 0">
         <div style="font-size:9px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Válida hasta</div>
-        <div style="font-size:14px;font-weight:700;color:${c.fecha_vencimiento ? NAVY : '#aaa'}">${c.fecha_vencimiento ?? 'Sin vencimiento'}</div>
+        <div style="font-size:14px;font-weight:700;color:${c.fecha_vencimiento ? NAVY : '#aaa'}">${c.fecha_vencimiento ?? '—'}</div>
       </td>
     </tr>
   </table>
@@ -150,10 +151,8 @@ export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: 
   ${obsBlock}
 
   <!-- FOOTER -->
-  <div style="margin-top:40px;padding-top:12px;border-top:1px solid #E5E9EE;display:flex;justify-content:space-between;align-items:center">
+  <div style="margin-top:40px;padding-top:12px;border-top:1px solid #E5E9EE;text-align:center">
     <span style="font-size:10px;color:#aaa">${empresa.nombre} · ${c.numero_cotizacion}</span>
-    <div style="width:8px;height:8px;border-radius:50%;background:${CYAN}"></div>
-    <span style="font-size:10px;color:#aaa">Sistema de Gestión Empresarial</span>
   </div>
 
 </div>

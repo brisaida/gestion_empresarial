@@ -158,6 +158,12 @@ export const transferenciasApi = {
   create: (data: unknown) => create<Transferencia>('/transferencias', data),
 }
 
+// ── Reportes ───────────────────────────────────────────────────────────────
+export const reportesApi = {
+  ingresos:     (params: Record<string, unknown>) => client.get('/reportes/ingresos', { params }),
+  topProductos: (params: Record<string, unknown>) => client.get('/reportes/top-productos', { params }),
+}
+
 // ── Ventas ─────────────────────────────────────────────────────────────────
 export const ventasApi = {
   list:             (params: Record<string, unknown>) => list<Venta>('/ventas', params),

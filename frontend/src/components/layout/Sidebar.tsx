@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -17,7 +17,8 @@ const nav = [
   { group: 'Inventario', items: [
     { to: '/existencias',            label: 'Stock',               icon: BarChart3,       end: true,  permiso: 'inventario'    },
     { to: '/existencias/stock-bajo', label: 'Alertas de stock',    icon: AlertTriangle,   end: true,  permiso: 'inventario'    },
-    { to: '/compras',                label: 'Compras',             icon: ShoppingCart,    end: false, permiso: 'compras'       },
+    { to: '/compras',                label: 'Nueva compra',        icon: ShoppingCart,    end: true,  permiso: 'compras'       },
+    { to: '/compras/historial',      label: 'Historial compras',   icon: ClipboardList,   end: true,  permiso: 'compras'       },
     { to: '/traslados',              label: 'Nuevo traslado',      icon: MoveRight,       end: true,  permiso: 'traslados'     },
     { to: '/traslados/historial',    label: 'Historial traslados', icon: ClipboardList,   end: true,  permiso: 'traslados'     },
     { to: '/movimientos',            label: 'Movimientos',         icon: ArrowLeftRight,  end: false, permiso: 'inventario'    },
@@ -36,6 +37,10 @@ const nav = [
     { to: '/proveedores',            label: 'Proveedores',         icon: Truck,           end: false, permiso: 'catalogos'     },
     { to: '/clientes',               label: 'Clientes',            icon: Users,           end: false, permiso: 'catalogos'     },
     { to: '/bodegas',                label: 'Bodegas',             icon: Warehouse,       end: false, permiso: 'catalogos'     },
+  ]},
+  { group: 'Reportes', items: [
+    { to: '/reportes/ingresos',      label: 'Ingresos',            icon: TrendingUp,      end: true,  permiso: 'reportes'      },
+    { to: '/reportes/productos',     label: 'Top productos',       icon: Star,            end: true,  permiso: 'reportes'      },
   ]},
   { group: 'Sistema', items: [
     { to: '/configuracion',          label: 'Configuración',       icon: Settings,        end: true,  permiso: 'configuracion' },

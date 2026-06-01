@@ -15,14 +15,17 @@ import BodegasPage    from '@/pages/warehouses/BodegasPage'
 import ExistenciasPage  from '@/pages/inventory/ExistenciasPage'
 import StockBajoPage   from '@/pages/inventory/StockBajoPage'
 import MovimientosPage from '@/pages/movements/MovimientosPage'
-import ComprasPage    from '@/pages/purchases/ComprasPage'
+import ComprasPage         from '@/pages/purchases/ComprasPage'
+import HistorialComprasPage from '@/pages/purchases/HistorialComprasPage'
 import CotizacionesPage        from '@/pages/quotations/CotizacionesPage'
 import HistorialCotizacionesPage from '@/pages/quotations/HistorialCotizacionesPage'
 import VentasPage               from '@/pages/sales/VentasPage'
 import HistorialVentasPage      from '@/pages/sales/HistorialVentasPage'
 import TrasladosPage             from '@/pages/transfers/TrasladosPage'
 import HistorialTrasladosPage   from '@/pages/transfers/HistorialTrasladosPage'
-import ConfiguracionPage        from '@/pages/settings/ConfiguracionPage'
+import ConfiguracionPage         from '@/pages/settings/ConfiguracionPage'
+import ReportesIngresosPage      from '@/pages/reports/ReportesIngresosPage'
+import ReportesProductosPage     from '@/pages/reports/ReportesProductosPage'
 import SuperAdminLayout         from '@/pages/super-admin/SuperAdminLayout'
 import DashboardSAPage          from '@/pages/super-admin/DashboardSAPage'
 import EmpresasAdminPage        from '@/pages/super-admin/EmpresasAdminPage'
@@ -67,13 +70,16 @@ export default function App() {
               <Route path="existencias"            element={<Guard perm="inventario"><ExistenciasPage /></Guard>} />
               <Route path="existencias/stock-bajo" element={<Guard perm="inventario"><StockBajoPage /></Guard>} />
               <Route path="movimientos" element={<Guard perm="inventario"><MovimientosPage /></Guard>} />
-              <Route path="compras"     element={<Guard perm="compras"><ComprasPage /></Guard>} />
+              <Route path="compras"            element={<Guard perm="compras"><ComprasPage /></Guard>} />
+              <Route path="compras/historial" element={<Guard perm="compras"><HistorialComprasPage /></Guard>} />
               <Route path="traslados"           element={<Guard perm="traslados"><TrasladosPage /></Guard>} />
               <Route path="traslados/historial" element={<Guard perm="traslados"><HistorialTrasladosPage /></Guard>} />
               <Route path="cotizaciones"           element={<Guard perm="cotizaciones"><CotizacionesPage /></Guard>} />
               <Route path="cotizaciones/historial" element={<Guard perm="cotizaciones"><HistorialCotizacionesPage /></Guard>} />
               <Route path="ventas"                 element={<Guard perm="ventas"><VentasPage /></Guard>} />
               <Route path="ventas/historial"       element={<Guard perm="ventas"><HistorialVentasPage /></Guard>} />
+              <Route path="reportes/ingresos"      element={<Guard perm="reportes"><ReportesIngresosPage /></Guard>} />
+              <Route path="reportes/productos"     element={<Guard perm="reportes"><ReportesProductosPage /></Guard>} />
               <Route path="configuracion"          element={<Guard perm="configuracion"><ConfiguracionPage /></Guard>} />
             </Route>
 

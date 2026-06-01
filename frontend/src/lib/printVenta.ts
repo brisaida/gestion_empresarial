@@ -7,6 +7,7 @@ export interface PrintEmpresa {
   telefono?: string
   correo?: string
   direccion?: string
+  isv_rate?: number
 }
 
 const fmt = (n: number) =>
@@ -56,8 +57,9 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
     ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">Descuento</td><td style="padding:4px 12px;text-align:right;color:#dc2626;font-weight:600">− ${fmt(v.descuento)}</td></tr>`
     : ''
 
+  const isvPct = empresa.isv_rate ?? 15
   const filaISV = v.impuesto > 0
-    ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">ISV (15%)</td><td style="padding:4px 12px;text-align:right;color:#555">${fmt(v.impuesto)}</td></tr>`
+    ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">ISV (${isvPct}%)</td><td style="padding:4px 12px;text-align:right;color:#555">${fmt(v.impuesto)}</td></tr>`
     : ''
 
   const estadoColor = v.estado === 'cancelada' ? '#dc2626' : '#059669'
@@ -153,10 +155,8 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
   </table>
 
   <!-- FOOTER -->
-  <div style="margin-top:40px;padding-top:12px;border-top:1px solid #E5E9EE;display:flex;justify-content:space-between;align-items:center">
+  <div style="margin-top:40px;padding-top:12px;border-top:1px solid #E5E9EE;text-align:center">
     <span style="font-size:10px;color:#aaa">${empresa.nombre} · ${v.numero_factura ?? ''}</span>
-    <div style="width:8px;height:8px;border-radius:50%;background:${CYAN}"></div>
-    <span style="font-size:10px;color:#aaa">Sistema de Gestión Empresarial</span>
   </div>
 
 </div>

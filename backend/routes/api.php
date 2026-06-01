@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\UnidadMedidaController;
 use App\Http\Controllers\Api\CotizacionController;
 use App\Http\Controllers\Api\EmpresaController;
 use App\Http\Controllers\Api\VentaController;
+use App\Http\Controllers\Api\ReporteController;
 use Illuminate\Support\Facades\Route;
 
 // ── Autenticación (sin token) ──────────────────────────────────────────────
@@ -96,6 +97,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Traslados
     Route::middleware('permiso:traslados')->group(function () {
         Route::apiResource('transferencias', TransferenciaController::class)->only(['index', 'store', 'show']);
+    });
+
+    // Reportes
+    Route::middleware('permiso:reportes')->group(function () {
+        Route::get('reportes/ingresos',      [ReporteController::class, 'ingresos']);
+        Route::get('reportes/top-productos', [ReporteController::class, 'topProductos']);
     });
 });
 

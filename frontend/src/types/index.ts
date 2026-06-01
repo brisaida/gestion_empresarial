@@ -283,6 +283,13 @@ export interface DashboardData {
     productos_stock_bajo: number
     compras_mes: number
     ventas_mes: number
+    ventas_mes_anterior: number
+    variacion_ventas_pct: number | null
+    margen_bruto_mes: number
+    margen_pct: number
+    valor_inventario: number
+    compras_pendientes_count: number
+    compras_pendientes_monto: number
   }
   ultimas_ventas: Array<{
     id: number
