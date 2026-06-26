@@ -19,7 +19,8 @@ class StoreVentaRequest extends FormRequest
             'descuento'      => ['nullable', 'numeric', 'min:0'],
             'impuesto'       => ['nullable', 'numeric', 'min:0'],
             'detalles'       => ['required', 'array', 'min:1'],
-            'detalles.*.producto_id'      => ['required', 'integer', 'exists:productos,id'],
+            'detalles.*.producto_id'      => ['nullable', 'integer', 'exists:productos,id'],
+            'detalles.*.receta_id'        => ['nullable', 'integer', 'exists:recetas,id'],
             'detalles.*.cantidad'         => ['required', 'numeric', 'min:0.0001'],
             'detalles.*.precio_unitario'  => ['required', 'numeric', 'min:0'],
         ];

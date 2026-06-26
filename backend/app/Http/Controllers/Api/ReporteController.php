@@ -64,7 +64,7 @@ class ReporteController extends ApiController
         $empresaId = $request->integer('empresa_id');
         $desde     = $request->input('fecha_desde', now()->subDays(29)->toDateString());
         $hasta     = $request->input('fecha_hasta', now()->toDateString());
-        $limit     = min($request->integer('limit', 10), 50);
+        $limit     = min($request->integer('limit', 10), 200);
 
         $productos = DB::table('detalle_ventas as dv')
             ->join('ventas as v', 'dv.venta_id', '=', 'v.id')
@@ -90,5 +90,31 @@ class ReporteController extends ApiController
             'success' => true,
             'data'    => $productos,
         ]);
+    }
+
+    public function inventario(Request $request): JsonResponse
+    {
+        $empresaId = $request->integer('empresa_id');
+
+        $datos = DB::table('existencias as e')
+            ->join('productos as p', 'e.producto_id', '=', 'p.id')
+            ->leftJoin('categorias as c', 'p.categoria_id', '=', 'c.id')
+            ->where('p.empresa_id', $empresaId)
+            ->selectRaw('p.id, p.nombre, p.codigo, p.costo, COALESCE(c.nombre,\'\') as categoria, SUM(e.cantidad) as stock_total, SUM(e.cantidad * p.costo) as valor_total')
+            ->groupBy('p.id', 'p.nombre', 'p.codigo', 'p.costo', 'c.nombre')
+            ->having(DB::raw('SUM(e.cantidad)'), '>', 0)
+            ->orderBy('p.nombre')
+            ->get()
+            ->map(fn ($r) => [
+                'producto_id' => $r->id,
+                'nombre'      => $r->nombre,
+                'codigo'      => $r->codigo,
+                'categoria'   => $r->categoria,
+                'costo'       => (float) $r->costo,
+                'stock_total' => (float) $r->stock_total,
+                'valor_total' => (float) $r->valor_total,
+            ]);
+
+        return response()->json(['success' => true, 'data' => $datos]);
     }
 }

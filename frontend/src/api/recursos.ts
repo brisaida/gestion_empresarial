@@ -3,7 +3,7 @@ import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
   Producto, Existencia, DashboardData, Movimiento, Compra, Venta, Cotizacion,
-  Transferencia, EmpresaConfig,
+  Transferencia, EmpresaConfig, Receta,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -113,6 +113,15 @@ export const productosApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
+  importar: (empresaId: number, file: File) => {
+    const form = new FormData()
+    form.append('empresa_id', String(empresaId))
+    form.append('archivo', file)
+    return client.post<ApiResponse<{ creados: number; errores: { fila: number; error: string }[] }>>(
+      '/productos/importar', form, { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+  },
+  plantillaUrl: () => `${client.defaults.baseURL}/productos/importar/plantilla`,
 }
 
 // ── Existencias ────────────────────────────────────────────────────────────
@@ -136,6 +145,22 @@ export const comprasApi = {
   create:   (data: unknown) => create<Compra>('/compras', data),
   recibir:  (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/recibir`),
   cancelar: (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/cancelar`),
+  escanear: (imagen: string, media_type: string) =>
+    client.post<ApiResponse<FacturaEscaneada>>('/compras/escanear-factura', { imagen, media_type }),
+}
+
+export interface FacturaEscaneada {
+  proveedor:           string | null
+  proveedor_rtn:       string | null
+  proveedor_telefono:  string | null
+  proveedor_correo:    string | null
+  numero_factura:      string | null
+  fecha:               string | null
+  items: { codigo?: string | null; descripcion: string; cantidad: number; precio_unitario: number }[]
+  subtotal:  number | null
+  impuesto:  number | null
+  descuento: number | null
+  total:     number | null
 }
 
 // ── Cotizaciones ───────────────────────────────────────────────────────────
@@ -162,6 +187,7 @@ export const transferenciasApi = {
 export const reportesApi = {
   ingresos:     (params: Record<string, unknown>) => client.get('/reportes/ingresos', { params }),
   topProductos: (params: Record<string, unknown>) => client.get('/reportes/top-productos', { params }),
+  inventario:   (params: Record<string, unknown>) => client.get('/reportes/inventario', { params }),
 }
 
 // ── Ventas ─────────────────────────────────────────────────────────────────
@@ -172,4 +198,13 @@ export const ventasApi = {
   cancelar:         (id: number) => client.post<ApiResponse<Venta>>(`/ventas/${id}/cancelar`),
   siguienteNumero:  (empresaId: number) =>
     client.get<ApiResponse<{ numero_factura: string }>>('/ventas/siguiente-numero', { params: { empresa_id: empresaId } }),
+}
+
+// ── Recetas ────────────────────────────────────────────────────────────────
+export const recetasApi = {
+  list:   (params: Record<string, unknown>) => list<Receta>('/recetas', params),
+  get:    (id: number) => get<Receta>(`/recetas/${id}`),
+  create: (data: unknown) => create<Receta>('/recetas', data),
+  update: (id: number, data: unknown) => update<Receta>(`/recetas/${id}`, data),
+  delete: (id: number) => remove(`/recetas/${id}`),
 }

@@ -1,17 +1,20 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, XCircle, Search, Minus, Trash2, Receipt, User, Warehouse,
-         CalendarDays, Hash, CheckCircle2, Lock } from 'lucide-react'
+         CalendarDays, Hash, CheckCircle2, Lock, ChefHat } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi } from '@/api/recursos'
+import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi, recetasApi } from '@/api/recursos'
 import { printVenta } from '@/lib/printVenta'
-import type { Venta } from '@/types'
+import type { Venta, Receta } from '@/types'
 import Button from '@/components/ui/Button'
-import { formatCurrency, getAxiosError } from '@/lib/utils'
+import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
 import type { Producto } from '@/types'
 
 interface LineaVenta {
-  producto: Producto
+  _key: string
+  tipo: 'producto' | 'receta'
+  producto?: Producto
+  receta?: Receta
   cantidad: number
   precio_unitario: number
 }
@@ -25,7 +28,7 @@ export default function VentasPage() {
   const [success, setSuccess]       = useState('')
   const [clienteId, setClienteId]   = useState('')
   const [bodegaId, setBodegaId]     = useState('')
-  const [fecha, setFecha]           = useState(new Date().toISOString().slice(0, 10))
+  const [fecha, setFecha]           = useState(todayISO())
   const [nFactura, setNFactura]     = useState('')
   const [descuento, setDescuento]   = useState(0)
   const [aplicarISV, setAplicarISV] = useState(true)
@@ -44,6 +47,8 @@ export default function VentasPage() {
   const { data: clientes }  = useQuery({ queryKey: ['clientes-all', empresaId],  queryFn: () => clientesApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: bodegas }   = useQuery({ queryKey: ['bodegas-all', empresaId],   queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then(r => r.data.data), enabled: empresaId > 0 })
+  const esRestaurante = state.empresaActiva?.rubro === 'restaurante'
+  const { data: recetas = [] } = useQuery({ queryKey: ['recetas', empresaId], queryFn: () => recetasApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => (r.data as { data: Receta[] }).data), enabled: empresaId > 0 && esRestaurante })
 
   const { data: numData, refetch: refetchNum } = useQuery({
     queryKey: ['venta-siguiente-num', empresaId],
@@ -86,12 +91,20 @@ export default function VentasPage() {
     search.length > 0 &&
     (p.nombre.toLowerCase().includes(search.toLowerCase()) ||
      (p.codigo ?? '').toLowerCase().includes(search.toLowerCase()))
-  ).slice(0, 8)
+  ).slice(0, 6)
+
+  const filteredRecetas = esRestaurante ? recetas.filter(r =>
+    search.length > 0 && r.nombre.toLowerCase().includes(search.toLowerCase())
+  ).slice(0, 4) : []
+
+  const showDrop2 = showDrop && search.length > 0 && (filteredProducts.length > 0 || filteredRecetas.length > 0)
 
   const subtotal = lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0)
   const isv = aplicarISV && subtotal > 0
     ? lineas.reduce((sum, l) => {
-        const rate = (l.producto.tasa_isv != null ? l.producto.tasa_isv : (empresaConfig?.isv_rate ?? 15)) / 100
+        const rate = (l.tipo === 'producto' && l.producto?.tasa_isv != null
+          ? l.producto.tasa_isv
+          : (empresaConfig?.isv_rate ?? 15)) / 100
         const lineaBase = l.cantidad * l.precio_unitario
         const lineaDescontada = descuento > 0 ? lineaBase * (1 - descuento / subtotal) : lineaBase
         return sum + lineaDescontada * rate
@@ -100,16 +113,25 @@ export default function VentasPage() {
   const total    = subtotal - descuento + isv
 
   const resetForm = () => {
-    setClienteId(''); setBodegaId(''); setFecha(new Date().toISOString().slice(0, 10))
+    setClienteId(''); setBodegaId(''); setFecha(todayISO())
     setDescuento(0); setAplicarISV(true); setLineas([])
     setSearch(''); setError('')
   }
 
   const addProduct = (p: Producto) => {
     setLineas(prev => {
-      const idx = prev.findIndex(l => l.producto.id === p.id)
+      const idx = prev.findIndex(l => l.tipo === 'producto' && l.producto?.id === p.id)
       if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, cantidad: l.cantidad + 1 } : l)
-      return [...prev, { producto: p, cantidad: 1, precio_unitario: Number(p.precio_venta) }]
+      return [...prev, { _key: `p-${p.id}`, tipo: 'producto', producto: p, cantidad: 1, precio_unitario: Number(p.precio_venta) }]
+    })
+    setSearch(''); setShowDrop(false)
+  }
+
+  const addReceta = (r: Receta) => {
+    setLineas(prev => {
+      const idx = prev.findIndex(l => l.tipo === 'receta' && l.receta?.id === r.id)
+      if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, cantidad: l.cantidad + 1 } : l)
+      return [...prev, { _key: `r-${r.id}`, tipo: 'receta', receta: r, cantidad: 1, precio_unitario: Number(r.precio_venta) }]
     })
     setSearch(''); setShowDrop(false)
   }
@@ -136,7 +158,8 @@ export default function VentasPage() {
       descuento,
       impuesto:       Math.round(isv * 10000) / 10000,
       detalles: lineas.map(l => ({
-        producto_id:     l.producto.id,
+        producto_id:     l.tipo === 'producto' ? l.producto!.id : null,
+        receta_id:       l.tipo === 'receta'   ? l.receta!.id   : null,
         cantidad:        l.cantidad,
         precio_unitario: l.precio_unitario,
       })),
@@ -221,7 +244,7 @@ export default function VentasPage() {
                   <Search size={16} className="text-[#5F6B7A] shrink-0" />
                   <input
                     type="text"
-                    placeholder="Buscar producto por nombre o código..."
+                    placeholder={esRestaurante ? 'Buscar plato o ingrediente…' : 'Buscar producto por nombre o código...'}
                     value={search}
                     onChange={e => { setSearch(e.target.value); setShowDrop(true) }}
                     onFocus={() => search && setShowDrop(true)}
@@ -234,36 +257,63 @@ export default function VentasPage() {
                   )}
                 </div>
 
-                {showDrop && filteredProducts.length > 0 && (
+                {showDrop2 && (
                   <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-                    {filteredProducts.map(p => (
-                      <button key={p.id} type="button" onClick={() => addProduct(p)}
-                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
-                        <div className="flex items-center gap-3">
-                          {p.imagen_url
-                            ? <img src={p.imagen_url} className="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" />
-                            : <div className="w-8 h-8 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center text-[9px] font-bold text-gray-300">IMG</div>
-                          }
-                          <div>
-                            <p className="text-sm font-semibold text-[#072B5A] group-hover:text-[#0E78D8] transition-colors">{p.nombre}</p>
-                            {p.codigo && <p className="text-xs text-gray-400 font-mono">{p.codigo}</p>}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          {p.stock_total !== undefined && <span className="text-xs text-[#5F6B7A]">Stock: {p.stock_total}</span>}
-                          <span className="text-sm font-bold text-[#0E78D8]">{formatCurrency(p.precio_venta)}</span>
-                          <span className="w-6 h-6 bg-[#0E78D8] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Plus size={13} />
-                          </span>
-                        </div>
-                      </button>
-                    ))}
+                    {filteredRecetas.length > 0 && (
+                      <>
+                        <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider flex items-center gap-1"><ChefHat size={10} /> Platos / Recetas</p>
+                        {filteredRecetas.map(r => (
+                          <button key={r.id} type="button" onClick={() => addReceta(r)}
+                            className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-[#0E78D8]/10 border border-[#0E78D8]/20 shrink-0 flex items-center justify-center">
+                                <ChefHat size={14} className="text-[#0E78D8]" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-[#072B5A] group-hover:text-[#0E78D8] transition-colors">{r.nombre}</p>
+                                <p className="text-xs text-gray-400">{r.ingredientes.length} ingredientes</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-sm font-bold text-[#0E78D8]">{formatCurrency(r.precio_venta)}</span>
+                              <span className="w-6 h-6 bg-[#0E78D8] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Plus size={13} /></span>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {filteredProducts.length > 0 && (
+                      <>
+                        {filteredRecetas.length > 0 && <div className="border-t border-gray-100 mt-1" />}
+                        {esRestaurante && <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider">Productos</p>}
+                        {filteredProducts.map(p => (
+                          <button key={p.id} type="button" onClick={() => addProduct(p)}
+                            className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
+                            <div className="flex items-center gap-3">
+                              {p.imagen_url
+                                ? <img src={p.imagen_url} className="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" />
+                                : <div className="w-8 h-8 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center text-[9px] font-bold text-gray-300">IMG</div>
+                              }
+                              <div>
+                                <p className="text-sm font-semibold text-[#072B5A] group-hover:text-[#0E78D8] transition-colors">{p.nombre}</p>
+                                {p.codigo && <p className="text-xs text-gray-400 font-mono">{p.codigo}</p>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              {p.stock_total !== undefined && <span className="text-xs text-[#5F6B7A]">Stock: {p.stock_total}</span>}
+                              <span className="text-sm font-bold text-[#0E78D8]">{formatCurrency(p.precio_venta)}</span>
+                              <span className="w-6 h-6 bg-[#0E78D8] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Plus size={13} /></span>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
 
-                {showDrop && search.length > 0 && filteredProducts.length === 0 && (
+                {showDrop && search.length > 0 && !showDrop2 && (
                   <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white rounded-xl border border-gray-200 shadow-xl px-4 py-3 text-sm text-[#5F6B7A]">
-                    No se encontraron productos con "<strong>{search}</strong>"
+                    No se encontraron resultados para "<strong>{search}</strong>"
                   </div>
                 )}
               </div>
@@ -272,7 +322,7 @@ export default function VentasPage() {
             {/* Encabezado tabla */}
             {lineas.length > 0 && (
               <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/70 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100">
-                <div className="col-span-4">Producto</div>
+                <div className="col-span-4">{esRestaurante ? 'Plato / Producto' : 'Producto'}</div>
                 <div className="col-span-3 text-center">Cantidad</div>
                 <div className="col-span-2 text-right">Precio unit.</div>
                 <div className="col-span-2 text-right">Subtotal</div>
@@ -286,24 +336,35 @@ export default function VentasPage() {
                 <div className="w-14 h-14 rounded-2xl bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-3">
                   <Receipt size={24} className="text-gray-300" />
                 </div>
-                <p className="text-sm font-medium text-[#5F6B7A]">Sin productos aún</p>
-                <p className="text-xs text-gray-400 mt-1">Usa el buscador de arriba para agregar productos</p>
+                <p className="text-sm font-medium text-[#5F6B7A]">{esRestaurante ? 'Sin platos aún' : 'Sin productos aún'}</p>
+                <p className="text-xs text-gray-400 mt-1">Usa el buscador de arriba para {esRestaurante ? 'agregar platos o productos' : 'agregar productos'}</p>
               </div>
             )}
 
             {/* Filas */}
             {lineas.map((l, i) => (
-              <div key={l.producto.id}
+              <div key={l._key}
                 className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
 
                 <div className="col-span-4 flex items-center gap-2.5">
-                  {l.producto.imagen_url
-                    ? <img src={l.producto.imagen_url} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
-                    : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />
+                  {l.tipo === 'receta'
+                    ? <div className="w-9 h-9 rounded-lg bg-[#0E78D8]/10 border border-[#0E78D8]/20 shrink-0 flex items-center justify-center">
+                        <ChefHat size={16} className="text-[#0E78D8]" />
+                      </div>
+                    : (l.producto?.imagen_url
+                        ? <img src={l.producto.imagen_url} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
+                        : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />)
                   }
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#072B5A] leading-tight truncate">{l.producto.nombre}</p>
-                    {l.producto.codigo && <p className="text-xs text-gray-400 font-mono">{l.producto.codigo}</p>}
+                    <p className="text-sm font-semibold text-[#072B5A] leading-tight truncate">
+                      {l.tipo === 'receta' ? l.receta!.nombre : l.producto!.nombre}
+                    </p>
+                    {l.tipo === 'producto' && l.producto?.codigo && (
+                      <p className="text-xs text-gray-400 font-mono">{l.producto.codigo}</p>
+                    )}
+                    {l.tipo === 'receta' && (
+                      <p className="text-xs text-[#0E78D8]">{l.receta!.ingredientes.length} ingredientes</p>
+                    )}
                   </div>
                 </div>
 

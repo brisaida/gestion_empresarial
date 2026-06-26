@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { cotizacionesApi, clientesApi, productosApi, empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
-import { formatCurrency, getAxiosError } from '@/lib/utils'
+import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
 import type { Cotizacion, Producto } from '@/types'
 import { printCotizacion } from '@/lib/printCotizacion'
 
@@ -23,7 +23,7 @@ export default function CotizacionesPage() {
   const [error, setError]             = useState('')
   const [success, setSuccess]         = useState('')
   const [clienteId, setClienteId]     = useState('')
-  const [fecha, setFecha]             = useState(new Date().toISOString().slice(0, 10))
+  const [fecha, setFecha]             = useState(todayISO())
   const [vencimiento, setVencimiento] = useState('')
   const [observaciones, setObservaciones] = useState('')
   const [nCot, setNCot]               = useState('')
@@ -96,7 +96,7 @@ export default function CotizacionesPage() {
   const total    = subtotal - descuento + isv
 
   const resetForm = () => {
-    setClienteId(''); setFecha(new Date().toISOString().slice(0, 10)); setVencimiento('')
+    setClienteId(''); setFecha(todayISO()); setVencimiento('')
     setObservaciones(''); setDescuento(0); setAplicarISV(true); setLineas([])
     setSearch(''); setError('')
   }

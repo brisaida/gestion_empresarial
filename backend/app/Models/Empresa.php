@@ -11,7 +11,7 @@ class Empresa extends Model
 
     protected $fillable = [
         'nombre', 'nombre_legal', 'rtn', 'correo',
-        'telefono', 'direccion', 'isv_rate', 'logo', 'activo',
+        'telefono', 'direccion', 'isv_rate', 'logo', 'activo', 'rubro',
     ];
 
     protected function casts(): array

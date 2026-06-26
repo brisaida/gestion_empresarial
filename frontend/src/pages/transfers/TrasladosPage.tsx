@@ -1,11 +1,57 @@
 import { useState, useId } from 'react'
-import { Plus, Trash2, ArrowRight, CheckCircle } from 'lucide-react'
+import { Plus, Trash2, ArrowRight, CheckCircle, AlertTriangle } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { bodegasApi, productosApi, transferenciasApi } from '@/api/recursos'
+import { bodegasApi, productosApi, transferenciasApi, existenciasApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
-import { formatNumber, getAxiosError } from '@/lib/utils'
+import { formatNumber, getAxiosError, todayISO } from '@/lib/utils'
 import type { Producto } from '@/types'
+
+// ── Stock por bodega para un producto ────────────────────────────────────────
+function StockBodegaInfo({ productoId, empresaId, bodegaOrigenId, cantidad }: {
+  productoId: string; empresaId: number; bodegaOrigenId: string; cantidad: string
+}) {
+  const { data: existencias = [] } = useQuery({
+    queryKey: ['existencias-prod', empresaId, productoId],
+    queryFn:  () => existenciasApi.list({ empresa_id: empresaId, producto_id: Number(productoId), per_page: 50 })
+                    .then(r => r.data.data),
+    enabled:  !!productoId && empresaId > 0,
+    staleTime: 30_000,
+  })
+
+  if (!existencias.length) return (
+    <p className="text-[10px] text-[#5F6B7A] mt-1">Sin stock registrado en ninguna bodega.</p>
+  )
+
+  const cantSolicitada = Number(cantidad) || 0
+  const stockOrigen = existencias.find(e => String(e.bodega_id) === bodegaOrigenId)?.cantidad_disponible ?? null
+
+  return (
+    <div className="mt-1.5 space-y-1">
+      <div className="flex flex-wrap gap-1.5">
+        {existencias.map(e => {
+          const esOrigen = String(e.bodega_id) === bodegaOrigenId
+          const nombre   = e.bodega?.nombre ?? `Bodega ${e.bodega_id}`
+          return (
+            <span key={e.id} className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+              esOrigen
+                ? 'bg-[#0E78D8]/10 text-[#0E78D8] border-[#0E78D8]/30'
+                : 'bg-gray-100 text-[#5F6B7A] border-gray-200'
+            }`}>
+              {esOrigen && <span className="w-1.5 h-1.5 rounded-full bg-[#0E78D8] shrink-0" />}
+              {nombre}: {formatNumber(e.cantidad_disponible, 0)} uds
+            </span>
+          )
+        })}
+      </div>
+      {bodegaOrigenId && stockOrigen !== null && cantSolicitada > 0 && cantSolicitada > stockOrigen && (
+        <p className="flex items-center gap-1 text-[10px] text-amber-700 font-semibold">
+          <AlertTriangle size={11} /> Cantidad supera el stock disponible en origen ({formatNumber(stockOrigen, 0)} uds)
+        </p>
+      )}
+    </div>
+  )
+}
 
 interface Linea {
   _id: string
@@ -31,7 +77,7 @@ export default function TrasladosPage() {
 
   const [bodegaOrigenId,  setBodegaOrigenId]  = useState('')
   const [bodegaDestinoId, setBodegaDestinoId] = useState('')
-  const [fecha,           setFecha]           = useState(new Date().toISOString().slice(0, 10))
+  const [fecha,           setFecha]           = useState(todayISO())
   const [observaciones,   setObservaciones]   = useState('')
   const [lineas,          setLineas]          = useState<Linea[]>([emptyLinea(uid + '-0')])
   const [error,           setError]           = useState('')
@@ -185,6 +231,14 @@ export default function TrasladosPage() {
                               <option key={p.id} value={p.id}>{p.codigo ? `[${p.codigo}] ` : ''}{p.nombre}</option>
                             ))}
                           </select>
+                          {l.producto_id && (
+                            <StockBodegaInfo
+                              productoId={l.producto_id}
+                              empresaId={empresaId}
+                              bodegaOrigenId={bodegaOrigenId}
+                              cantidad={l.cantidad}
+                            />
+                          )}
                         </div>
                         <div>
                           <label className={labelCls}>Cantidad *</label>

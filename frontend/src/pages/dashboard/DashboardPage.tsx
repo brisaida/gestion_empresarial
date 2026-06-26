@@ -4,10 +4,14 @@ import {
   TrendingDown, Boxes, ShoppingCart, BarChart2,
 } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
-import { dashboardApi } from '@/api/recursos'
+import { dashboardApi, reportesApi } from '@/api/recursos'
 import { MetricCard } from '@/components/ui/Card'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Link } from 'react-router-dom'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend,
+} from 'recharts'
 
 function VariacionBadge({ pct }: { pct: number | null | undefined }) {
   if (pct == null) return <span className="text-xs text-gray-400">Sin datos mes ant.</span>
@@ -31,6 +35,52 @@ export default function DashboardPage() {
   })
 
   const r = data?.resumen
+
+  // ── Datos para el gráfico de comparación mensual ──────────────────
+  const localISO = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  const hoy           = new Date()
+  const inicioMes     = localISO(new Date(hoy.getFullYear(), hoy.getMonth(), 1))
+  const hoyStr        = localISO(hoy)
+  const inicioMesAnt  = localISO(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1))
+  const finMesAnt     = localISO(new Date(hoy.getFullYear(), hoy.getMonth(), 0))
+
+  type FilaIngreso = { periodo: string; total: number; cantidad: number }
+  type RespIngresos = { data: { filas: FilaIngreso[] } }
+
+  const { data: filasActual } = useQuery<FilaIngreso[]>({
+    queryKey: ['chart-mes-actual', empresaId],
+    queryFn: () => reportesApi.ingresos({ empresa_id: empresaId, fecha_desde: inicioMes, fecha_hasta: hoyStr, agrupacion: 'dia' })
+      .then(r => (r as unknown as RespIngresos).data.filas),
+    enabled: empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
+
+  const { data: filasAnt } = useQuery<FilaIngreso[]>({
+    queryKey: ['chart-mes-anterior', empresaId],
+    queryFn: () => reportesApi.ingresos({ empresa_id: empresaId, fecha_desde: inicioMesAnt, fecha_hasta: finMesAnt, agrupacion: 'dia' })
+      .then(r => (r as unknown as RespIngresos).data.filas),
+    enabled: empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
+
+  const diaHoy       = hoy.getDate()
+  const diasMesAnt   = new Date(hoy.getFullYear(), hoy.getMonth(), 0).getDate()
+  const maxDias      = Math.max(diaHoy, diasMesAnt)
+
+  const chartData = Array.from({ length: maxDias }, (_, i) => {
+    const dia  = i + 1
+    const curr = filasActual?.find(f => new Date(f.periodo + 'T12:00:00').getDate() === dia)
+    const prev = filasAnt?.find(f => new Date(f.periodo + 'T12:00:00').getDate() === dia)
+    return {
+      dia,
+      este_mes:     dia <= diaHoy    ? (curr?.total ?? 0) : undefined,
+      mes_anterior: dia <= diasMesAnt ? (prev?.total ?? 0) : undefined,
+    }
+  })
+
+  const mesActualNombre  = hoy.toLocaleDateString('es', { month: 'long' })
+  const mesAntNombre     = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1).toLocaleDateString('es', { month: 'long' })
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -131,6 +181,69 @@ export default function DashboardPage() {
           icon={<Truck size={20} />}
           color="cyan"
         />
+      </div>
+
+      {/* ── Gráfico comparativo mensual ─────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-sm font-semibold text-[#072B5A]">Ventas diarias — comparación mensual</p>
+            <p className="text-xs text-[#5F6B7A] mt-0.5 capitalize">{mesActualNombre} vs {mesAntNombre}</p>
+          </div>
+          <Link to="/reportes/ingresos" className="text-xs text-[#0E78D8] hover:text-[#072B5A] font-semibold flex items-center gap-1 transition-colors">
+            Ver reporte completo <ArrowRight size={12} />
+          </Link>
+        </div>
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart data={chartData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F0F2F5" vertical={false} />
+            <XAxis
+              dataKey="dia"
+              tick={{ fontSize: 11, fill: '#5F6B7A' }}
+              axisLine={false}
+              tickLine={false}
+              interval={4}
+            />
+            <YAxis
+              tickFormatter={v => `L ${(v / 1000).toFixed(0)}k`}
+              tick={{ fontSize: 11, fill: '#5F6B7A' }}
+              axisLine={false}
+              tickLine={false}
+              width={56}
+            />
+            <Tooltip
+              formatter={(value: number, name: string) => [
+                formatCurrency(value),
+                name === 'este_mes' ? mesActualNombre : mesAntNombre,
+              ]}
+              labelFormatter={dia => `Día ${dia}`}
+              contentStyle={{ borderRadius: 8, border: '1px solid #E5E9EE', fontSize: 12 }}
+            />
+            <Legend
+              formatter={name => name === 'este_mes'
+                ? <span className="text-xs font-medium capitalize">{mesActualNombre}</span>
+                : <span className="text-xs font-medium capitalize text-gray-400">{mesAntNombre}</span>
+              }
+            />
+            <Line
+              type="monotone"
+              dataKey="mes_anterior"
+              stroke="#CBD5E1"
+              strokeWidth={2}
+              strokeDasharray="4 3"
+              dot={false}
+              connectNulls={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="este_mes"
+              stroke="#0E78D8"
+              strokeWidth={2.5}
+              dot={false}
+              connectNulls={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
       {/* ── Paneles de detalle ───────────────────────────────────────── */}

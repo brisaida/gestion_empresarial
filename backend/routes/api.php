@@ -20,6 +20,8 @@ use App\Http\Controllers\Api\UnidadMedidaController;
 use App\Http\Controllers\Api\CotizacionController;
 use App\Http\Controllers\Api\EmpresaController;
 use App\Http\Controllers\Api\VentaController;
+use App\Http\Controllers\Api\ImportarProductosController;
+use App\Http\Controllers\Api\RecetaController;
 use App\Http\Controllers\Api\ReporteController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,6 +61,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('bodegas',         BodegaController::class);
         Route::apiResource('productos',       ProductoController::class);
         Route::post('productos/{producto}/imagen', [ProductoController::class, 'uploadImagen']);
+        Route::get('productos/importar/plantilla', [ImportarProductosController::class, 'plantilla']);
+        Route::post('productos/importar',          [ImportarProductosController::class, 'importar']);
     });
 
     // Inventario
@@ -72,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Compras
     Route::middleware('permiso:compras')->group(function () {
+        Route::post('compras/escanear-factura',  [CompraController::class, 'escanearFactura']);
         Route::apiResource('compras', CompraController::class)->only(['index', 'store', 'show']);
         Route::post('compras/{compra}/recibir',  [CompraController::class, 'recibir']);
         Route::post('compras/{compra}/cancelar', [CompraController::class, 'cancelar']);
@@ -99,10 +104,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('transferencias', TransferenciaController::class)->only(['index', 'store', 'show']);
     });
 
+    // Recetas (solo restaurante, permiso ventas)
+    Route::middleware('permiso:ventas')->group(function () {
+        Route::apiResource('recetas', RecetaController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    });
+
     // Reportes
     Route::middleware('permiso:reportes')->group(function () {
         Route::get('reportes/ingresos',      [ReporteController::class, 'ingresos']);
         Route::get('reportes/top-productos', [ReporteController::class, 'topProductos']);
+        Route::get('reportes/inventario',    [ReporteController::class, 'inventario']);
     });
 });
 

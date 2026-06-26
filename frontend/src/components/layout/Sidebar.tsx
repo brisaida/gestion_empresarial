@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -28,8 +28,9 @@ const nav = [
     { to: '/cotizaciones/historial', label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'cotizaciones'  },
   ]},
   { group: 'Ventas', items: [
-    { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas'        },
-    { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas'        },
+    { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas',       rubro: null },
+    { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas',       rubro: null },
+    { to: '/recetas',                label: 'Recetas / Platos',    icon: ChefHat,         end: false, permiso: 'ventas',       rubro: 'restaurante' },
   ]},
   { group: 'Catálogos', items: [
     { to: '/productos',              label: 'Productos',           icon: Package,         end: false, permiso: 'catalogos'     },
@@ -41,13 +42,14 @@ const nav = [
   { group: 'Reportes', items: [
     { to: '/reportes/ingresos',      label: 'Ingresos',            icon: TrendingUp,      end: true,  permiso: 'reportes'      },
     { to: '/reportes/productos',     label: 'Top productos',       icon: Star,            end: true,  permiso: 'reportes'      },
+    { to: '/reportes/exportar',      label: 'Exportar Excel',      icon: FileDown,        end: true,  permiso: 'reportes'      },
   ]},
   { group: 'Sistema', items: [
     { to: '/configuracion',          label: 'Configuración',       icon: Settings,        end: true,  permiso: 'configuracion' },
   ]},
 ]
 
-interface NavItem { to: string; label: string; icon: React.ElementType; end: boolean; permiso: string }
+interface NavItem { to: string; label: string; icon: React.ElementType; end: boolean; permiso: string; rubro?: string | null }
 interface Props { collapsed: boolean }
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
@@ -56,6 +58,8 @@ export default function Sidebar({ collapsed }: Props) {
   const { state } = useAuth()
   const { hasPerm } = usePermisos()
   const empresaId = state.empresaActiva?.id ?? 0
+
+  const rubro = state.empresaActiva?.rubro ?? null
 
   const { data: empresaConfig } = useQuery({
     queryKey: ['empresa', empresaId],
@@ -105,7 +109,9 @@ export default function Sidebar({ collapsed }: Props) {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto scrollbar-dark py-3 space-y-4 px-2">
         {nav.map((group) => {
-          const visibles = (group.items as NavItem[]).filter(i => hasPerm(i.permiso))
+          const visibles = (group.items as NavItem[]).filter(i =>
+            hasPerm(i.permiso) && (i.rubro === undefined || i.rubro === null || i.rubro === rubro)
+          )
           if (visibles.length === 0) return null
           return (
           <div key={group.group}>

@@ -45,6 +45,7 @@ class AuthController extends ApiController
                     'rol'     => $e->pivot->rol_id,
                     'logo_url'=> $e->logo ? '/' . ltrim($e->logo, '/') : null,
                     'modulos' => $roles->get($e->pivot->rol_id)?->modulos ?? null,
+                    'rubro'   => $e->rubro,
                 ]),
             ],
         ]);

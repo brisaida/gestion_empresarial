@@ -6,6 +6,7 @@ import { empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { getAxiosError } from '@/lib/utils'
+import type { Rubro } from '@/types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -27,7 +28,7 @@ export default function ConfiguracionPage() {
     enabled:  empresaId > 0,
   })
 
-  const [form, setForm] = useState({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', isv_rate: '15' })
+  const [form, setForm] = useState({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', isv_rate: '15', rubro: '' })
 
   // Inicializar form cuando llegan los datos
   const initialized = useRef(false)
@@ -41,17 +42,22 @@ export default function ConfiguracionPage() {
       telefono:     empresa.telefono     ?? '',
       direccion:    empresa.direccion    ?? '',
       isv_rate:     String(empresa.isv_rate ?? 15),
+      rubro:        empresa.rubro        ?? '',
     })
   }
 
   /* ── Guardar datos ──────────────────────────────────────────── */
   const guardar = useMutation({
-    mutationFn: () => empresaApi.update(empresaId, { ...form, isv_rate: parseFloat(form.isv_rate) || 0 }),
+    mutationFn: () => empresaApi.update(empresaId, {
+      ...form,
+      isv_rate: parseFloat(form.isv_rate) || 0,
+      rubro: (form.rubro as Rubro) || null,
+    }),
     onSuccess: (res) => {
       setSaveOk(true); setSaveError('')
       setTimeout(() => setSaveOk(false), 3000)
-      // Actualiza el nombre en el auth state
-      setEmpresa({ ...state.empresaActiva!, nombre: res.data.data.nombre })
+      // Actualiza nombre y rubro en el auth state
+      setEmpresa({ ...state.empresaActiva!, nombre: res.data.data.nombre, rubro: res.data.data.rubro ?? null })
       qc.invalidateQueries({ queryKey: ['empresa', empresaId] })
     },
     onError: (err) => { setSaveError(getAxiosError(err)); setSaveOk(false) },
@@ -174,7 +180,7 @@ export default function ConfiguracionPage() {
           </div>
         </div>
 
-        {saveError && <p className="mt-3 text-sm text-red-600">{saveError}</p>}
+{saveError && <p className="mt-3 text-sm text-red-600">{saveError}</p>}
         {saveOk    && <p className="mt-3 text-sm text-emerald-600">Cambios guardados correctamente.</p>}
 
         <div className="mt-5 flex justify-end">

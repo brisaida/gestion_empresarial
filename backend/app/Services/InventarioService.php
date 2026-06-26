@@ -142,15 +142,30 @@ class InventarioService
 
     /**
      * Procesa una venta: crea movimiento de salida por cada línea.
-     * Usa costo_unitario (costo real del producto) — no el precio de venta.
+     * Para líneas de receta, descuenta cada ingrediente multiplicado por las porciones vendidas.
      */
     public function procesarVenta(\App\Models\Venta $venta, int $usuarioId): void
     {
-        $detalles = $venta->detalles->map(fn($d) => [
-            'producto_id'    => $d->producto_id,
-            'cantidad'       => $d->cantidad,
-            'costo_unitario' => (float) $d->costo_unitario,   // ← costo real, no precio
-        ])->toArray();
+        $detalles = [];
+
+        foreach ($venta->detalles as $d) {
+            if ($d->receta_id && $d->relationLoaded('receta') && $d->receta) {
+                // Deducir cada ingrediente escalado por la cantidad de porciones
+                foreach ($d->receta->ingredientes as $ing) {
+                    $detalles[] = [
+                        'producto_id'    => $ing->producto_id,
+                        'cantidad'       => (float) $ing->cantidad * (float) $d->cantidad,
+                        'costo_unitario' => (float) ($ing->producto?->costo ?? 0),
+                    ];
+                }
+            } else {
+                $detalles[] = [
+                    'producto_id'    => $d->producto_id,
+                    'cantidad'       => $d->cantidad,
+                    'costo_unitario' => (float) $d->costo_unitario,
+                ];
+            }
+        }
 
         $this->registrarMovimiento([
             'empresa_id'      => $venta->empresa_id,

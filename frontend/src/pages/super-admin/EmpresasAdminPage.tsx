@@ -12,7 +12,15 @@ import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import SearchBar from '@/components/ui/SearchBar'
 import { getAxiosError } from '@/lib/utils'
-import type { EmpresaAdmin } from '@/types'
+import type { EmpresaAdmin, Rubro } from '@/types'
+
+const RUBROS: { value: Rubro; label: string }[] = [
+  { value: 'tienda',        label: 'Tienda / Retail' },
+  { value: 'distribuidora', label: 'Distribuidora / Mayorista' },
+  { value: 'farmacia',      label: 'Farmacia / Salud' },
+  { value: 'ferreteria',    label: 'Ferretería / Construcción' },
+  { value: 'restaurante',   label: 'Restaurante / Cafetería' },
+]
 
 const schema = z.object({
   nombre:       z.string().min(1, 'Requerido'),
@@ -21,6 +29,7 @@ const schema = z.object({
   correo:       z.string().email('Correo inválido').optional().or(z.literal('')),
   telefono:     z.string().optional(),
   direccion:    z.string().optional(),
+  rubro:        z.string().optional(),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -61,14 +70,14 @@ export default function EmpresasAdminPage() {
   })
 
   const openCreate = () => {
-    reset({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '' })
+    reset({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', rubro: '' })
     setError('')
     setModal('create')
   }
 
   const openEdit = (e: EmpresaAdmin) => {
     setSelected(e)
-    reset({ nombre: e.nombre, nombre_legal: e.nombre_legal ?? '', rtn: e.rtn ?? '', correo: e.correo ?? '', telefono: e.telefono ?? '', direccion: e.direccion ?? '' })
+    reset({ nombre: e.nombre, nombre_legal: e.nombre_legal ?? '', rtn: e.rtn ?? '', correo: e.correo ?? '', telefono: e.telefono ?? '', direccion: e.direccion ?? '', rubro: e.rubro ?? '' })
     setError('')
     setModal('edit')
   }
@@ -84,6 +93,13 @@ export default function EmpresasAdminPage() {
     { key: 'nombre',       header: 'Nombre',          cell: r => <span className="font-semibold text-[#072B5A]">{r.nombre}</span> },
     { key: 'nombre_legal', header: 'Razón social',     cell: r => <span className="text-gray-500 text-sm">{r.nombre_legal ?? '—'}</span> },
     { key: 'rtn',          header: 'RTN',              cell: r => <span className="text-gray-500 text-sm">{r.rtn ?? '—'}</span> },
+    { key: 'rubro', header: 'Rubro', width: '160px',
+      cell: r => r.rubro
+        ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#0E78D8]/10 text-[#0E78D8]">
+            {RUBROS.find(x => x.value === r.rubro)?.label ?? r.rubro}
+          </span>
+        : <span className="text-gray-400 text-sm">—</span>
+    },
     { key: 'usuarios_count', header: 'Usuarios', align: 'center', width: '90px',
       cell: r => <span className="text-sm font-medium text-purple-700 bg-purple-50 rounded-full px-2.5 py-0.5">{r.usuarios_count}</span> },
     { key: 'activo', header: 'Estado', align: 'center', width: '90px', cell: r => <StatusBadge activo={r.activo} /> },
@@ -139,6 +155,14 @@ export default function EmpresasAdminPage() {
           <div className="grid grid-cols-2 gap-4">
             <Input label="Teléfono" {...register('telefono')} />
             <Input label="Dirección" {...register('direccion')} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5">Rubro</label>
+            <select {...register('rubro')}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-500 transition-all">
+              <option value="">— Sin especificar —</option>
+              {RUBROS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </select>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={closeModal}>Cancelar</Button>

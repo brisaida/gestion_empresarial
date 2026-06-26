@@ -1,3 +1,9 @@
+/** Fecha local del dispositivo en formato YYYY-MM-DD (sin conversión a UTC). */
+export function todayISO(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-HN', { style: 'currency', currency: 'HNL' }).format(value)
 }
@@ -17,8 +23,16 @@ export function cn(...classes: (string | undefined | null | false)[]): string {
 
 export function getAxiosError(error: unknown): string {
   if (error && typeof error === 'object' && 'response' in error) {
-    const res = (error as { response: { data: { message?: string } } }).response
-    return res?.data?.message ?? 'Error inesperado.'
+    const res = (error as { response: { data: { message?: string; errors?: Record<string, string[]> } } }).response
+    const msg = res?.data?.message ?? 'Error inesperado.'
+    const fieldErrors = res?.data?.errors
+    if (fieldErrors) {
+      const detail = Object.entries(fieldErrors)
+        .map(([field, msgs]) => `${field}: ${msgs[0]}`)
+        .join(' · ')
+      return `${msg} (${detail})`
+    }
+    return msg
   }
   return 'Error de conexión.'
 }

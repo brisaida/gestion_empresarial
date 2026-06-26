@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
-import { getAxiosError } from '@/lib/utils'
+import { getAxiosError, todayISO } from '@/lib/utils'
 import type { Movimiento, TipoMovimiento } from '@/types'
 
 const TIPOS: { value: TipoMovimiento; label: string }[] = [
@@ -48,7 +48,7 @@ export default function MovimientosPage() {
   const [page, setPage] = useState(1)
   const [modal, setModal] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ tipo_movimiento: '' as TipoMovimiento | '', bodega_id: '', fecha: new Date().toISOString().slice(0, 10), numero_documento: '', observaciones: '' })
+  const [form, setForm] = useState({ tipo_movimiento: '' as TipoMovimiento | '', bodega_id: '', fecha: todayISO(), numero_documento: '', observaciones: '' })
   const [lineas, setLineas] = useState<LineaItem[]>([emptyLinea()])
 
   const { data: bodegas }   = useQuery({ queryKey: ['bodegas-all', empresaId],   queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then((r) => r.data.data),   enabled: empresaId > 0 })
@@ -73,7 +73,7 @@ export default function MovimientosPage() {
   })
 
   const openModal = () => {
-    setForm({ tipo_movimiento: '', bodega_id: '', fecha: new Date().toISOString().slice(0, 10), numero_documento: '', observaciones: '' })
+    setForm({ tipo_movimiento: '', bodega_id: '', fecha: todayISO(), numero_documento: '', observaciones: '' })
     setLineas([emptyLinea()])
     setError('')
     setModal(true)

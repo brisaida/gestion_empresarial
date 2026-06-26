@@ -27,6 +27,8 @@ class VentaResource extends JsonResource
                 'id'              => $d->id,
                 'producto_id'     => $d->producto_id,
                 'producto'        => $d->producto?->nombre,
+                'receta_id'       => $d->receta_id,
+                'receta'          => $d->receta?->nombre,
                 'cantidad'        => (float) $d->cantidad,
                 'precio_unitario' => (float) $d->precio_unitario,
                 'subtotal'        => (float) $d->subtotal,

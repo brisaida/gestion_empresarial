@@ -12,11 +12,13 @@ import { TrendingUp, ShoppingBag, BarChart2 } from 'lucide-react'
 
 type Preset = '7d' | '30d' | '3m' | '12m'
 
-const hoy = () => new Date().toISOString().slice(0, 10)
+const localISO = (d: Date = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+const hoy = () => localISO()
 const subDays = (n: number) => {
   const d = new Date()
   d.setDate(d.getDate() - n)
-  return d.toISOString().slice(0, 10)
+  return localISO(d)
 }
 
 const PRESETS: { key: Preset; label: string; desde: () => string; agrupacion: string }[] = [

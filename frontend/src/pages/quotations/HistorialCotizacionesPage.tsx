@@ -7,7 +7,7 @@ import { Table, Pagination, type Column } from '@/components/ui/Table'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import SearchBar from '@/components/ui/SearchBar'
-import { formatCurrency, getAxiosError } from '@/lib/utils'
+import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
 import type { Cotizacion, EstadoCotizacion } from '@/types'
 
 /* ── Badge de estado ─────────────────────────────────────────── */
@@ -78,7 +78,7 @@ export default function HistorialCotizacionesPage() {
 
   const convertir = useMutation({
     mutationFn: ({ id, bodega_id }: { id: number; bodega_id: number }) =>
-      cotizacionesApi.convertir(id, { bodega_id, fecha_venta: new Date().toISOString().slice(0, 10) }),
+      cotizacionesApi.convertir(id, { bodega_id, fecha_venta: todayISO() }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['cotizaciones'] })
       qc.invalidateQueries({ queryKey: ['ventas'] })

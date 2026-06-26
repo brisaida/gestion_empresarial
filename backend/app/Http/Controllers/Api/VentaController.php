@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\Inventory\StoreVentaRequest;
 use App\Http\Resources\VentaResource;
 use App\Models\Producto;
+use App\Models\Receta;
 use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Services\InventarioService;
@@ -104,24 +105,46 @@ class VentaController extends ApiController
                     'estado'         => 'completada',
                 ]);
 
-                // Cargar costos actuales de todos los productos en una sola consulta
-                $productoIds = collect($validated['detalles'])->pluck('producto_id')->unique();
-                $costos = Producto::whereIn('id', $productoIds)
-                    ->pluck('costo', 'id');   // [producto_id => costo_promedio_ponderado]
+                // Pre-cargar costos de productos regulares
+                $productoIds = collect($validated['detalles'])
+                    ->whereNotNull('producto_id')->pluck('producto_id')->unique();
+                $costos = $productoIds->isNotEmpty()
+                    ? Producto::whereIn('id', $productoIds)->pluck('costo', 'id')
+                    : collect();
+
+                // Pre-cargar recetas con ingredientes para calcular costo
+                $recetaIds = collect($validated['detalles'])
+                    ->whereNotNull('receta_id')->pluck('receta_id')->unique();
+                $recetas = $recetaIds->isNotEmpty()
+                    ? Receta::with('ingredientes.producto')->whereIn('id', $recetaIds)->get()->keyBy('id')
+                    : collect();
 
                 foreach ($validated['detalles'] as $det) {
+                    $esReceta     = !empty($det['receta_id']);
+                    $costoUnitario = 0;
+
+                    if ($esReceta) {
+                        $receta = $recetas[$det['receta_id']] ?? null;
+                        if ($receta) {
+                            $costoUnitario = $receta->ingredientes
+                                ->sum(fn($i) => (float) $i->cantidad * (float) ($i->producto?->costo ?? 0));
+                        }
+                    } else {
+                        $costoUnitario = $costos[$det['producto_id']] ?? 0;
+                    }
+
                     DetalleVenta::create([
                         'venta_id'        => $venta->id,
-                        'producto_id'     => $det['producto_id'],
+                        'producto_id'     => $esReceta ? null : $det['producto_id'],
+                        'receta_id'       => $esReceta ? $det['receta_id'] : null,
                         'cantidad'        => $det['cantidad'],
                         'precio_unitario' => $det['precio_unitario'],
-                        // Capturar el costo al momento de la venta (snapshot para COGS)
-                        'costo_unitario'  => $costos[$det['producto_id']] ?? 0,
+                        'costo_unitario'  => $costoUnitario,
                         'subtotal'        => $det['cantidad'] * $det['precio_unitario'],
                     ]);
                 }
 
-                $venta->load('detalles');
+                $venta->load(['detalles', 'detalles.receta.ingredientes']);
                 $this->inventario->procesarVenta($venta, $request->user()->id);
 
                 return $venta;

@@ -32,6 +32,7 @@ class EmpresaAdminController extends ApiController
                 'correo'         => $e->correo,
                 'telefono'       => $e->telefono,
                 'direccion'      => $e->direccion,
+                'rubro'          => $e->rubro,
                 'activo'         => $e->activo,
                 'usuarios_count' => $e->usuarios_count,
                 'created_at'     => $e->created_at?->toDateString(),
@@ -54,6 +55,7 @@ class EmpresaAdminController extends ApiController
             'correo'       => ['nullable', 'email', 'max:255'],
             'telefono'     => ['nullable', 'string', 'max:30'],
             'direccion'    => ['nullable', 'string', 'max:500'],
+            'rubro'        => ['nullable', 'string', 'in:tienda,distribuidora,farmacia,ferreteria,restaurante'],
         ]);
 
         $empresa = Empresa::create(array_merge($validated, ['activo' => true]));
@@ -75,6 +77,7 @@ class EmpresaAdminController extends ApiController
             'correo'       => ['nullable', 'email', 'max:255'],
             'telefono'     => ['nullable', 'string', 'max:30'],
             'direccion'    => ['nullable', 'string', 'max:500'],
+            'rubro'        => ['nullable', 'string', 'in:tienda,distribuidora,farmacia,ferreteria,restaurante'],
         ]);
 
         $empresa->update($validated);

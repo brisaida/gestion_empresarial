@@ -10,6 +10,7 @@ use App\Services\InventarioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class CompraController extends ApiController
 {
@@ -131,5 +132,96 @@ class CompraController extends ApiController
         }
         $compra->update(['estado' => 'cancelada']);
         return response()->json(['success' => true, 'message' => 'Compra cancelada.', 'data' => new CompraResource($compra)]);
+    }
+
+    public function escanearFactura(Request $request): JsonResponse
+    {
+        $request->validate([
+            'imagen'     => 'required|string',
+            'media_type' => 'required|in:image/jpeg,image/png,image/gif,image/webp,application/pdf',
+        ]);
+
+        $apiKey = config('services.anthropic.key');
+        if (!$apiKey) {
+            return $this->error('El servicio de IA no está configurado. Agrega ANTHROPIC_API_KEY en el .env del servidor.', 503);
+        }
+
+        $prompt = <<<'PROMPT'
+Analiza esta imagen de factura de compra y extrae los datos en el siguiente formato JSON exacto.
+Responde ÚNICAMENTE con el JSON, sin texto adicional, sin bloques de código.
+
+{
+  "proveedor": "nombre del proveedor o vendedor (string o null)",
+  "proveedor_rtn": "RTN, NIT o número de identificación fiscal del proveedor (string o null)",
+  "proveedor_telefono": "teléfono del proveedor (string o null)",
+  "proveedor_correo": "correo electrónico del proveedor (string o null)",
+  "numero_factura": "número de factura (string o null)",
+  "fecha": "YYYY-MM-DD (string o null)",
+  "items": [
+    {
+      "codigo": "código, SKU o referencia del producto (string o null)",
+      "descripcion": "nombre limpio del producto sin códigos ni referencias",
+      "cantidad": 1,
+      "precio_unitario": 0.00
+    }
+  ],
+  "subtotal": 0.00,
+  "impuesto": 0.00,
+  "descuento": 0.00,
+  "total": 0.00
+}
+
+Reglas:
+- Usa null cuando un campo no sea visible o no aplique.
+- Para números usa punto como separador decimal (ej: 125.50).
+- Si el ISV/impuesto aparece como porcentaje, calcula el monto.
+- items debe ser un array aunque solo haya un producto.
+- En "descripcion" escribe SOLO el nombre comercial del producto. Si la línea empieza con un código alfanumérico (SKU, referencia, código de barra), ponlo en "codigo" y no lo incluyas en "descripcion". Ejemplo: "KV6PK6400901608 6-PACK - HEINEKEN LAGER" → codigo: "KV6PK6400901608", descripcion: "6-PACK - HEINEKEN LAGER".
+- La "L" antes de un número es el símbolo de Lempiras (moneda hondureña), NO es el dígito 1. Elimínala al extraer cualquier monto. Ejemplo: "L198.00" → 198.00, NUNCA 1198.00.
+- Las facturas hondureñas suelen tener columnas: UDM (unidad de medida, ej. CJ, UND), CANT (cantidad), PRECIO (precio unitario), DESCUENTO, ISV, TOTAL. Extrae "cantidad" del campo CANT y "precio_unitario" del campo PRECIO. El campo UDM (como "CJ-1" o "UND") NO es la cantidad.
+- Verifica que cantidad × precio_unitario ≈ total de la línea. Si no cuadra, revisa que no estés confundiendo columnas.
+PROMPT;
+
+        $response = Http::withHeaders([
+            'x-api-key'         => $apiKey,
+            'anthropic-version' => '2023-06-01',
+            'content-type'      => 'application/json',
+        ])->timeout(45)->post('https://api.anthropic.com/v1/messages', [
+            'model'      => 'claude-haiku-4-5-20251001',
+            'max_tokens' => 1024,
+            'messages'   => [[
+                'role'    => 'user',
+                'content' => [
+                    [
+                        'type'   => $request->media_type === 'application/pdf' ? 'document' : 'image',
+                        'source' => [
+                            'type'       => 'base64',
+                            'media_type' => $request->media_type,
+                            'data'       => $request->imagen,
+                        ],
+                    ],
+                    ['type' => 'text', 'text' => $prompt],
+                ],
+            ]],
+        ]);
+
+        if (!$response->successful()) {
+            $msg = $response->json('error.message') ?? 'Error al consultar el servicio de IA.';
+            return $this->error($msg, 502);
+        }
+
+        $text = $response->json('content.0.text', '');
+
+        // Extrae el JSON aunque el modelo agregue texto extra
+        if (preg_match('/\{.*\}/s', $text, $m)) {
+            $text = $m[0];
+        }
+
+        $data = json_decode($text, true);
+        if (!is_array($data)) {
+            return $this->error('No se pudo interpretar la respuesta del modelo. Intenta con una imagen más clara.', 422);
+        }
+
+        return response()->json(['success' => true, 'data' => $data]);
     }
 }

@@ -30,6 +30,7 @@ class EmpresaController extends ApiController
             'telefono'     => ['nullable', 'string', 'max:30'],
             'direccion'    => ['nullable', 'string', 'max:500'],
             'isv_rate'     => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'rubro'        => ['nullable', 'string', 'in:tienda,distribuidora,farmacia,ferreteria,restaurante'],
         ]);
 
         $empresa->update($validated);
@@ -114,6 +115,7 @@ class EmpresaController extends ApiController
             'telefono'    => $e->telefono,
             'direccion'   => $e->direccion,
             'isv_rate'    => (float) ($e->isv_rate ?? 15),
+            'rubro'       => $e->rubro,
             'logo_url'    => $e->logo ? '/' . ltrim($e->logo, '/') : null,
         ];
     }

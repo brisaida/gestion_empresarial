@@ -7,12 +7,15 @@ export interface Usuario {
   es_super_admin: boolean
 }
 
+export type Rubro = 'tienda' | 'distribuidora' | 'farmacia' | 'ferreteria' | 'restaurante'
+
 export interface EmpresaResumen {
   id: number
   nombre: string
   rol: number
   logo_url?: string | null
   modulos: string[] | null  // null = acceso total; array = módulos permitidos
+  rubro?: Rubro | null
 }
 
 export interface EmpresaConfig {
@@ -24,6 +27,7 @@ export interface EmpresaConfig {
   telefono?: string
   direccion?: string
   isv_rate?: number
+  rubro?: Rubro | null
   logo_url?: string | null
 }
 
@@ -250,11 +254,34 @@ export type EstadoVenta = 'completada' | 'cancelada'
 
 export interface DetalleVenta {
   id: number
-  producto_id: number
+  producto_id?: number | null
+  receta_id?: number | null
   cantidad: number
   precio_unitario: number
   subtotal: number
-  producto?: { id: number; codigo?: string; nombre: string }
+  producto?: string | null
+  receta?: string | null
+}
+
+// ── Recetas ───────────────────────────────────────────────────────────────
+export interface RecetaIngrediente {
+  id: number
+  producto_id: number
+  producto?: string
+  unidad?: string | null
+  cantidad: number
+  costo_unit: number
+}
+
+export interface Receta {
+  id: number
+  empresa_id: number
+  nombre: string
+  descripcion?: string | null
+  precio_venta: number
+  activo: boolean
+  ingredientes: RecetaIngrediente[]
+  costo_total?: number | null
 }
 
 export interface Venta {
@@ -367,6 +394,7 @@ export interface EmpresaAdmin {
   correo?: string
   telefono?: string
   direccion?: string
+  rubro?: Rubro | null
   activo: boolean
   usuarios_count: number
   created_at: string
