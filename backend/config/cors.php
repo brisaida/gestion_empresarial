@@ -19,9 +19,15 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:5173')],
+    'allowed_origins' => array_filter([
+        env('FRONTEND_URL', 'http://localhost:5173'),
+    ]),
 
-    'allowed_origins_patterns' => [],
+    // Acepta cualquier subdominio de Railway automáticamente
+    'allowed_origins_patterns' => [
+        '#^https://.*\.up\.railway\.app$#',
+        '#^http://localhost(:\d+)?$#',
+    ],
 
     'allowed_headers' => ['*'],
 
