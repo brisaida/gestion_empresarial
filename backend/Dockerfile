@@ -41,6 +41,12 @@ RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' \
 RUN chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache public
 
+# Asegurar que solo mpm_prefork esté habilitado
+RUN ls /etc/apache2/mods-enabled/mpm_* 2>/dev/null || true \
+    && find /etc/apache2/mods-enabled -name 'mpm_*.load' ! -name 'mpm_prefork.load' -delete \
+    && find /etc/apache2/mods-enabled -name 'mpm_*.conf' ! -name 'mpm_prefork.conf' -delete \
+    && ls /etc/apache2/mods-enabled/mpm_* 2>/dev/null || true
+
 COPY docker-entrypoint-prod.sh /usr/local/bin/entrypoint
 RUN chmod +x /usr/local/bin/entrypoint
 

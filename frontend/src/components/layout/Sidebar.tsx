@@ -50,11 +50,11 @@ const nav = [
 ]
 
 interface NavItem { to: string; label: string; icon: React.ElementType; end: boolean; permiso: string; rubro?: string | null }
-interface Props { collapsed: boolean }
+interface Props { collapsed: boolean; mobileOpen: boolean }
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
-export default function Sidebar({ collapsed }: Props) {
+export default function Sidebar({ collapsed, mobileOpen }: Props) {
   const { state } = useAuth()
   const { hasPerm } = usePermisos()
   const empresaId = state.empresaActiva?.id ?? 0
@@ -78,7 +78,15 @@ export default function Sidebar({ collapsed }: Props) {
     <aside
       className={cn(
         'h-screen flex flex-col transition-all duration-300 shrink-0',
-        collapsed ? 'w-16' : 'w-60',
+        // Mobile: fixed overlay drawer
+        'fixed inset-y-0 left-0 z-50',
+        // Desktop: back in document flow
+        'md:relative md:inset-y-auto md:left-auto md:z-auto',
+        // Mobile: slide in/out; desktop: always visible
+        mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        // Width: mobile drawer fixed, desktop respects collapsed
+        'w-64',
+        collapsed ? 'md:w-16' : 'md:w-60',
       )}
       style={{ background: 'linear-gradient(180deg, #031B3A 0%, #072B5A 100%)' }}
     >

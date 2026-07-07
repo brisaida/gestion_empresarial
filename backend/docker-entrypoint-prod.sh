@@ -50,6 +50,9 @@ PORT=${PORT:-80}
 sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/000-default.conf
 
+find /etc/apache2/mods-enabled -name 'mpm_*.load' ! -name 'mpm_prefork.load' -delete 2>/dev/null || true
+find /etc/apache2/mods-enabled -name 'mpm_*.conf' ! -name 'mpm_prefork.conf' -delete 2>/dev/null || true
+
 # ── Migraciones ───────────────────────────────────────────────────────────────
 echo "[backend] Ejecutando migraciones..."
 php artisan migrate --force --no-interaction

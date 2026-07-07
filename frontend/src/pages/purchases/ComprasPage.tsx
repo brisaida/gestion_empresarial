@@ -468,7 +468,7 @@ export default function ComprasPage() {
         {/* Encabezado */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <p className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-4">Información general</p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Proveedor con botón crear */}
             <div className="flex flex-col gap-1">
               <Select
@@ -519,11 +519,11 @@ export default function ComprasPage() {
             </button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-x-auto">
             {lineas.map((l, i) => {
               const prod = productos.find(p => String(p.id) === l.producto_id)
               return (
-                <div key={i} className="bg-[#F4F7FA] rounded-lg">
+                <div key={i} className="bg-[#F4F7FA] rounded-lg min-w-[500px]">
                   <div className="grid grid-cols-12 gap-2 items-end p-3">
                     <div className="col-span-4">
                       {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Producto *</p>}

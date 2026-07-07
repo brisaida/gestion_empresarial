@@ -80,7 +80,8 @@ export default function ReportesProductosPage() {
         ) : rows.length === 0 ? (
           <div className="py-20 text-center text-sm text-[#5F6B7A]">Sin ventas en este período.</div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-sm">
             <thead>
               <tr className="border-b border-gray-100">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide w-8">#</th>
@@ -135,6 +136,7 @@ export default function ReportesProductosPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

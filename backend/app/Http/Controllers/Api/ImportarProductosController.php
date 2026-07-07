@@ -90,14 +90,64 @@ class ImportarProductosController extends ApiController
             return $this->error('No se pudo leer el archivo. Asegúrate de usar la plantilla proporcionada.', 422);
         }
 
-        $rows    = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+        $rows    = $spreadsheet->getActiveSheet()->toArray(null, true, false, false);
         $creados = 0;
         $errores = [];
+
+        if (empty($rows)) {
+            return $this->error('El archivo está vacío.', 422);
+        }
+
+        // Mapa de palabras clave → nombre de campo
+        $mapaCampos = [
+            'nombre'       => ['nombre'],
+            'codigo'       => ['codigo', 'código'],
+            'codigo_barra' => ['codigo_barra', 'código_barra', 'codigobarra', 'barcode', 'ean'],
+            'descripcion'  => ['descripcion', 'descripción', 'detalle'],
+            'categoria'    => ['categoria', 'categoría', 'category'],
+            'marca'        => ['marca', 'brand'],
+            'unidad'       => ['unidad', 'und', 'unidad (und/kg/lt...)'],
+            'costo'        => ['costo', 'cost', 'costo *'],
+            'precio_venta' => ['precio_venta', 'precio venta', 'precio', 'price', 'precio_venta *'],
+            'tasa_isv'     => ['tasa_isv', 'isv', 'impuesto', 'tasa isv (%, ej: 15)'],
+            'stock_minimo' => ['stock_minimo', 'stock minimo', 'stock mínimo', 'minimo'],
+        ];
+
+        // Detectar índices de columnas desde la fila de encabezados
+        $headerRow = array_map(fn($h) => strtolower(trim((string) $h)), $rows[0]);
+        $cols = [];
+        foreach ($mapaCampos as $campo => $claves) {
+            foreach ($headerRow as $idx => $header) {
+                foreach ($claves as $clave) {
+                    if (str_contains($header, $clave)) {
+                        $cols[$campo] = $idx;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        // Validar que las columnas obligatorias existan
+        $obligatorias = ['nombre', 'costo', 'precio_venta'];
+        foreach ($obligatorias as $campo) {
+            if (!isset($cols[$campo])) {
+                $headersDetectados = implode(', ', array_map(
+                    fn($h) => '"' . $h . '"',
+                    array_filter($rows[0], fn($v) => $v !== null && $v !== '')
+                ));
+                return $this->error(
+                    "No se encontró la columna «{$campo}». Encabezados detectados: [{$headersDetectados}]",
+                    422
+                );
+            }
+        }
 
         // Cache de catálogos para no consultar la BD por cada fila
         $categorias = Categoria::where('empresa_id', $empresaId)->get()->keyBy(fn($c) => strtolower(trim($c->nombre)));
         $marcas     = Marca::where('empresa_id', $empresaId)->get()->keyBy(fn($m) => strtolower(trim($m->nombre)));
         $unidades   = UnidadMedida::where('empresa_id', $empresaId)->get()->keyBy(fn($u) => strtolower(trim($u->abreviatura)));
+
+        $get = fn($row, $campo) => isset($cols[$campo]) ? ($row[$cols[$campo]] ?? null) : null;
 
         foreach ($rows as $index => $row) {
             $fila = $index + 1;
@@ -105,20 +155,28 @@ class ImportarProductosController extends ApiController
             // Saltar encabezado y filas vacías
             if ($fila === 1 || empty(array_filter($row))) continue;
 
-            [$nombre, $codigo, $codigoBarra, $descripcion, $categoriaNombre,
-             $marcaNombre, $unidadAbrev, $costo, $precioVenta, $tasaIsv, $stockMinimo] = array_pad($row, 11, null);
+            $nombre          = trim((string) $get($row, 'nombre'));
+            $codigo          = $get($row, 'codigo');
+            $codigoBarra     = $get($row, 'codigo_barra');
+            $descripcion     = $get($row, 'descripcion');
+            $categoriaNombre = $get($row, 'categoria');
+            $marcaNombre     = $get($row, 'marca');
+            $unidadAbrev     = $get($row, 'unidad');
+            $rawCosto        = $get($row, 'costo');
+            $rawPrecioVenta  = $get($row, 'precio_venta');
+            $tasaIsv         = $get($row, 'tasa_isv');
+            $stockMinimo     = $get($row, 'stock_minimo');
 
-            $nombre = trim((string) $nombre);
             if (!$nombre) {
                 $errores[] = ['fila' => $fila, 'error' => 'El nombre es requerido.'];
                 continue;
             }
 
-            $costo      = is_numeric($costo)      ? (float) $costo      : null;
-            $precioVenta = is_numeric($precioVenta) ? (float) $precioVenta : null;
+            $costo       = self::parseNumero($rawCosto) ?? 0.0;
+            $precioVenta = self::parseNumero($rawPrecioVenta);
 
-            if ($costo === null || $precioVenta === null) {
-                $errores[] = ['fila' => $fila, 'error' => "Costo o precio de venta inválido en «{$nombre}»."];
+            if ($precioVenta === null) {
+                $errores[] = ['fila' => $fila, 'error' => "Precio de venta inválido o vacío en «{$nombre}»."];
                 continue;
             }
 
@@ -183,5 +241,49 @@ class ImportarProductosController extends ApiController
             'data'    => ['creados' => $creados, 'errores' => $errores],
             'message' => "{$creados} producto(s) importado(s) correctamente.",
         ]);
+    }
+
+    private static function parseNumero(mixed $value): ?float
+    {
+        if ($value === null || $value === '') return null;
+
+        // PhpSpreadsheet puede devolver float directamente
+        if (is_float($value) || is_int($value)) return (float) $value;
+
+        $str = trim((string) $value);
+
+        // Quitar símbolos de moneda, espacios y caracteres no numéricos excepto . , -
+        $str = preg_replace('/[^\d.,-]/', '', $str);
+
+        if ($str === '' || $str === '-') return null;
+
+        // Detectar si la coma es separador decimal (e.g. "150,00") o de miles (e.g. "1,500.00")
+        $hasDot   = str_contains($str, '.');
+        $hasComma = str_contains($str, ',');
+
+        if ($hasComma && $hasDot) {
+            // Ambos: el que aparece último es el decimal
+            $lastDot   = strrpos($str, '.');
+            $lastComma = strrpos($str, ',');
+            if ($lastComma > $lastDot) {
+                // Coma es decimal: "1.500,99" → quitar puntos, cambiar coma por punto
+                $str = str_replace(['.', ','], ['', '.'], $str);
+            } else {
+                // Punto es decimal: "1,500.99" → quitar comas
+                $str = str_replace(',', '', $str);
+            }
+        } elseif ($hasComma && !$hasDot) {
+            // Solo coma: puede ser decimal "150,00" o miles "1,500"
+            $parts = explode(',', $str);
+            $last  = end($parts);
+            // Si la parte después de la coma tiene exactamente 2-3 dígitos → decimal
+            if (strlen($last) <= 3 && count($parts) === 2) {
+                $str = str_replace(',', '.', $str);
+            } else {
+                $str = str_replace(',', '', $str);
+            }
+        }
+
+        return is_numeric($str) ? (float) $str : null;
     }
 }

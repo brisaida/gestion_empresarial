@@ -135,7 +135,7 @@ export default function MovimientosPage() {
         {error && <p className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Cabecera */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide block mb-1">Tipo *</label>
               <select
@@ -171,12 +171,12 @@ export default function MovimientosPage() {
                 <Plus size={13} /> Agregar línea
               </button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               {lineas.map((l, i) => {
                 const prod = productos?.find(p => String(p.id) === l.producto_id)
                 const inputCls = 'w-full rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all'
                 return (
-                  <div key={i} className="bg-[#F4F7FA] rounded-lg">
+                  <div key={i} className="bg-[#F4F7FA] rounded-lg min-w-[460px]">
                     <div className="grid grid-cols-12 gap-2 items-end p-3">
                       <div className="col-span-4">
                         {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Producto *</p>}

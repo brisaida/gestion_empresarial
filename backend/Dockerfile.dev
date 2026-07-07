@@ -4,14 +4,19 @@ RUN apk add --no-cache \
     postgresql-dev \
     libzip-dev \
     oniguruma-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
     curl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo \
         pdo_pgsql \
         pgsql \
         zip \
         bcmath \
-        mbstring
+        mbstring \
+        gd
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

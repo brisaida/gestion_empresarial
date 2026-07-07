@@ -195,7 +195,7 @@ export default function CotizacionesPage() {
         </div>
 
         {/* ── Detalle + Resumen ─────────────────────────────────────── */}
-        <div className="flex gap-4 items-start">
+        <div className="flex flex-col sm:flex-row gap-4 items-start">
 
           {/* Tabla */}
           <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -252,8 +252,9 @@ export default function CotizacionesPage() {
             </div>
 
             {/* Header tabla */}
+            <div className="overflow-x-auto">
             {lineas.length > 0 && (
-              <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/70 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100">
+              <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/70 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100 min-w-[420px]">
                 <div className="col-span-4">Producto</div>
                 <div className="col-span-3 text-center">Cantidad</div>
                 <div className="col-span-2 text-right">Precio unit.</div>
@@ -274,7 +275,7 @@ export default function CotizacionesPage() {
 
             {lineas.map((l, i) => (
               <div key={l.producto.id}
-                className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
+                className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 min-w-[420px] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
 
                 <div className="col-span-4 flex items-center gap-2.5">
                   {l.producto.imagen_url
@@ -319,10 +320,11 @@ export default function CotizacionesPage() {
                 </div>
               </div>
             ))}
+            </div>{/* /overflow-x-auto */}
           </div>
 
           {/* Panel resumen */}
-          <div className="w-64 shrink-0 space-y-4">
+          <div className="w-full sm:w-64 shrink-0 space-y-4">
 
             {/* Totales */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">

@@ -7,7 +7,8 @@ import type { ReactNode } from 'react'
 import AppLayout      from '@/components/layout/AppLayout'
 import LoginPage      from '@/pages/auth/LoginPage'
 import DashboardPage  from '@/pages/dashboard/DashboardPage'
-import ProductosPage  from '@/pages/products/ProductosPage'
+import ProductosPage    from '@/pages/products/ProductosPage'
+import ProductoFormPage from '@/pages/products/ProductoFormPage'
 import CategoriasPage from '@/pages/categories/CategoriasPage'
 import ProveedoresPage from '@/pages/suppliers/ProveedoresPage'
 import ClientesPage   from '@/pages/clients/ClientesPage'
@@ -64,7 +65,9 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard"   element={<Guard perm="dashboard"><DashboardPage /></Guard>} />
-              <Route path="productos"   element={<Guard perm="catalogos"><ProductosPage /></Guard>} />
+              <Route path="productos"          element={<Guard perm="catalogos"><ProductosPage /></Guard>} />
+              <Route path="productos/nuevo"   element={<Guard perm="catalogos"><ProductoFormPage /></Guard>} />
+              <Route path="productos/:id/editar" element={<Guard perm="catalogos"><ProductoFormPage /></Guard>} />
               <Route path="categorias"  element={<Guard perm="catalogos"><CategoriasPage /></Guard>} />
               <Route path="proveedores" element={<Guard perm="catalogos"><ProveedoresPage /></Guard>} />
               <Route path="clientes"    element={<Guard perm="catalogos"><ClientesPage /></Guard>} />

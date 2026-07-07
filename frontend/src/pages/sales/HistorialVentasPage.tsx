@@ -19,8 +19,7 @@ function EstadoBadge({ estado }: { estado: EstadoVenta }) {
 
 export default function HistorialVentasPage() {
   const { state } = useAuth()
-  const empresaId     = state.empresaActiva?.id ?? 0
-  const empresaNombre = state.empresaActiva?.nombre ?? 'Mi empresa'
+  const empresaId = state.empresaActiva?.id ?? 0
   const qc = useQueryClient()
 
   const [page, setPage]               = useState(1)
@@ -52,14 +51,15 @@ export default function HistorialVentasPage() {
     setPdfError('')
     setLoadingPdf(venta.id)
     try {
-      const [ventaRes, logoRes, { printVenta }] = await Promise.all([
+      const [ventaRes, empresaRes, logoRes, { printVenta }] = await Promise.all([
         ventasApi.get(venta.id),
+        empresaApi.get(empresaId),
         empresaApi.logoBase64(empresaId),
         import('@/lib/printVenta'),
       ])
       printVenta(
         ventaRes.data.data,
-        empresaNombre,
+        empresaRes.data.data,
         logoRes.data.data.logo_base64 ?? undefined,
       )
     } catch (err) {

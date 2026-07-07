@@ -232,7 +232,7 @@ export default function VentasPage() {
         </div>
 
         {/* ── FILA 2: detalle (izq) + totales (der) ──────────────── */}
-        <div className="flex gap-4 items-start">
+        <div className="flex flex-col sm:flex-row gap-4 items-start">
 
           {/* Tabla de detalle */}
           <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -320,8 +320,9 @@ export default function VentasPage() {
             </div>
 
             {/* Encabezado tabla */}
+            <div className="overflow-x-auto">
             {lineas.length > 0 && (
-              <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/70 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100">
+              <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/70 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100 min-w-[420px]">
                 <div className="col-span-4">{esRestaurante ? 'Plato / Producto' : 'Producto'}</div>
                 <div className="col-span-3 text-center">Cantidad</div>
                 <div className="col-span-2 text-right">Precio unit.</div>
@@ -344,7 +345,7 @@ export default function VentasPage() {
             {/* Filas */}
             {lineas.map((l, i) => (
               <div key={l._key}
-                className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
+                className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 min-w-[420px] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
 
                 <div className="col-span-4 flex items-center gap-2.5">
                   {l.tipo === 'receta'
@@ -400,10 +401,11 @@ export default function VentasPage() {
                 </div>
               </div>
             ))}
+            </div>{/* /overflow-x-auto */}
           </div>
 
           {/* Panel de totales */}
-          <div className="w-64 shrink-0 bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+          <div className="w-full sm:w-64 shrink-0 bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
 
             <p className="text-xs font-bold text-[#072B5A] uppercase tracking-wider">Resumen</p>
 
