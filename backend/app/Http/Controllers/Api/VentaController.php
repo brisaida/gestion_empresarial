@@ -22,6 +22,14 @@ class VentaController extends ApiController
         $query = Venta::with(['cliente', 'bodega'])
             ->where('empresa_id', $request->integer('empresa_id'));
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('numero_factura', 'ilike', "%{$search}%")
+                  ->orWhereHas('cliente', fn($c) => $c->where('nombre', 'ilike', "%{$search}%"));
+            });
+        }
+
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
