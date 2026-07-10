@@ -23,12 +23,12 @@ const RUBROS: { value: Rubro; label: string }[] = [
 ]
 
 const schema = z.object({
-  nombre:       z.string().min(1, 'Requerido'),
-  nombre_legal: z.string().optional(),
-  rtn:          z.string().optional(),
-  correo:       z.string().email('Correo inválido').optional().or(z.literal('')),
-  telefono:     z.string().optional(),
-  direccion:    z.string().optional(),
+  nombre:       z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(255),
+  nombre_legal: z.string().max(255).optional().or(z.literal('')),
+  rtn:          z.string().max(20, 'El RTN no puede tener más de 20 caracteres').optional().or(z.literal('')),
+  correo:       z.string().email('Ingresa un correo electrónico válido').optional().or(z.literal('')),
+  telefono:     z.string().max(30, 'El teléfono es demasiado largo').optional().or(z.literal('')),
+  direccion:    z.string().max(500).optional().or(z.literal('')),
   rubro:        z.string().optional(),
 })
 type FormValues = z.infer<typeof schema>
@@ -142,7 +142,11 @@ export default function EmpresasAdminPage() {
       </div>
 
       <Modal open={!!modal} onClose={closeModal} title={modal === 'create' ? 'Nueva empresa' : 'Editar empresa'}>
-        {error && <p className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+        {error && (
+          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg whitespace-pre-line">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label="Nombre comercial *" error={errors.nombre?.message} {...register('nombre')} />
