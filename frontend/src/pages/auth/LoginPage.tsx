@@ -62,7 +62,7 @@ export default function LoginPage() {
               <div className="inline-flex items-center justify-center w-14 h-14 bg-white/15 rounded-xl mb-4 backdrop-blur-sm border border-white/20">
                 <Package size={28} className="text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Inventario</h1>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Vilena</h1>
               <p className="text-white/70 text-sm mt-1 font-medium">Sistema de gestión empresarial</p>
               <p className="text-[#38D6D4] text-xs mt-1 font-semibold tracking-widest uppercase">Vilena Dev Studio</p>
             </div>

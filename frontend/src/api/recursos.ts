@@ -3,7 +3,7 @@ import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
   Producto, Existencia, DashboardData, Movimiento, Compra, Venta, Cotizacion,
-  Transferencia, EmpresaConfig, Receta,
+  Transferencia, EmpresaConfig, Receta, Comanda, Mesa,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -122,6 +122,8 @@ export const productosApi = {
     )
   },
   plantillaUrl: () => `${client.defaults.baseURL}/productos/importar/plantilla`,
+  eliminarMasivo: (ids: number[]) =>
+    client.post<ApiResponse<{ message: string }>>('/productos/eliminar-masivo', { ids }),
 }
 
 // ── Existencias ────────────────────────────────────────────────────────────
@@ -198,6 +200,28 @@ export const ventasApi = {
   cancelar:         (id: number) => client.post<ApiResponse<Venta>>(`/ventas/${id}/cancelar`),
   siguienteNumero:  (empresaId: number) =>
     client.get<ApiResponse<{ numero_factura: string }>>('/ventas/siguiente-numero', { params: { empresa_id: empresaId } }),
+}
+
+// ── Comandas ───────────────────────────────────────────────────────────────
+export const comandasApi = {
+  list:             (params: Record<string, unknown>) => client.get<ApiResponse<Comanda[]>>('/comandas', { params }),
+  create:           (data: unknown) => client.post<ApiResponse<Comanda>>('/comandas', data),
+  actualizarEstado: (id: number, estado: string) => client.patch(`/comandas/${id}/estado`, { estado }),
+  marcarItemListo:  (comandaId: number, detalleId: number, listo: boolean) =>
+    client.patch<ApiResponse<Comanda>>(`/comandas/${comandaId}/detalles/${detalleId}/listo`, { listo }),
+  facturar:         (id: number, data: unknown) => client.post(`/comandas/${id}/facturar`, data),
+  siguienteNumero:  (empresaId: number) =>
+    client.get<ApiResponse<{ numero_comanda: string }>>('/comandas/siguiente-numero', { params: { empresa_id: empresaId } }),
+}
+
+// ── Mesas ─────────────────────────────────────────────────────────────────
+export const mesasApi = {
+  list:     (params: Record<string, unknown>) => client.get<ApiResponse<Mesa[]>>('/mesas', { params }),
+  create:   (data: unknown) => create<Mesa>('/mesas', data),
+  update:   (id: number, data: unknown) => update<Mesa>(`/mesas/${id}`, data),
+  delete:   (id: number) => remove(`/mesas/${id}`),
+  comandas: (id: number) => client.get<ApiResponse<Comanda[]>>(`/mesas/${id}/comandas`),
+  facturar: (id: number, data: unknown) => client.post<ApiResponse<Venta>>(`/mesas/${id}/facturar`, data),
 }
 
 // ── Recetas ────────────────────────────────────────────────────────────────

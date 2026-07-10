@@ -12,7 +12,7 @@ class Venta extends Model
     protected $fillable = [
         'empresa_id', 'cliente_id', 'bodega_id', 'usuario_id',
         'numero_factura', 'fecha_venta',
-        'subtotal', 'impuesto', 'descuento', 'total', 'estado',
+        'subtotal', 'impuesto', 'descuento', 'total', 'estado', 'metodo_pago',
     ];
 
     protected function casts(): array

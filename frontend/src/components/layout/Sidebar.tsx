@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -30,7 +30,9 @@ const nav = [
   { group: 'Ventas', items: [
     { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas',       rubro: null },
     { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas',       rubro: null },
+    { to: '/restaurante',             label: 'Salón / Mesas',       icon: LayoutGrid,      end: true,  permiso: 'ventas',       rubro: 'restaurante' },
     { to: '/recetas',                label: 'Recetas / Platos',    icon: ChefHat,         end: false, permiso: 'ventas',       rubro: 'restaurante' },
+    { to: '/cocina',                 label: 'Pantalla Cocina',     icon: UtensilsCrossed, end: false, permiso: 'ventas',       rubro: 'restaurante' },
   ]},
   { group: 'Catálogos', items: [
     { to: '/productos',              label: 'Productos',           icon: Package,         end: false, permiso: 'catalogos'     },
@@ -68,7 +70,7 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
     staleTime: 5 * 60_000,
   })
 
-  const nombre  = empresaConfig?.nombre ?? state.empresaActiva?.nombre ?? 'Inventario'
+  const nombre  = empresaConfig?.nombre ?? state.empresaActiva?.nombre ?? 'Vilena'
   const rawLogo = empresaConfig?.logo_url
   const logoUrl = rawLogo
     ? (rawLogo.startsWith('http') ? rawLogo : `${API_BASE}${rawLogo}`)
@@ -109,7 +111,7 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
         {!collapsed && (
           <div className="min-w-0">
             <p className="font-bold text-white text-sm leading-tight truncate">{nombre}</p>
-            <p className="text-[10px] text-[#38D6D4] font-medium tracking-widest uppercase leading-tight">Inventario</p>
+            <p className="text-[10px] text-[#38D6D4] font-medium tracking-widest uppercase leading-tight">Vilena</p>
           </div>
         )}
       </div>

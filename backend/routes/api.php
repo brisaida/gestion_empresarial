@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\ProveedorController;
 use App\Http\Controllers\Api\TransferenciaController;
 use App\Http\Controllers\Api\UnidadMedidaController;
 use App\Http\Controllers\Api\CotizacionController;
+use App\Http\Controllers\Api\ComandaController;
+use App\Http\Controllers\Api\MesaController;
 use App\Http\Controllers\Api\EmpresaController;
 use App\Http\Controllers\Api\VentaController;
 use App\Http\Controllers\Api\ImportarProductosController;
@@ -59,10 +61,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('proveedores',     ProveedorController::class);
         Route::apiResource('clientes',        ClienteController::class);
         Route::apiResource('bodegas',         BodegaController::class);
+
         Route::apiResource('productos',       ProductoController::class);
-        Route::post('productos/{producto}/imagen', [ProductoController::class, 'uploadImagen']);
-        Route::get('productos/importar/plantilla', [ImportarProductosController::class, 'plantilla']);
-        Route::post('productos/importar',          [ImportarProductosController::class, 'importar']);
+        Route::post('productos/{producto}/imagen',  [ProductoController::class, 'uploadImagen']);
+        Route::post('productos/eliminar-masivo',    [ProductoController::class, 'destroyMasivo']);
+        Route::get('productos/importar/plantilla',  [ImportarProductosController::class, 'plantilla']);
+        Route::post('productos/importar',           [ImportarProductosController::class, 'importar']);
     });
 
     // Inventario
@@ -92,11 +96,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('cotizaciones/{cotizacion}/convertir', [CotizacionController::class, 'convertirAVenta']);
     });
 
-    // Ventas
+    // Ventas + Comandas + Mesas (restaurante)
     Route::middleware('permiso:ventas')->group(function () {
         Route::get('ventas/siguiente-numero', [VentaController::class, 'siguienteNumero']);
         Route::apiResource('ventas', VentaController::class)->only(['index', 'store', 'show']);
         Route::post('ventas/{venta}/cancelar', [VentaController::class, 'cancelar']);
+
+        Route::get('comandas/siguiente-numero',                      [ComandaController::class, 'siguienteNumero']);
+        Route::get('comandas',                                        [ComandaController::class, 'index']);
+        Route::post('comandas',                                       [ComandaController::class, 'store']);
+        Route::patch('comandas/{comanda}/estado',                     [ComandaController::class, 'actualizarEstado']);
+        Route::patch('comandas/{comanda}/detalles/{detalle}/listo',   [ComandaController::class, 'marcarItemListo']);
+        Route::post('comandas/{comanda}/facturar',                    [ComandaController::class, 'facturar']);
+
+        Route::get('mesas/{mesa}/comandas',  [MesaController::class, 'comandas']);
+        Route::post('mesas/{mesa}/facturar', [MesaController::class, 'facturar']);
+        Route::apiResource('mesas', MesaController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 
     // Traslados

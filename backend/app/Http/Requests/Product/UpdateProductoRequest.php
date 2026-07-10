@@ -32,6 +32,7 @@ class UpdateProductoRequest extends FormRequest
             'maneja_vencimiento' => ['boolean'],
             'maneja_serie'       => ['boolean'],
             'activo'             => ['boolean'],
+            'tipo'               => ['nullable', 'in:venta,ingrediente'],
         ];
     }
 }

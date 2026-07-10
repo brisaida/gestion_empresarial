@@ -36,6 +36,7 @@ const schema = z.object({
   maneja_vencimiento: z.boolean().default(false),
   maneja_serie:       z.boolean().default(false),
   activo:             z.boolean().default(true),
+  tipo:               z.enum(['venta', 'ingrediente']).default('venta'),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -74,7 +75,7 @@ export default function ProductoFormPage() {
     enabled:  isEdit,
   })
 
-  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: { costo: 0, precio_venta: 0, stock_minimo: 0, activo: true },
   })
@@ -102,6 +103,7 @@ export default function ProductoFormPage() {
         maneja_vencimiento: producto.maneja_vencimiento,
         maneja_serie:       producto.maneja_serie,
         activo:             producto.activo,
+        tipo:               producto.tipo ?? 'venta',
       })
       setImagePreview(producto.imagen_url ?? null)
     }
@@ -449,6 +451,31 @@ export default function ProductoFormPage() {
         {/* ── Opciones ── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
           <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Opciones de rastreo</p>
+
+          {/* Tipo */}
+          <div>
+            <p className="text-xs font-medium text-gray-600 mb-2">Tipo de producto</p>
+            <div className="flex gap-3">
+              {([
+                { value: 'venta',       label: 'Para venta',  desc: 'Aparece en el punto de venta' },
+                { value: 'ingrediente', label: 'Ingrediente', desc: 'Solo se usa en recetas'        },
+              ] as const).map(opt => (
+                <label key={opt.value}
+                  className={`flex-1 flex items-start gap-2.5 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    watch('tipo') === opt.value
+                      ? 'border-[#0E78D8] bg-[#0E78D8]/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                  <input type="radio" value={opt.value} {...register('tipo')} className="mt-0.5 accent-[#0E78D8]" />
+                  <div>
+                    <p className="text-sm font-semibold text-[#072B5A]">{opt.label}</p>
+                    <p className="text-xs text-[#5F6B7A]">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-6">
             {([
               ['maneja_lote',        'Maneja lote'],

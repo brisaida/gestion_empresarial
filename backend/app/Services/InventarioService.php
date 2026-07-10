@@ -146,26 +146,32 @@ class InventarioService
      */
     public function procesarVenta(\App\Models\Venta $venta, int $usuarioId): void
     {
-        $detalles = [];
+        $detalles   = [];
+        $requeridos = []; // producto_id => cantidad total acumulada
 
         foreach ($venta->detalles as $d) {
             if ($d->receta_id && $d->relationLoaded('receta') && $d->receta) {
-                // Deducir cada ingrediente escalado por la cantidad de porciones
                 foreach ($d->receta->ingredientes as $ing) {
+                    $qty = (float) $ing->cantidad * (float) $d->cantidad;
                     $detalles[] = [
                         'producto_id'    => $ing->producto_id,
-                        'cantidad'       => (float) $ing->cantidad * (float) $d->cantidad,
+                        'cantidad'       => $qty,
                         'costo_unitario' => (float) ($ing->producto?->costo ?? 0),
                     ];
+                    $requeridos[$ing->producto_id] = ($requeridos[$ing->producto_id] ?? 0.0) + $qty;
                 }
             } else {
+                $qty = (float) $d->cantidad;
                 $detalles[] = [
                     'producto_id'    => $d->producto_id,
-                    'cantidad'       => $d->cantidad,
+                    'cantidad'       => $qty,
                     'costo_unitario' => (float) $d->costo_unitario,
                 ];
+                $requeridos[$d->producto_id] = ($requeridos[$d->producto_id] ?? 0.0) + $qty;
             }
         }
+
+        $this->validarStockDisponible($venta->empresa_id, $venta->bodega_id, $requeridos);
 
         $this->registrarMovimiento([
             'empresa_id'      => $venta->empresa_id,
@@ -178,6 +184,38 @@ class InventarioService
             'fecha'           => $venta->fecha_venta,
             'observaciones'   => "Despacho de venta #{$venta->id}",
         ], $detalles);
+    }
+
+    private function validarStockDisponible(int $empresaId, int $bodegaId, array $requeridos): void
+    {
+        if (empty($requeridos)) return;
+
+        $productoIds = array_keys($requeridos);
+
+        $nombres = Producto::whereIn('id', $productoIds)->pluck('nombre', 'id');
+
+        $existencias = Existencia::where('empresa_id', $empresaId)
+            ->where('bodega_id', $bodegaId)
+            ->whereIn('producto_id', $productoIds)
+            ->groupBy('producto_id')
+            ->selectRaw('producto_id, SUM(cantidad) as total')
+            ->pluck('total', 'producto_id');
+
+        $errores = [];
+        foreach ($requeridos as $productoId => $cantRequerida) {
+            $disponible = (float) ($existencias[$productoId] ?? 0);
+            if ($disponible < $cantRequerida) {
+                $nombre    = $nombres[$productoId] ?? "Producto #$productoId";
+                $errores[] = "• {$nombre}: disponible " . number_format($disponible, 3, '.', '')
+                           . ", requerido " . number_format($cantRequerida, 3, '.', '');
+            }
+        }
+
+        if ($errores) {
+            throw new \DomainException(
+                "Stock insuficiente para completar la venta:\n" . implode("\n", $errores)
+            );
+        }
     }
 
     /**

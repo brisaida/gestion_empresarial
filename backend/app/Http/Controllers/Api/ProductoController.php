@@ -37,6 +37,10 @@ class ProductoController extends ApiController
             $query->where('activo', true);
         }
 
+        if ($request->filled('tipo')) {
+            $query->where('tipo', $request->string('tipo'));
+        }
+
         $data = $query->orderBy('nombre')->paginate($request->integer('per_page', 15));
 
         return response()->json([
@@ -103,5 +107,31 @@ class ProductoController extends ApiController
         }
         $producto->delete();
         return $this->noContent('Producto eliminado.');
+    }
+
+    public function destroyMasivo(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids'   => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:productos,id'],
+        ]);
+
+        $conStock = Producto::whereIn('id', $validated['ids'])
+            ->whereHas('existencias', fn($q) => $q->where('cantidad', '>', 0))
+            ->pluck('nombre');
+
+        if ($conStock->isNotEmpty()) {
+            return $this->error(
+                'No se pueden eliminar los siguientes productos porque tienen stock: ' . $conStock->implode(', '),
+                409
+            );
+        }
+
+        $eliminados = Producto::whereIn('id', $validated['ids'])->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$eliminados} producto(s) eliminado(s).",
+        ]);
     }
 }

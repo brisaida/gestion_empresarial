@@ -131,6 +131,7 @@ export interface Producto {
   maneja_vencimiento: boolean
   maneja_serie: boolean
   activo: boolean
+  tipo: 'venta' | 'ingrediente'
   imagen_url?: string | null
   categoria?: { id: number; nombre: string }
   marca?: { id: number; nombre: string }
@@ -284,6 +285,43 @@ export interface Receta {
   costo_total?: number | null
 }
 
+// ── Mesas ─────────────────────────────────────────────────────────────────
+export interface Mesa {
+  id: number
+  empresa_id: number
+  nombre: string
+  capacidad?: number | null
+  activo: boolean
+  estado: 'libre' | 'ocupada' | 'lista'
+  comandas_activas: number
+  comandas_listas: number
+}
+
+// ── Comandas ──────────────────────────────────────────────────────────────
+export interface DetalleComanda {
+  id: number
+  producto_id?: number | null
+  receta_id?: number | null
+  nombre_item: string
+  cantidad: number
+  precio_unitario: number
+  notas?: string | null
+  listo: boolean
+}
+
+export interface Comanda {
+  id: number
+  empresa_id: number
+  bodega_id: number
+  mesa_id?: number | null
+  numero_comanda: string
+  mesa?: string | null
+  estado: 'pendiente' | 'en_preparacion' | 'listo' | 'cancelado'
+  observaciones?: string | null
+  created_at: string
+  detalles: DetalleComanda[]
+}
+
 export interface Venta {
   id: number
   empresa_id: number
@@ -297,6 +335,7 @@ export interface Venta {
   impuesto: number
   total: number
   estado: EstadoVenta
+  metodo_pago?: 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto' | null
   cliente?: { id: number; nombre: string }
   bodega?: { id: number; nombre: string }
   detalles?: DetalleVenta[]

@@ -1,14 +1,15 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, type CSSProperties } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ── Column definition ──────────────────────────────────────────────────────
 export interface Column<T> {
   key: string
-  header: string
+  header: ReactNode
   cell: (row: T) => ReactNode
   align?: 'left' | 'center' | 'right'
   width?: string
+  headerStyle?: CSSProperties
 }
 
 // ── Table ──────────────────────────────────────────────────────────────────
@@ -29,7 +30,7 @@ export function Table<T extends { id: number }>({ columns, data, loading, emptyM
             {columns.map((col) => (
               <th
                 key={col.key}
-                style={col.width ? { width: col.width } : undefined}
+                style={{ ...(col.width ? { width: col.width } : {}), ...col.headerStyle }}
                 className={cn('px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap',
                   col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                 )}
