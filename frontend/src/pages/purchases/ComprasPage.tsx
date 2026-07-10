@@ -331,7 +331,16 @@ export default function ComprasPage() {
   const [modalProd, setModalProd] = useState<{ idx: number; nombre: string; costo: string } | null>(null)
 
   const { data: proveedores = [] } = useQuery({ queryKey: ['proveedores-all', empresaId], queryFn: () => proveedoresApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 })
-  const { data: bodegas = [] }     = useQuery({ queryKey: ['bodegas-all', empresaId],     queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),     enabled: empresaId > 0 })
+  const { data: bodegas = [] } = useQuery({
+    queryKey: ['bodegas-all', empresaId],
+    queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
+    enabled: empresaId > 0,
+    select: (data) => {
+      const pred = data?.find(b => b.predeterminada)
+      if (pred) setForm(f => f.bodega_id ? f : { ...f, bodega_id: String(pred.id) })
+      return data
+    },
+  })
   const { data: productos = [] }   = useQuery({ queryKey: ['productos-all', empresaId],   queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then(r => r.data.data), enabled: empresaId > 0 })
 
   const crear = useMutation({

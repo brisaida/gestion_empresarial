@@ -10,12 +10,12 @@ class Bodega extends Model
     use HasFactory;
 
     protected $fillable = [
-        'empresa_id', 'sucursal_id', 'codigo', 'nombre', 'activo',
+        'empresa_id', 'sucursal_id', 'codigo', 'nombre', 'activo', 'predeterminada',
     ];
 
     protected function casts(): array
     {
-        return ['activo' => 'boolean'];
+        return ['activo' => 'boolean', 'predeterminada' => 'boolean'];
     }
 
     public function empresa()

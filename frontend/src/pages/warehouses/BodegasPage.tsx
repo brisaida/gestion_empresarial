@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Star } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/stores/authStore'
 import { bodegasApi } from '@/api/recursos'
 import { useCrud } from '@/hooks/useCrud'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import { StatusBadge } from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -24,6 +25,12 @@ export default function BodegasPage() {
   const { state } = useAuth()
   const empresaId = state.empresaActiva?.id ?? 0
   const crud = useCrud(bodegasApi, { queryKey: 'bodegas', empresaId })
+  const qc = useQueryClient()
+
+  const setPredeterminada = useMutation({
+    mutationFn: (id: number) => bodegasApi.setPredeterminada(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['bodegas'] }),
+  })
 
   const [modal, setModal] = useState<'create' | 'edit' | null>(null)
   const [selected, setSelected] = useState<Bodega | null>(null)
@@ -39,13 +46,30 @@ export default function BodegasPage() {
 
   const columns: Column<Bodega>[] = [
     { key: 'codigo',   header: 'Código',  cell: (r) => <span className="font-mono text-sm text-gray-500">{r.codigo ?? '—'}</span>, width: '100px' },
-    { key: 'nombre',   header: 'Bodega',  cell: (r) => <span className="font-medium text-gray-900">{r.nombre}</span> },
+    {
+      key: 'nombre', header: 'Bodega',
+      cell: (r) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-900">{r.nombre}</span>
+          {r.predeterminada && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200">
+              <Star size={9} className="fill-amber-500 text-amber-500" /> Predeterminada
+            </span>
+          )}
+        </div>
+      ),
+    },
     { key: 'sucursal', header: 'Sucursal', cell: (r) => <span className="text-gray-500">{r.sucursal?.nombre ?? '—'}</span> },
     { key: 'activo',   header: 'Estado',  cell: (r) => <StatusBadge activo={r.activo} />, align: 'center', width: '90px' },
     {
-      key: 'acciones', header: '', align: 'right', width: '80px',
+      key: 'acciones', header: '', align: 'right', width: '110px',
       cell: (r) => (
         <div className="flex items-center justify-end gap-1">
+          <button onClick={() => setPredeterminada.mutate(r.id)} disabled={r.predeterminada}
+            title={r.predeterminada ? 'Ya es predeterminada' : 'Marcar como predeterminada'}
+            className={`p-1.5 rounded transition-colors ${r.predeterminada ? 'text-amber-400 cursor-default' : 'text-gray-400 hover:text-amber-500 hover:bg-amber-50'}`}>
+            <Star size={15} className={r.predeterminada ? 'fill-amber-400' : ''} />
+          </button>
           <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-[#0E78D8] hover:bg-[#0E78D8]/8"><Pencil size={15} /></button>
           <button onClick={() => setDeleteId(r.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"><Trash2 size={15} /></button>
         </div>

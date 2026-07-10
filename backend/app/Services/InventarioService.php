@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Exceptions\StockInsuficienteException;
+use App\Models\Bodega;
 use App\Models\Existencia;
 use App\Models\MovimientoInventario;
 use App\Models\DetalleMovimientoInventario;
@@ -201,21 +203,58 @@ class InventarioService
             ->selectRaw('producto_id, SUM(cantidad) as total')
             ->pluck('total', 'producto_id');
 
-        $errores = [];
+        $faltantes = [];
+        $errores   = [];
         foreach ($requeridos as $productoId => $cantRequerida) {
             $disponible = (float) ($existencias[$productoId] ?? 0);
             if ($disponible < $cantRequerida) {
-                $nombre    = $nombres[$productoId] ?? "Producto #$productoId";
+                $nombre      = $nombres[$productoId] ?? "Producto #$productoId";
+                $faltantes[] = [
+                    'producto_id' => $productoId,
+                    'nombre'      => $nombre,
+                    'disponible'  => $disponible,
+                    'requerido'   => (float) $cantRequerida,
+                ];
                 $errores[] = "• {$nombre}: disponible " . number_format($disponible, 3, '.', '')
                            . ", requerido " . number_format($cantRequerida, 3, '.', '');
             }
         }
 
-        if ($errores) {
-            throw new \DomainException(
-                "Stock insuficiente para completar la venta:\n" . implode("\n", $errores)
-            );
+        if (empty($faltantes)) return;
+
+        // Buscar bodegas alternativas que tengan stock suficiente para TODOS los productos
+        $bodegasAlternativas = [];
+        $otrasBodegas = Bodega::where('empresa_id', $empresaId)
+            ->where('id', '!=', $bodegaId)
+            ->where('activo', true)
+            ->get(['id', 'nombre']);
+
+        foreach ($otrasBodegas as $bodega) {
+            $existAlt = Existencia::where('empresa_id', $empresaId)
+                ->where('bodega_id', $bodega->id)
+                ->whereIn('producto_id', $productoIds)
+                ->groupBy('producto_id')
+                ->selectRaw('producto_id, SUM(cantidad) as total')
+                ->pluck('total', 'producto_id');
+
+            $satisface = true;
+            foreach ($requeridos as $productoId => $cantRequerida) {
+                if ((float) ($existAlt[$productoId] ?? 0) < (float) $cantRequerida) {
+                    $satisface = false;
+                    break;
+                }
+            }
+
+            if ($satisface) {
+                $bodegasAlternativas[] = ['id' => $bodega->id, 'nombre' => $bodega->nombre];
+            }
         }
+
+        throw new StockInsuficienteException(
+            "Stock insuficiente para completar la venta:\n" . implode("\n", $errores),
+            $faltantes,
+            $bodegasAlternativas,
+        );
     }
 
     /**

@@ -60,6 +60,14 @@ class BodegaController extends ApiController
         return response()->json(['success' => true, 'message' => 'Bodega actualizada.', 'data' => new BodegaResource($bodega)]);
     }
 
+    public function setPredeterminada(Bodega $bodega): JsonResponse
+    {
+        Bodega::where('empresa_id', $bodega->empresa_id)->update(['predeterminada' => false]);
+        $bodega->update(['predeterminada' => true]);
+        $bodega->load('sucursal');
+        return response()->json(['success' => true, 'message' => 'Bodega predeterminada actualizada.', 'data' => new BodegaResource($bodega)]);
+    }
+
     public function destroy(Bodega $bodega): JsonResponse
     {
         if ($bodega->existencias()->where('cantidad', '>', 0)->exists()) {

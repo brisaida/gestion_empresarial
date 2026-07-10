@@ -198,7 +198,7 @@ export default function CotizacionesPage() {
         <div className="flex flex-col sm:flex-row gap-4 items-start">
 
           {/* Tabla */}
-          <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-visible">
 
             {/* Buscador */}
             <div className="p-4 border-b border-gray-100" ref={searchRef}>

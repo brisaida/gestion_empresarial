@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\StockInsuficienteException;
 use App\Http\Resources\CotizacionResource;
 use App\Http\Resources\VentaResource;
 use App\Models\Cotizacion;
@@ -208,8 +209,9 @@ class CotizacionController extends ApiController
         }
 
         $request->validate([
-            'bodega_id'  => ['required', 'integer', 'exists:bodegas,id'],
+            'bodega_id'   => ['required', 'integer', 'exists:bodegas,id'],
             'fecha_venta' => ['nullable', 'date'],
+            'metodo_pago' => ['nullable', 'string', 'in:efectivo,tarjeta,transferencia,mixto'],
         ]);
 
         $cotizacion->load('detalles');
@@ -239,6 +241,7 @@ class CotizacionController extends ApiController
                     'descuento'      => $cotizacion->descuento,
                     'impuesto'       => $cotizacion->impuesto,
                     'total'          => $cotizacion->total,
+                    'metodo_pago'    => $request->input('metodo_pago', 'efectivo'),
                     'estado'         => 'completada',
                 ]);
 
@@ -260,6 +263,13 @@ class CotizacionController extends ApiController
 
                 return $venta;
             });
+        } catch (StockInsuficienteException $e) {
+            return response()->json([
+                'success'              => false,
+                'message'              => $e->getMessage(),
+                'faltantes'            => $e->faltantes,
+                'bodegas_alternativas' => $e->bodegasAlternativas,
+            ], 422);
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         }

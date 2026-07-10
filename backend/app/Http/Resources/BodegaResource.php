@@ -15,7 +15,8 @@ class BodegaResource extends JsonResource
             'sucursal_id' => $this->sucursal_id,
             'codigo'      => $this->codigo,
             'nombre'      => $this->nombre,
-            'activo'      => $this->activo,
+            'activo'         => $this->activo,
+            'predeterminada' => (bool) $this->predeterminada,
             'sucursal'    => $this->whenLoaded('sucursal', fn() => ['id' => $this->sucursal->id, 'nombre' => $this->sucursal->nombre]),
         ];
     }

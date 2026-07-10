@@ -87,6 +87,11 @@ export default function TrasladosPage() {
     queryKey: ['bodegas-all', empresaId],
     queryFn:  () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
     enabled:  empresaId > 0,
+    select: (data) => {
+      const pred = data?.find(b => b.predeterminada)
+      if (pred) setBodegaOrigenId(id => id || String(pred.id))
+      return data
+    },
   })
 
   const { data: productos } = useQuery({

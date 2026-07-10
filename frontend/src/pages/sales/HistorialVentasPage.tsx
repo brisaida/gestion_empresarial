@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { XCircle, Download, Loader2 } from 'lucide-react'
+import type React from 'react'
+import { XCircle, Download, Loader2, Banknote, CreditCard, ArrowLeftRight, Layers } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { ventasApi, empresaApi } from '@/api/recursos'
@@ -15,6 +16,26 @@ function EstadoBadge({ estado }: { estado: EstadoVenta }) {
   return estado === 'completada'
     ? <Badge variant="green">Completada</Badge>
     : <Badge variant="red">Cancelada</Badge>
+}
+
+type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
+
+const metodoPagoInfo: Record<MetodoPago, { icon: React.ElementType; label: string; cls: string }> = {
+  efectivo:      { icon: Banknote,       label: 'Efectivo',      cls: 'text-emerald-700 bg-emerald-50' },
+  tarjeta:       { icon: CreditCard,     label: 'Tarjeta',       cls: 'text-blue-700 bg-blue-50'       },
+  transferencia: { icon: ArrowLeftRight, label: 'Transferencia', cls: 'text-purple-700 bg-purple-50'   },
+  mixto:         { icon: Layers,         label: 'Mixto',         cls: 'text-amber-700 bg-amber-50'     },
+}
+
+function MetodoPagoBadge({ metodo }: { metodo?: string | null }) {
+  const key = (metodo ?? 'efectivo') as MetodoPago
+  const { icon: Icon, label, cls } = metodoPagoInfo[key] ?? metodoPagoInfo.efectivo
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${cls}`}>
+      <Icon size={11} />
+      {label}
+    </span>
+  )
 }
 
 export default function HistorialVentasPage() {
@@ -88,6 +109,11 @@ export default function HistorialVentasPage() {
       key: 'fecha_venta', header: 'Fecha',
       cell: r => <span className="text-[#5F6B7A]">{r.fecha_venta}</span>,
       align: 'center',
+    },
+    {
+      key: 'metodo_pago', header: 'Pago',
+      cell: r => <MetodoPagoBadge metodo={r.metodo_pago} />,
+      align: 'center', width: '130px',
     },
     {
       key: 'total', header: 'Total',

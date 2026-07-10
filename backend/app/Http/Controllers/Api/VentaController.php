@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\StockInsuficienteException;
 use App\Http\Requests\Inventory\StoreVentaRequest;
 use App\Http\Resources\VentaResource;
 use App\Models\Producto;
@@ -110,6 +111,7 @@ class VentaController extends ApiController
                     'descuento'      => $descuento,
                     'impuesto'       => $impuesto,
                     'total'          => $subtotal - $descuento + $impuesto,
+                    'metodo_pago'    => $validated['metodo_pago'] ?? 'efectivo',
                     'estado'         => 'completada',
                 ]);
 
@@ -157,6 +159,13 @@ class VentaController extends ApiController
 
                 return $venta;
             });
+        } catch (StockInsuficienteException $e) {
+            return response()->json([
+                'success'              => false,
+                'message'              => $e->getMessage(),
+                'faltantes'            => $e->faltantes,
+                'bodegas_alternativas' => $e->bodegasAlternativas,
+            ], 422);
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         }

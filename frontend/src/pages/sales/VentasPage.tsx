@@ -1,14 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, XCircle, Search, Minus, Trash2, Receipt, User, Warehouse,
-         CalendarDays, Hash, CheckCircle2, Lock, ChefHat, Package, LayoutGrid, UtensilsCrossed, TableProperties } from 'lucide-react'
+         CalendarDays, Hash, Lock, ChefHat, Package, LayoutGrid, UtensilsCrossed, TableProperties, Banknote, AlertTriangle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi, recetasApi, comandasApi } from '@/api/recursos'
+import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi, recetasApi, comandasApi, sesionCajaApi } from '@/api/recursos'
 import { printVenta } from '@/lib/printVenta'
 import type { Venta, Receta } from '@/types'
 import Button from '@/components/ui/Button'
+import Modal from '@/components/ui/Modal'
+import { useToast } from '@/components/ui/Toast'
 import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
 import type { Producto } from '@/types'
+import { useNavigate } from 'react-router-dom'
 
 interface LineaVenta {
   _key: string
@@ -25,9 +28,14 @@ export default function VentasPage() {
   const { state } = useAuth()
   const empresaId = state.empresaActiva?.id ?? 0
   const qc = useQueryClient()
+  const navigate = useNavigate()
 
-  const [error, setError]           = useState('')
-  const [success, setSuccess]       = useState('')
+  const toast = useToast()
+  const [stockModal, setStockModal] = useState<{
+    open: boolean
+    mensaje: string
+    alternativas: { id: number; nombre: string }[]
+  }>({ open: false, mensaje: '', alternativas: [] })
   const [clienteId, setClienteId]   = useState('')
   const [bodegaId, setBodegaId]     = useState('')
   const [fecha, setFecha]           = useState(todayISO())
@@ -36,15 +44,24 @@ export default function VentasPage() {
   const [aplicarISV, setAplicarISV] = useState(true)
   const [lineas, setLineas]         = useState<LineaVenta[]>([])
 
+  const [metodoPago, setMetodoPago] = useState<'efectivo'|'tarjeta'|'transferencia'|'mixto'>('efectivo')
+
   const [search, setSearch]         = useState('')
   const [showDrop, setShowDrop]     = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   const [mesa, setMesa]             = useState('')
-  const [cocinarSuccess, setCocinarSuccess] = useState('')
 
   // Tablet POS state
   const [categoriaActiva, setCategoriaActiva] = useState<CategoriaTab>('todos')
   const [tabletSearch, setTabletSearch]       = useState('')
+
+  const { data: sesionActual } = useQuery({
+    queryKey: ['caja-actual', empresaId],
+    queryFn:  () => sesionCajaApi.actual(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 30_000,
+  })
+  const sinSesion = sesionActual === null
 
   const { data: empresaConfig } = useQuery({
     queryKey: ['empresa', empresaId],
@@ -53,8 +70,13 @@ export default function VentasPage() {
     staleTime: 5 * 60_000,
   })
   const { data: clientes }  = useQuery({ queryKey: ['clientes-all', empresaId],  queryFn: () => clientesApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data), enabled: empresaId > 0 })
-  const { data: bodegas }   = useQuery({ queryKey: ['bodegas-all', empresaId],   queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 })
-  const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true, tipo: 'venta' }).then(r => r.data.data), enabled: empresaId > 0 })
+  const { data: bodegas }   = useQuery({
+    queryKey: ['bodegas-all', empresaId],
+    queryFn:  () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    select: (data) => { const pred = data?.find(b => b.predeterminada); if (pred && !bodegaId) setBodegaId(String(pred.id)); return data },
+  })
+  const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, solo_activos: true }).then(r => r.data.data), enabled: empresaId > 0 })
   const esRestaurante = state.empresaActiva?.rubro === 'restaurante'
   const { data: recetas = [] } = useQuery({ queryKey: ['recetas', empresaId], queryFn: () => recetasApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => (r.data as { data: Receta[] }).data), enabled: empresaId > 0 && esRestaurante })
 
@@ -74,8 +96,7 @@ export default function VentasPage() {
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       const venta = (res.data as { data: Venta }).data
       resetForm(); refetchNum()
-      setSuccess(`Factura ${venta.numero_factura} registrada correctamente.`)
-      setTimeout(() => setSuccess(''), 6000)
+      toast.success(`Factura ${venta.numero_factura} registrada correctamente.`)
       try {
         const [empresaRes, logoRes] = await Promise.all([
           empresaApi.get(empresaId),
@@ -84,7 +105,22 @@ export default function VentasPage() {
         printVenta(venta, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined)
       } catch { /* PDF es opcional */ }
     },
-    onError: (err) => setError(getAxiosError(err)),
+    onError: (err) => {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const data = (err as { response: { data: Record<string, unknown> } }).response?.data
+        if (data && 'bodegas_alternativas' in data) {
+          setStockModal({
+            open: true,
+            mensaje: String(data.message ?? getAxiosError(err)),
+            alternativas: Array.isArray(data.bodegas_alternativas)
+              ? data.bodegas_alternativas as { id: number; nombre: string }[]
+              : [],
+          })
+          return
+        }
+      }
+      toast.error(getAxiosError(err))
+    },
   })
 
   useEffect(() => {
@@ -159,8 +195,7 @@ export default function VentasPage() {
     onSuccess: (res) => {
       const c = (res.data as { data: { numero_comanda: string } }).data
       resetForm(); setMesa('')
-      setCocinarSuccess(`Pedido ${c.numero_comanda} enviado a cocina.`)
-      setTimeout(() => setCocinarSuccess(''), 5000)
+      toast.info(`Pedido ${c.numero_comanda} enviado a cocina.`)
     },
     onError: (err) => setError(err instanceof Error ? err.message : getAxiosError(err)),
   })
@@ -168,7 +203,7 @@ export default function VentasPage() {
   const resetForm = () => {
     setClienteId(''); setBodegaId(''); setFecha(todayISO())
     setDescuento(0); setAplicarISV(true); setLineas([])
-    setSearch(''); setError('')
+    setMetodoPago('efectivo'); setSearch('')
   }
 
   const addProduct = (p: Producto) => {
@@ -197,26 +232,33 @@ export default function VentasPage() {
 
   const removeLinea = (idx: number) => setLineas(prev => prev.filter((_, i) => i !== idx))
 
+  const buildPayload = (bid: string) => ({
+    empresa_id:     empresaId,
+    cliente_id:     clienteId ? Number(clienteId) : null,
+    bodega_id:      Number(bid),
+    fecha_venta:    fecha,
+    numero_factura: nFactura || null,
+    descuento,
+    impuesto:       Math.round(isv * 10000) / 10000,
+    metodo_pago:    metodoPago,
+    detalles: lineas.map(l => ({
+      producto_id:     l.tipo === 'producto' ? l.producto!.id : null,
+      receta_id:       l.tipo === 'receta'   ? l.receta!.id   : null,
+      cantidad:        l.cantidad,
+      precio_unitario: l.precio_unitario,
+    })),
+  })
+
+  const cambiarBodega = (nuevoBodegaId: number) => {
+    setBodegaId(String(nuevoBodegaId))
+    setStockModal(s => ({ ...s, open: false }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    if (!bodegaId) { setError('Selecciona una bodega.'); return }
-    if (lineas.length === 0) { setError('Agrega al menos un producto.'); return }
-    await crear.mutateAsync({
-      empresa_id:     empresaId,
-      cliente_id:     clienteId ? Number(clienteId) : null,
-      bodega_id:      Number(bodegaId),
-      fecha_venta:    fecha,
-      numero_factura: nFactura || null,
-      descuento,
-      impuesto:       Math.round(isv * 10000) / 10000,
-      detalles: lineas.map(l => ({
-        producto_id:     l.tipo === 'producto' ? l.producto!.id : null,
-        receta_id:       l.tipo === 'receta'   ? l.receta!.id   : null,
-        cantidad:        l.cantidad,
-        precio_unitario: l.precio_unitario,
-      })),
-    })
+    if (!bodegaId) { toast.warning('Selecciona una bodega.'); return }
+    if (lineas.length === 0) { toast.warning('Agrega al menos un producto.'); return }
+    await crear.mutateAsync(buildPayload(bodegaId))
   }
 
   const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
@@ -269,9 +311,6 @@ export default function VentasPage() {
         <span className="text-lg tracking-tight">{formatCurrency(total)}</span>
       </div>
 
-      {error && (
-        <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{error}</p>
-      )}
 
       {esRestaurante && (
         <div>
@@ -295,7 +334,7 @@ export default function VentasPage() {
               type="button"
               loading={enviarCocina.isPending}
               icon={<UtensilsCrossed size={15} />}
-              disabled={lineas.length === 0 || !bodegaId}
+              disabled={lineas.length === 0 || !bodegaId || sinSesion}
               onClick={() => { setError(''); enviarCocina.mutate() }}
               className="w-full justify-center"
               style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 100%)' }}
@@ -304,13 +343,13 @@ export default function VentasPage() {
             </Button>
             <Button type="submit" loading={crear.isPending} icon={<Receipt size={15} />}
               variant="secondary"
-              disabled={lineas.length === 0} className="w-full justify-center">
+              disabled={lineas.length === 0 || sinSesion} className="w-full justify-center">
               Facturar directo
             </Button>
           </>
         ) : (
           <Button type="submit" loading={crear.isPending} icon={<Receipt size={15} />}
-            disabled={lineas.length === 0} className="w-full justify-center">
+            disabled={lineas.length === 0 || sinSesion} className="w-full justify-center">
             Registrar venta
           </Button>
         )}
@@ -325,27 +364,65 @@ export default function VentasPage() {
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
 
+      {/* Modal de stock insuficiente */}
+      <Modal open={stockModal.open} onClose={() => setStockModal(s => ({ ...s, open: false }))}
+        title="Stock insuficiente" size="sm">
+        <div className="space-y-4">
+          <div className="flex gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <AlertTriangle size={18} className="text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 whitespace-pre-line leading-relaxed">{stockModal.mensaje}</p>
+          </div>
+          {stockModal.alternativas.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide">
+                Stock disponible en otras bodegas:
+              </p>
+              {stockModal.alternativas.map(b => (
+                <button key={b.id} type="button" onClick={() => cambiarBodega(b.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-[#072B5A] font-medium hover:bg-[#0E78D8] hover:text-white hover:border-[#0E78D8] transition-colors text-left">
+                  <Warehouse size={15} className="shrink-0" /> Cambiar a "{b.nombre}"
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[#5F6B7A]">No hay otras bodegas con stock suficiente para esta venta.</p>
+          )}
+          <div className="flex justify-end pt-1">
+            <Button variant="secondary" onClick={() => setStockModal(s => ({ ...s, open: false }))}>
+              Cerrar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+
       <div>
         <h1 className="text-xl font-bold text-[#072B5A]">Nueva Venta</h1>
         <p className="text-sm text-[#5F6B7A]">Registra una factura de venta</p>
       </div>
 
-      {success && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm font-medium">
-          <CheckCircle2 size={18} className="shrink-0" />{success}
+      {sinSesion && (
+        <div className="flex items-center justify-between gap-4 px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+          <div className="flex items-center gap-3 text-amber-800">
+            <AlertTriangle size={18} className="shrink-0 text-amber-500" />
+            <div>
+              <p className="text-sm font-semibold">No hay una sesión de caja abierta</p>
+              <p className="text-xs text-amber-700 mt-0.5">Debes abrir una sesión antes de registrar ventas.</p>
+            </div>
+          </div>
+          <button onClick={() => navigate('/caja')}
+            className="shrink-0 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg transition-colors">
+            Abrir sesión
+          </button>
         </div>
       )}
-      {cocinarSuccess && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-[#0E78D8]/10 border border-[#0E78D8]/30 rounded-xl text-[#0E78D8] text-sm font-medium">
-          <UtensilsCrossed size={18} className="shrink-0" />{cocinarSuccess}
-        </div>
-      )}
+
 
       <form onSubmit={handleSubmit} className="space-y-4">
 
         {/* ── Cabecera: siempre visible ──────────────────────────────── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
 
             <div>
               <label className={labelCls}>
@@ -383,6 +460,18 @@ export default function VentasPage() {
                 <span className="flex items-center gap-1.5"><CalendarDays size={11} /> Fecha *</span>
               </label>
               <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} required className={selectCls} />
+            </div>
+
+            <div>
+              <label className={labelCls}>
+                <span className="flex items-center gap-1.5"><Banknote size={11} /> Método de pago</span>
+              </label>
+              <select value={metodoPago} onChange={e => setMetodoPago(e.target.value as typeof metodoPago)} className={selectCls}>
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="mixto">Mixto</option>
+              </select>
             </div>
           </div>
         </div>
@@ -597,7 +686,7 @@ export default function VentasPage() {
         <div className={`flex flex-col sm:flex-row gap-4 items-start${esRestaurante ? ' md:hidden' : ''}`}>
 
           {/* Tabla de detalle */}
-          <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-visible">
 
             {/* Buscador */}
             <div className="p-4 border-b border-gray-100" ref={searchRef}>

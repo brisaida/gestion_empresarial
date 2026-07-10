@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -30,6 +30,7 @@ const nav = [
   { group: 'Ventas', items: [
     { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas',       rubro: null },
     { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas',       rubro: null },
+    { to: '/caja',                   label: 'Cierre de caja',      icon: LockOpen,        end: true,  permiso: 'ventas',       rubro: null },
     { to: '/restaurante',             label: 'Salón / Mesas',       icon: LayoutGrid,      end: true,  permiso: 'ventas',       rubro: 'restaurante' },
     { to: '/recetas',                label: 'Recetas / Platos',    icon: ChefHat,         end: false, permiso: 'ventas',       rubro: 'restaurante' },
     { to: '/cocina',                 label: 'Pantalla Cocina',     icon: UtensilsCrossed, end: false, permiso: 'ventas',       rubro: 'restaurante' },

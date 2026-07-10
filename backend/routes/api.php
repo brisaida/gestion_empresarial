@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\VentaController;
 use App\Http\Controllers\Api\ImportarProductosController;
 use App\Http\Controllers\Api\RecetaController;
 use App\Http\Controllers\Api\ReporteController;
+use App\Http\Controllers\Api\SesionCajaController;
 use Illuminate\Support\Facades\Route;
 
 // ── Autenticación (sin token) ──────────────────────────────────────────────
@@ -61,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('proveedores',     ProveedorController::class);
         Route::apiResource('clientes',        ClienteController::class);
         Route::apiResource('bodegas',         BodegaController::class);
+        Route::patch('bodegas/{bodega}/predeterminada', [BodegaController::class, 'setPredeterminada']);
 
         Route::apiResource('productos',       ProductoController::class);
         Route::post('productos/{producto}/imagen',  [ProductoController::class, 'uploadImagen']);
@@ -112,6 +114,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('mesas/{mesa}/comandas',  [MesaController::class, 'comandas']);
         Route::post('mesas/{mesa}/facturar', [MesaController::class, 'facturar']);
         Route::apiResource('mesas', MesaController::class)->only(['index', 'store', 'update', 'destroy']);
+
+        // Sesiones de caja
+        Route::get('caja/actual',              [SesionCajaController::class, 'actual']);
+        Route::post('caja',                    [SesionCajaController::class, 'store']);
+        Route::post('caja/{sesion}/cerrar',    [SesionCajaController::class, 'cerrar']);
+        Route::get('caja',                     [SesionCajaController::class, 'index']);
+        Route::get('caja/{sesion}',            [SesionCajaController::class, 'show']);
     });
 
     // Traslados

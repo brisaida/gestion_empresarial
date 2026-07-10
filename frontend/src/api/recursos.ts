@@ -3,7 +3,7 @@ import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
   Producto, Existencia, DashboardData, Movimiento, Compra, Venta, Cotizacion,
-  Transferencia, EmpresaConfig, Receta, Comanda, Mesa,
+  Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -92,11 +92,12 @@ export const clientesApi = {
 
 // ── Bodegas ────────────────────────────────────────────────────────────────
 export const bodegasApi = {
-  list:    (params: Record<string, unknown>) => list<Bodega>('/bodegas', params),
-  get:     (id: number) => get<Bodega>(`/bodegas/${id}`),
-  create:  (data: unknown) => create<Bodega>('/bodegas', data),
-  update:  (id: number, data: unknown) => update<Bodega>(`/bodegas/${id}`, data),
-  delete:  (id: number) => remove(`/bodegas/${id}`),
+  list:              (params: Record<string, unknown>) => list<Bodega>('/bodegas', params),
+  get:               (id: number) => get<Bodega>(`/bodegas/${id}`),
+  create:            (data: unknown) => create<Bodega>('/bodegas', data),
+  update:            (id: number, data: unknown) => update<Bodega>(`/bodegas/${id}`, data),
+  delete:            (id: number) => remove(`/bodegas/${id}`),
+  setPredeterminada: (id: number) => client.patch<ApiResponse<Bodega>>(`/bodegas/${id}/predeterminada`),
 }
 
 // ── Productos ──────────────────────────────────────────────────────────────
@@ -190,6 +191,14 @@ export const reportesApi = {
   ingresos:     (params: Record<string, unknown>) => client.get('/reportes/ingresos', { params }),
   topProductos: (params: Record<string, unknown>) => client.get('/reportes/top-productos', { params }),
   inventario:   (params: Record<string, unknown>) => client.get('/reportes/inventario', { params }),
+}
+
+// ── Sesiones de caja ──────────────────────────────────────────────────────
+export const sesionCajaApi = {
+  actual:  (empresa_id: number) => client.get<ApiResponse<SesionCaja | null>>('/caja/actual', { params: { empresa_id } }),
+  abrir:   (data: { empresa_id: number; monto_inicial: number }) => client.post<ApiResponse<SesionCaja>>('/caja', data),
+  cerrar:  (id: number, data: { monto_cierre: number; observaciones?: string }) => client.post<ApiResponse<SesionCaja>>(`/caja/${id}/cerrar`, data),
+  list:    (params: Record<string, unknown>) => list<SesionCaja>('/caja', params),
 }
 
 // ── Ventas ─────────────────────────────────────────────────────────────────

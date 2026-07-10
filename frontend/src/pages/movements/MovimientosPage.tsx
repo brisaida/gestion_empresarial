@@ -51,7 +51,16 @@ export default function MovimientosPage() {
   const [form, setForm] = useState({ tipo_movimiento: '' as TipoMovimiento | '', bodega_id: '', fecha: todayISO(), numero_documento: '', observaciones: '' })
   const [lineas, setLineas] = useState<LineaItem[]>([emptyLinea()])
 
-  const { data: bodegas }   = useQuery({ queryKey: ['bodegas-all', empresaId],   queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then((r) => r.data.data),   enabled: empresaId > 0 })
+  const { data: bodegas } = useQuery({
+    queryKey: ['bodegas-all', empresaId],
+    queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then((r) => r.data.data),
+    enabled: empresaId > 0,
+    select: (data) => {
+      const pred = data?.find(b => b.predeterminada)
+      if (pred) setForm(f => f.bodega_id ? f : { ...f, bodega_id: String(pred.id) })
+      return data
+    },
+  })
   const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then((r) => r.data.data), enabled: empresaId > 0 })
 
   const { data, isLoading } = useQuery({

@@ -104,6 +104,7 @@ export interface Bodega {
   codigo?: string
   nombre: string
   activo: boolean
+  predeterminada: boolean
   sucursal?: { id: number; nombre: string }
 }
 
@@ -468,6 +469,32 @@ export interface UsuarioEmpresaItem {
   rol_id: number
   rol_nombre: string
   activo: boolean
+}
+
+// ── Sesión de caja ───────────────────────────────────────────────────────
+export interface SesionCaja {
+  id: number
+  empresa_id: number
+  usuario?: { id: number; nombre: string } | null
+  monto_inicial: number
+  monto_cierre?: number | null
+  diferencia?: number | null
+  total_ventas?: number | null
+  total_efectivo?: number | null
+  total_tarjeta?: number | null
+  total_transferencia?: number | null
+  total_mixto?: number | null
+  cantidad_ventas?: number | null
+  estado: 'abierta' | 'cerrada'
+  fecha_apertura: string
+  fecha_cierre?: string | null
+  observaciones?: string | null
+  resumen?: {
+    total_ventas: number
+    cantidad_ventas: number
+    por_metodo: { efectivo: number; tarjeta: number; transferencia: number; mixto: number }
+    efectivo_esperado: number
+  }
 }
 
 // ── API response wrappers ─────────────────────────────────────────────────

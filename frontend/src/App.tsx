@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/stores/authStore'
+import { ToastProvider } from '@/components/ui/Toast'
 import { usePermisos } from '@/lib/permisos'
 import { Lock } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -22,6 +23,7 @@ import CotizacionesPage        from '@/pages/quotations/CotizacionesPage'
 import HistorialCotizacionesPage from '@/pages/quotations/HistorialCotizacionesPage'
 import VentasPage               from '@/pages/sales/VentasPage'
 import HistorialVentasPage      from '@/pages/sales/HistorialVentasPage'
+import CierreCajaPage           from '@/pages/sales/CierreCajaPage'
 import TrasladosPage             from '@/pages/transfers/TrasladosPage'
 import HistorialTrasladosPage   from '@/pages/transfers/HistorialTrasladosPage'
 import ConfiguracionPage         from '@/pages/settings/ConfiguracionPage'
@@ -60,6 +62,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ToastProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -85,6 +88,7 @@ export default function App() {
               <Route path="cotizaciones/historial" element={<Guard perm="cotizaciones"><HistorialCotizacionesPage /></Guard>} />
               <Route path="ventas"                 element={<Guard perm="ventas"><VentasPage /></Guard>} />
               <Route path="ventas/historial"       element={<Guard perm="ventas"><HistorialVentasPage /></Guard>} />
+              <Route path="caja"                   element={<Guard perm="ventas"><CierreCajaPage /></Guard>} />
               <Route path="restaurante"             element={<Guard perm="ventas"><RestaurantePage /></Guard>} />
               <Route path="recetas"                element={<Guard perm="ventas"><RecetasPage /></Guard>} />
               <Route path="cocina"                 element={<Guard perm="ventas"><CocinaPage /></Guard>} />
@@ -105,6 +109,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   )

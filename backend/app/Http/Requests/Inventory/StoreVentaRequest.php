@@ -18,6 +18,7 @@ class StoreVentaRequest extends FormRequest
             'fecha_venta'    => ['required', 'date'],
             'descuento'      => ['nullable', 'numeric', 'min:0'],
             'impuesto'       => ['nullable', 'numeric', 'min:0'],
+            'metodo_pago'    => ['nullable', 'string', 'in:efectivo,tarjeta,transferencia,mixto'],
             'detalles'       => ['required', 'array', 'min:1'],
             'detalles.*.producto_id'      => ['nullable', 'integer', 'exists:productos,id'],
             'detalles.*.receta_id'        => ['nullable', 'integer', 'exists:recetas,id'],
