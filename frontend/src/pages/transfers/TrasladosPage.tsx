@@ -1,4 +1,4 @@
-import { useState, useId } from 'react'
+import { useState, useId, useEffect } from 'react'
 import { Plus, Trash2, ArrowRight, CheckCircle, AlertTriangle } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
@@ -87,12 +87,11 @@ export default function TrasladosPage() {
     queryKey: ['bodegas-all', empresaId],
     queryFn:  () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
     enabled:  empresaId > 0,
-    select: (data) => {
-      const pred = data?.find(b => b.predeterminada)
-      if (pred) setBodegaOrigenId(id => id || String(pred.id))
-      return data
-    },
   })
+  useEffect(() => {
+    const pred = bodegas?.find(b => b.predeterminada)
+    if (pred) setBodegaOrigenId(id => id || String(pred.id))
+  }, [bodegas])
 
   const { data: productos } = useQuery({
     queryKey: ['productos-all', empresaId],

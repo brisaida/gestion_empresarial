@@ -14,26 +14,28 @@ const nav = [
   { group: 'Principal', items: [
     { to: '/dashboard',              label: 'Dashboard',           icon: LayoutDashboard, end: true,  permiso: 'dashboard'     },
   ]},
-  { group: 'Inventario', items: [
-    { to: '/existencias',            label: 'Stock',               icon: BarChart3,       end: true,  permiso: 'inventario'    },
-    { to: '/existencias/stock-bajo', label: 'Alertas de stock',    icon: AlertTriangle,   end: true,  permiso: 'inventario'    },
-    { to: '/compras',                label: 'Nueva compra',        icon: ShoppingCart,    end: true,  permiso: 'compras'       },
-    { to: '/compras/historial',      label: 'Historial compras',   icon: ClipboardList,   end: true,  permiso: 'compras'       },
-    { to: '/traslados',              label: 'Nuevo traslado',      icon: MoveRight,       end: true,  permiso: 'traslados'     },
-    { to: '/traslados/historial',    label: 'Historial traslados', icon: ClipboardList,   end: true,  permiso: 'traslados'     },
-    { to: '/movimientos',            label: 'Movimientos',         icon: ArrowLeftRight,  end: false, permiso: 'inventario'    },
+  { group: 'Ventas', items: [
+    { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas',       rubro: null },
+    { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas',       rubro: null },
+    { to: '/caja',                   label: 'Cierre de caja',      icon: LockOpen,        end: true,  permiso: 'ventas',       rubro: null },
+    { to: '/restaurante',            label: 'Salón / Mesas',       icon: LayoutGrid,      end: true,  permiso: 'ventas',       rubro: 'restaurante' },
+    { to: '/recetas',                label: 'Recetas / Platos',    icon: ChefHat,         end: false, permiso: 'ventas',       rubro: 'restaurante' },
+    { to: '/cocina',                 label: 'Pantalla Cocina',     icon: UtensilsCrossed, end: false, permiso: 'ventas',       rubro: 'restaurante' },
   ]},
   { group: 'Cotizaciones', items: [
     { to: '/cotizaciones',           label: 'Nueva cotización',    icon: FileText,        end: true,  permiso: 'cotizaciones'  },
     { to: '/cotizaciones/historial', label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'cotizaciones'  },
   ]},
-  { group: 'Ventas', items: [
-    { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas',       rubro: null },
-    { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas',       rubro: null },
-    { to: '/caja',                   label: 'Cierre de caja',      icon: LockOpen,        end: true,  permiso: 'ventas',       rubro: null },
-    { to: '/restaurante',             label: 'Salón / Mesas',       icon: LayoutGrid,      end: true,  permiso: 'ventas',       rubro: 'restaurante' },
-    { to: '/recetas',                label: 'Recetas / Platos',    icon: ChefHat,         end: false, permiso: 'ventas',       rubro: 'restaurante' },
-    { to: '/cocina',                 label: 'Pantalla Cocina',     icon: UtensilsCrossed, end: false, permiso: 'ventas',       rubro: 'restaurante' },
+  { group: 'Inventario', items: [
+    { to: '/existencias',            label: 'Stock',               icon: BarChart3,       end: true,  permiso: 'inventario'    },
+    { to: '/existencias/stock-bajo', label: 'Alertas de stock',    icon: AlertTriangle,   end: true,  permiso: 'inventario'    },
+    { to: '/movimientos',            label: 'Movimientos',         icon: ArrowLeftRight,  end: false, permiso: 'inventario'    },
+  ]},
+  { group: 'Compras', items: [
+    { to: '/compras',                label: 'Nueva compra',        icon: ShoppingCart,    end: true,  permiso: 'compras'       },
+    { to: '/compras/historial',      label: 'Historial compras',   icon: ClipboardList,   end: true,  permiso: 'compras'       },
+    { to: '/traslados',              label: 'Nuevo traslado',      icon: MoveRight,       end: true,  permiso: 'traslados'     },
+    { to: '/traslados/historial',    label: 'Historial traslados', icon: ClipboardList,   end: true,  permiso: 'traslados'     },
   ]},
   { group: 'Catálogos', items: [
     { to: '/productos',              label: 'Productos',           icon: Package,         end: false, permiso: 'catalogos'     },

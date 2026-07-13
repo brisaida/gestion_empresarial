@@ -37,8 +37,10 @@ class ClienteController extends ApiController
             'rtn'        => ['nullable', 'string', 'max:30'],
             'correo'     => ['nullable', 'email', 'max:100'],
             'telefono'   => ['nullable', 'string', 'max:30'],
-            'direccion'  => ['nullable', 'string', 'max:255'],
-            'activo'     => ['boolean'],
+            'direccion'    => ['nullable', 'string', 'max:255'],
+            'departamento' => ['nullable', 'string', 'max:100'],
+            'municipio'    => ['nullable', 'string', 'max:100'],
+            'activo'       => ['boolean'],
         ]);
         $cliente = Cliente::create($data);
         return $this->created(new ClienteResource($cliente));
@@ -56,8 +58,10 @@ class ClienteController extends ApiController
             'rtn'       => ['nullable', 'string', 'max:30'],
             'correo'    => ['nullable', 'email', 'max:100'],
             'telefono'  => ['nullable', 'string', 'max:30'],
-            'direccion' => ['nullable', 'string', 'max:255'],
-            'activo'    => ['boolean'],
+            'direccion'    => ['nullable', 'string', 'max:255'],
+            'departamento' => ['nullable', 'string', 'max:100'],
+            'municipio'    => ['nullable', 'string', 'max:100'],
+            'activo'       => ['boolean'],
         ]);
         $cliente->update($data);
         return response()->json(['success' => true, 'message' => 'Cliente actualizado.', 'data' => new ClienteResource($cliente)]);

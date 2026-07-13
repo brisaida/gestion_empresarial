@@ -16,8 +16,10 @@ class ClienteResource extends JsonResource
             'rtn'        => $this->rtn,
             'correo'     => $this->correo,
             'telefono'   => $this->telefono,
-            'direccion'  => $this->direccion,
-            'activo'     => $this->activo,
+            'direccion'    => $this->direccion,
+            'departamento' => $this->departamento,
+            'municipio'    => $this->municipio,
+            'activo'       => $this->activo,
         ];
     }
 }

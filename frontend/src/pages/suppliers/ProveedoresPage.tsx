@@ -12,15 +12,18 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import SearchBar from '@/components/ui/SearchBar'
+import { HONDURAS, DEPARTAMENTOS } from '@/lib/honduras'
 import type { Proveedor } from '@/types'
 
 const schema = z.object({
-  nombre:    z.string().min(1, 'El nombre es requerido'),
-  rtn:       z.string().optional(),
-  correo:    z.string().email('Correo inválido').optional().or(z.literal('')),
-  telefono:  z.string().optional(),
-  direccion: z.string().optional(),
-  activo:    z.boolean().optional(),
+  nombre:       z.string().min(1, 'El nombre es requerido'),
+  rtn:          z.string().optional(),
+  correo:       z.string().email('Correo inválido').optional().or(z.literal('')),
+  telefono:     z.string().optional(),
+  direccion:    z.string().optional(),
+  departamento: z.string().optional(),
+  municipio:    z.string().optional(),
+  activo:       z.boolean().optional(),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -33,12 +36,19 @@ export default function ProveedoresPage() {
   const [selected, setSelected] = useState<Proveedor | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   })
 
+  const deptoSeleccionado = watch('departamento') ?? ''
+  const municipios = deptoSeleccionado ? (HONDURAS[deptoSeleccionado] ?? []) : []
+
   const openCreate = () => { reset({ nombre: '', activo: true }); setModal('create') }
-  const openEdit = (p: Proveedor) => { setSelected(p); reset({ nombre: p.nombre, rtn: p.rtn ?? '', correo: p.correo ?? '', telefono: p.telefono ?? '', direccion: p.direccion ?? '', activo: p.activo }); setModal('edit') }
+  const openEdit = (p: Proveedor) => {
+    setSelected(p)
+    reset({ nombre: p.nombre, rtn: p.rtn ?? '', correo: p.correo ?? '', telefono: p.telefono ?? '', direccion: p.direccion ?? '', departamento: p.departamento ?? '', municipio: p.municipio ?? '', activo: p.activo })
+    setModal('edit')
+  }
   const closeModal = () => { setModal(null); setSelected(null); crud.setError('') }
 
   const onSubmit = async (values: FormValues) => {
@@ -90,7 +100,29 @@ export default function ProveedoresPage() {
             <Input label="RTN" {...register('rtn')} />
             <Input label="Teléfono" {...register('telefono')} />
             <Input label="Correo" type="email" error={errors.correo?.message} {...register('correo')} />
-            <Input label="Dirección" {...register('direccion')} />
+            <div className="col-span-2"><Input label="Dirección" {...register('direccion')} /></div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Departamento</label>
+              <select
+                {...register('departamento')}
+                onChange={(e) => { setValue('departamento', e.target.value); setValue('municipio', '') }}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]"
+              >
+                <option value="">— Seleccionar —</option>
+                {DEPARTAMENTOS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Municipio</label>
+              <select
+                {...register('municipio')}
+                disabled={!deptoSeleccionado}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] disabled:bg-gray-50 disabled:text-gray-400"
+              >
+                <option value="">— Seleccionar —</option>
+                {municipios.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
           </div>
           <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
             <input type="checkbox" {...register('activo')} className="rounded" />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Trash2, ArrowDownCircle, ArrowUpCircle, SlidersHorizontal } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
@@ -55,12 +55,11 @@ export default function MovimientosPage() {
     queryKey: ['bodegas-all', empresaId],
     queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then((r) => r.data.data),
     enabled: empresaId > 0,
-    select: (data) => {
-      const pred = data?.find(b => b.predeterminada)
-      if (pred) setForm(f => f.bodega_id ? f : { ...f, bodega_id: String(pred.id) })
-      return data
-    },
   })
+  useEffect(() => {
+    const pred = bodegas?.find(b => b.predeterminada)
+    if (pred) setForm(f => f.bodega_id ? f : { ...f, bodega_id: String(pred.id) })
+  }, [bodegas])
   const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then((r) => r.data.data), enabled: empresaId > 0 })
 
   const { data, isLoading } = useQuery({

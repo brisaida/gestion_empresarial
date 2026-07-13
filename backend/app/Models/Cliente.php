@@ -13,7 +13,7 @@ class Cliente extends Model
 
     protected $fillable = [
         'empresa_id', 'nombre', 'rtn', 'correo',
-        'telefono', 'direccion', 'activo',
+        'telefono', 'direccion', 'departamento', 'municipio', 'activo',
     ];
 
     protected function casts(): array

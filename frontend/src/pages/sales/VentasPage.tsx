@@ -70,12 +70,15 @@ export default function VentasPage() {
     staleTime: 5 * 60_000,
   })
   const { data: clientes }  = useQuery({ queryKey: ['clientes-all', empresaId],  queryFn: () => clientesApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data), enabled: empresaId > 0 })
-  const { data: bodegas }   = useQuery({
+  const { data: bodegas } = useQuery({
     queryKey: ['bodegas-all', empresaId],
     queryFn:  () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
     enabled:  empresaId > 0,
-    select: (data) => { const pred = data?.find(b => b.predeterminada); if (pred && !bodegaId) setBodegaId(String(pred.id)); return data },
   })
+  useEffect(() => {
+    const pred = bodegas?.find(b => b.predeterminada)
+    if (pred && !bodegaId) setBodegaId(String(pred.id))
+  }, [bodegas])
   const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, solo_activos: true }).then(r => r.data.data), enabled: empresaId > 0 })
   const esRestaurante = state.empresaActiva?.rubro === 'restaurante'
   const { data: recetas = [] } = useQuery({ queryKey: ['recetas', empresaId], queryFn: () => recetasApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => (r.data as { data: Receta[] }).data), enabled: empresaId > 0 && esRestaurante })

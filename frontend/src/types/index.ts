@@ -83,6 +83,8 @@ export interface Proveedor {
   correo?: string
   telefono?: string
   direccion?: string
+  departamento?: string
+  municipio?: string
   activo: boolean
 }
 
@@ -94,6 +96,8 @@ export interface Cliente {
   correo?: string
   telefono?: string
   direccion?: string
+  departamento?: string
+  municipio?: string
   activo: boolean
 }
 
