@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\ComandaController;
 use App\Http\Controllers\Api\MesaController;
 use App\Http\Controllers\Api\EmpresaController;
 use App\Http\Controllers\Api\VentaController;
+use App\Http\Controllers\Api\ImportarCategoriasController;
 use App\Http\Controllers\Api\ImportarProductosController;
 use App\Http\Controllers\Api\RecetaController;
 use App\Http\Controllers\Api\ReporteController;
@@ -56,7 +57,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Catálogos
     Route::middleware('permiso:catalogos')->group(function () {
-        Route::apiResource('categorias',      CategoriaController::class);
+        Route::get('categorias/importar/plantilla', [ImportarCategoriasController::class, 'plantilla']);
+        Route::post('categorias/importar',          [ImportarCategoriasController::class, 'importar']);
+        Route::apiResource('categorias',            CategoriaController::class);
         Route::apiResource('marcas',          MarcaController::class);
         Route::apiResource('unidades-medida', UnidadMedidaController::class);
         Route::apiResource('proveedores',     ProveedorController::class);

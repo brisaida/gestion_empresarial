@@ -54,6 +54,15 @@ export const categoriasApi = {
   create:  (data: unknown) => create<Categoria>('/categorias', data),
   update:  (id: number, data: unknown) => update<Categoria>(`/categorias/${id}`, data),
   delete:  (id: number) => remove(`/categorias/${id}`),
+  importar: (empresaId: number, file: File) => {
+    const form = new FormData()
+    form.append('empresa_id', String(empresaId))
+    form.append('archivo', file)
+    return client.post<ApiResponse<{ creados: number; omitidas: number; errores: { fila: number; error: string }[] }>>(
+      '/categorias/importar', form, { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+  },
+  plantillaUrl: () => `${client.defaults.baseURL}/categorias/importar/plantilla`,
 }
 
 // ── Marcas ─────────────────────────────────────────────────────────────────
@@ -118,11 +127,11 @@ export const productosApi = {
     const form = new FormData()
     form.append('empresa_id', String(empresaId))
     form.append('archivo', file)
-    return client.post<ApiResponse<{ creados: number; errores: { fila: number; error: string }[] }>>(
+    return client.post<ApiResponse<{ creados: number; omitidos: number; errores: { fila: number; error: string }[]; sin_bodega: boolean }>>(
       '/productos/importar', form, { headers: { 'Content-Type': 'multipart/form-data' } }
     )
   },
-  plantillaUrl: () => `${client.defaults.baseURL}/productos/importar/plantilla`,
+  plantillaUrl: (empresaId: number) => `${client.defaults.baseURL}/productos/importar/plantilla?empresa_id=${empresaId}`,
   eliminarMasivo: (ids: number[]) =>
     client.post<ApiResponse<{ message: string }>>('/productos/eliminar-masivo', { ids }),
 }

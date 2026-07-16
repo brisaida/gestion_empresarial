@@ -30,7 +30,7 @@ export default function ProductosPage() {
   // Importar Excel
   const [importModal,  setImportModal]  = useState(false)
   const [importFile,   setImportFile]   = useState<File | null>(null)
-  const [importResult, setImportResult] = useState<{ creados: number; errores: { fila: number; error: string }[] } | null>(null)
+  const [importResult, setImportResult] = useState<{ creados: number; omitidos: number; errores: { fila: number; error: string }[]; sin_bodega: boolean } | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
 
   // Limpiar selección al cambiar de página
@@ -50,7 +50,7 @@ export default function ProductosPage() {
   const importar = useMutation({
     mutationFn: (file: File) => productosApi.importar(empresaId, file),
     onSuccess:  (res) => { setImportResult(res.data.data); qc.invalidateQueries({ queryKey: ['productos'] }) },
-    onError:    (err) => setImportResult({ creados: 0, errores: [{ fila: 0, error: getAxiosError(err) }] }),
+    onError:    (err) => setImportResult({ creados: 0, omitidos: 0, sin_bodega: false, errores: [{ fila: 0, error: getAxiosError(err) }] }),
   })
 
   const allSelected = crud.data.length > 0 && crud.data.every(p => selectedIds.has(p.id))
@@ -234,7 +234,7 @@ export default function ProductosPage() {
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0E78D8] hover:underline"
                   onClick={async () => {
                     const token = localStorage.getItem('token') ?? ''
-                    const res = await fetch(productosApi.plantillaUrl(), { headers: { Authorization: `Bearer ${token}` } })
+                    const res = await fetch(productosApi.plantillaUrl(empresaId), { headers: { Authorization: `Bearer ${token}` } })
                     const blob = await res.blob()
                     const url = URL.createObjectURL(blob)
                     const a = document.createElement('a'); a.href = url; a.download = 'plantilla_productos.xlsx'; a.click()
@@ -273,8 +273,16 @@ export default function ProductosPage() {
           ) : (
             <>
               <div className={`rounded-lg px-4 py-3 flex items-start gap-3 ${importResult.creados > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'}`}>
-                <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
-                <p className="text-sm font-semibold text-emerald-800">{importResult.creados} producto(s) importado(s) correctamente.</p>
+                <CheckCircle2 size={18} className={`shrink-0 mt-0.5 ${importResult.creados > 0 ? 'text-emerald-600' : 'text-amber-500'}`} />
+                <div className="text-sm space-y-0.5">
+                  <p className="font-semibold text-emerald-800">{importResult.creados} producto(s) importado(s) correctamente.</p>
+                  {importResult.omitidos > 0 && (
+                    <p className="text-emerald-700">{importResult.omitidos} omitido(s) por nombre duplicado.</p>
+                  )}
+                  {importResult.sin_bodega && (
+                    <p className="text-amber-700 mt-1">No hay bodega predeterminada: el stock inicial no se registró. Configúrala en Catálogos → Bodegas.</p>
+                  )}
+                </div>
               </div>
               {importResult.errores.length > 0 && (
                 <div className="space-y-1.5">
