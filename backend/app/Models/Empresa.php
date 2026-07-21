@@ -12,13 +12,15 @@ class Empresa extends Model
     protected $fillable = [
         'nombre', 'nombre_legal', 'rtn', 'correo',
         'telefono', 'direccion', 'isv_rate', 'logo', 'activo', 'rubro',
+        'config_cotizacion',
     ];
 
     protected function casts(): array
     {
         return [
-            'activo'   => 'boolean',
-            'isv_rate' => 'decimal:2',
+            'activo'            => 'boolean',
+            'isv_rate'          => 'decimal:2',
+            'config_cotizacion' => 'array',
         ];
     }
 

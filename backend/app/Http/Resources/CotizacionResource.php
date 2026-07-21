@@ -29,7 +29,13 @@ class CotizacionResource extends JsonResource
                     'cantidad'        => (float) $d->cantidad,
                     'precio_unitario' => (float) $d->precio_unitario,
                     'subtotal'        => (float) $d->subtotal,
-                    'producto'        => $d->producto ? ['id' => $d->producto->id, 'codigo' => $d->producto->codigo, 'nombre' => $d->producto->nombre] : null,
+                    'producto'        => $d->producto ? [
+                        'id'          => $d->producto->id,
+                        'codigo'      => $d->producto->codigo,
+                        'nombre'      => $d->producto->nombre,
+                        'descripcion' => $d->producto->descripcion,
+                        'imagen_url'  => $d->producto->imagen ? '/storage/' . $d->producto->imagen : null,
+                    ] : null,
                 ])
             ),
         ];

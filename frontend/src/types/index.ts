@@ -18,6 +18,11 @@ export interface EmpresaResumen {
   rubro?: Rubro | null
 }
 
+export interface ConfigCotizacion {
+  mostrar_descripcion: boolean
+  mostrar_foto: boolean
+}
+
 export interface EmpresaConfig {
   id: number
   nombre: string
@@ -29,6 +34,7 @@ export interface EmpresaConfig {
   isv_rate?: number
   rubro?: Rubro | null
   logo_url?: string | null
+  config_cotizacion?: ConfigCotizacion
 }
 
 export interface AuthState {
@@ -232,7 +238,7 @@ export interface DetalleCotizacion {
   cantidad: number
   precio_unitario: number
   subtotal: number
-  producto?: { id: number; codigo?: string; nombre: string }
+  producto?: { id: number; codigo?: string; nombre: string; descripcion?: string | null; imagen_url?: string | null }
 }
 
 export interface Cotizacion {

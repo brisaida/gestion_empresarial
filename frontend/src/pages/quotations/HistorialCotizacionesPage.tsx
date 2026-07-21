@@ -251,7 +251,7 @@ export default function HistorialCotizacionesPage() {
         empresaApi.logoBase64(empresaId),
         import('@/lib/printCotizacion'),
       ])
-      printCotizacion(cotRes.data.data, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined)
+      printCotizacion(cotRes.data.data, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined, empresaRes.data.data.config_cotizacion)
     } catch { setPdfError('No se pudo generar el documento.') }
     finally { setLoadingPdf(null) }
   }

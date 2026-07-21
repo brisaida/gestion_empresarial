@@ -31,6 +31,9 @@ class EmpresaController extends ApiController
             'direccion'    => ['nullable', 'string', 'max:500'],
             'isv_rate'     => ['nullable', 'numeric', 'min:0', 'max:100'],
             'rubro'        => ['nullable', 'string', 'in:tienda,distribuidora,farmacia,ferreteria,restaurante'],
+            'config_cotizacion'                          => ['nullable', 'array'],
+            'config_cotizacion.mostrar_descripcion'      => ['boolean'],
+            'config_cotizacion.mostrar_foto'             => ['boolean'],
         ]);
 
         $empresa->update($validated);
@@ -106,17 +109,20 @@ class EmpresaController extends ApiController
     /* ── Helper: estructura de respuesta ────────────────────────── */
     private function resource(Empresa $e): array
     {
+        $defaultConfig = ['mostrar_descripcion' => false, 'mostrar_foto' => false];
+
         return [
-            'id'          => $e->id,
-            'nombre'      => $e->nombre,
-            'nombre_legal'=> $e->nombre_legal,
-            'rtn'         => $e->rtn,
-            'correo'      => $e->correo,
-            'telefono'    => $e->telefono,
-            'direccion'   => $e->direccion,
-            'isv_rate'    => (float) ($e->isv_rate ?? 15),
-            'rubro'       => $e->rubro,
-            'logo_url'    => $e->logo ? '/' . ltrim($e->logo, '/') : null,
+            'id'                 => $e->id,
+            'nombre'             => $e->nombre,
+            'nombre_legal'       => $e->nombre_legal,
+            'rtn'                => $e->rtn,
+            'correo'             => $e->correo,
+            'telefono'           => $e->telefono,
+            'direccion'          => $e->direccion,
+            'isv_rate'           => (float) ($e->isv_rate ?? 15),
+            'rubro'              => $e->rubro,
+            'logo_url'           => $e->logo ? '/' . ltrim($e->logo, '/') : null,
+            'config_cotizacion'  => array_merge($defaultConfig, $e->config_cotizacion ?? []),
         ];
     }
 }

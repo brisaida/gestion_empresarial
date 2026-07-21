@@ -1,7 +1,9 @@
-import type { Cotizacion } from '@/types'
+import type { Cotizacion, ConfigCotizacion } from '@/types'
 import type { PrintEmpresa } from './printVenta'
 
 export type { PrintEmpresa }
+
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 const fmt = (n: number) =>
   'L ' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
@@ -28,19 +30,34 @@ function empresaHeader(e: PrintEmpresa, logoSrc?: string): string {
   `
 }
 
-export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: string): void {
-  const detalles = c.detalles ?? []
+export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: string, configCot?: ConfigCotizacion): void {
+  const detalles          = c.detalles ?? []
+  const mostrarDesc       = configCot?.mostrar_descripcion ?? false
+  const mostrarFoto       = configCot?.mostrar_foto ?? false
 
-  const filas = detalles.map((d, i) => `
+  const filas = detalles.map((d, i) => {
+    const imgUrl = d.producto?.imagen_url
+      ? (d.producto.imagen_url.startsWith('http') ? d.producto.imagen_url : `${API_BASE}${d.producto.imagen_url}`)
+      : null
+    const fotoHtml = mostrarFoto && imgUrl
+      ? `<img src="${imgUrl}" style="width:44px;height:44px;object-fit:contain;border-radius:6px;border:1px solid #E5E9EE;display:block;margin-bottom:4px" alt="">`
+      : ''
+    const descHtml = mostrarDesc && d.producto?.descripcion
+      ? `<span style="color:#888;font-size:11px;display:block;margin-top:3px;line-height:1.4">${d.producto.descripcion}</span>`
+      : ''
+    return `
     <tr style="background:${i % 2 === 0 ? '#ffffff' : '#F4F7FA'}">
       <td style="padding:8px 12px">
+        ${fotoHtml}
         <strong style="color:${NAVY};font-size:13px">${d.producto?.nombre ?? 'Producto'}</strong>
         ${d.producto?.codigo ? `<br><span style="color:#888;font-size:11px;font-family:monospace">${d.producto.codigo}</span>` : ''}
+        ${descHtml}
       </td>
       <td style="padding:8px 12px;text-align:center;color:#555;font-size:13px">${Number(d.cantidad).toFixed(2)}</td>
       <td style="padding:8px 12px;text-align:right;color:#555;font-size:13px">${fmt(d.precio_unitario)}</td>
       <td style="padding:8px 12px;text-align:right;font-weight:700;color:${NAVY};font-size:13px">${fmt(d.subtotal)}</td>
-    </tr>`).join('')
+    </tr>`
+  }).join('')
 
   const filaDescuento = c.descuento > 0
     ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">Descuento</td><td style="padding:4px 12px;text-align:right;color:#dc2626;font-weight:600">− ${fmt(c.descuento)}</td></tr>`

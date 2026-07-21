@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Building2, Upload, Trash2, Save, ImageOff } from 'lucide-react'
+import { Building2, Upload, Trash2, Save, ImageOff, FileText } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
@@ -29,6 +29,7 @@ export default function ConfiguracionPage() {
   })
 
   const [form, setForm] = useState({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', isv_rate: '15', rubro: '' })
+  const [configCot, setConfigCot] = useState({ mostrar_descripcion: false, mostrar_foto: false })
 
   // Inicializar form cuando llegan los datos
   const initialized = useRef(false)
@@ -44,6 +45,10 @@ export default function ConfiguracionPage() {
       isv_rate:     String(empresa.isv_rate ?? 15),
       rubro:        empresa.rubro        ?? '',
     })
+    setConfigCot({
+      mostrar_descripcion: empresa.config_cotizacion?.mostrar_descripcion ?? false,
+      mostrar_foto:        empresa.config_cotizacion?.mostrar_foto        ?? false,
+    })
   }
 
   /* ── Guardar datos ──────────────────────────────────────────── */
@@ -52,6 +57,7 @@ export default function ConfiguracionPage() {
       ...form,
       isv_rate: parseFloat(form.isv_rate) || 0,
       rubro: (form.rubro as Rubro) || null,
+      config_cotizacion: configCot,
     }),
     onSuccess: (res) => {
       setSaveOk(true); setSaveError('')
@@ -182,6 +188,54 @@ export default function ConfiguracionPage() {
 
 {saveError && <p className="mt-3 text-sm text-red-600">{saveError}</p>}
         {saveOk    && <p className="mt-3 text-sm text-emerald-600">Cambios guardados correctamente.</p>}
+
+        <div className="mt-5 flex justify-end">
+          <Button icon={<Save size={15} />} loading={guardar.isPending} onClick={() => guardar.mutate()}>
+            Guardar cambios
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Configuración de cotizaciones ──────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <h2 className="text-sm font-bold text-[#072B5A] mb-1 flex items-center gap-2">
+          <FileText size={16} className="text-[#0E78D8]" /> Configuración de cotizaciones
+        </h2>
+        <p className="text-xs text-[#5F6B7A] mb-5">Elige qué información mostrar en el PDF de cada cotización.</p>
+
+        <div className="space-y-4">
+          {/* Toggle: mostrar descripción */}
+          <div className="flex items-center justify-between py-3 px-4 rounded-xl border border-gray-100 bg-[#F4F7FA]">
+            <div>
+              <p className="text-sm font-semibold text-[#072B5A]">Mostrar descripción del producto</p>
+              <p className="text-xs text-[#5F6B7A] mt-0.5">Incluye la descripción debajo del nombre en la tabla de productos.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfigCot(c => ({ ...c, mostrar_descripcion: !c.mostrar_descripcion }))}
+              style={{ height: '24px', width: '44px' }}
+              className={`rounded-full flex items-center px-0.5 transition-colors shrink-0 ml-4 ${configCot.mostrar_descripcion ? 'bg-[#0E78D8]' : 'bg-gray-300'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${configCot.mostrar_descripcion ? 'translate-x-[20px]' : 'translate-x-0'}`} />
+            </button>
+          </div>
+
+          {/* Toggle: mostrar foto */}
+          <div className="flex items-center justify-between py-3 px-4 rounded-xl border border-gray-100 bg-[#F4F7FA]">
+            <div>
+              <p className="text-sm font-semibold text-[#072B5A]">Mostrar foto del producto</p>
+              <p className="text-xs text-[#5F6B7A] mt-0.5">Muestra la imagen del producto en cada fila si está disponible.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfigCot(c => ({ ...c, mostrar_foto: !c.mostrar_foto }))}
+              style={{ height: '24px', width: '44px' }}
+              className={`rounded-full flex items-center px-0.5 transition-colors shrink-0 ml-4 ${configCot.mostrar_foto ? 'bg-[#0E78D8]' : 'bg-gray-300'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${configCot.mostrar_foto ? 'translate-x-[20px]' : 'translate-x-0'}`} />
+            </button>
+          </div>
+        </div>
 
         <div className="mt-5 flex justify-end">
           <Button icon={<Save size={15} />} loading={guardar.isPending} onClick={() => guardar.mutate()}>
