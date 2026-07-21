@@ -13,7 +13,7 @@ class StoreMovimientoRequest extends FormRequest
     {
         return [
             'empresa_id'      => ['required', 'integer', 'exists:empresas,id'],
-            'bodega_id'       => ['required', 'integer', 'exists:bodegas,id'],
+            'bodega_id'       => ['nullable', 'integer', 'exists:bodegas,id'],
             'tipo_movimiento' => ['required', Rule::in(['entrada', 'salida', 'ajuste_positivo', 'ajuste_negativo'])],
             'numero_documento' => ['nullable', 'string', 'max:60'],
             'fecha'           => ['required', 'date'],

@@ -19,7 +19,9 @@ class MovimientoResource extends JsonResource
             'numero_documento' => $this->numero_documento,
             'fecha'            => $this->fecha?->toDateString(),
             'observaciones'    => $this->observaciones,
-            'bodega'           => $this->whenLoaded('bodega', fn() => ['id' => $this->bodega->id, 'nombre' => $this->bodega->nombre]),
+            'bodega'           => $this->bodega_id
+                ? $this->whenLoaded('bodega', fn() => ['id' => $this->bodega->id, 'nombre' => $this->bodega->nombre])
+                : ['id' => null, 'nombre' => 'Sin asignar'],
             'usuario'          => $this->whenLoaded('usuario', fn() => ['id' => $this->usuario->id, 'nombre' => $this->usuario->nombre]),
             'detalles'         => $this->whenLoaded('detalles', fn() => $this->detalles->map(fn($d) => [
                 'producto_id'    => $d->producto_id,

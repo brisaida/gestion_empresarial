@@ -97,12 +97,12 @@ export default function MovimientosPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!form.tipo_movimiento || !form.bodega_id || !form.fecha) { setError('Completa los campos requeridos.'); return }
+    if (!form.tipo_movimiento || !form.fecha) { setError('Completa los campos requeridos.'); return }
     if (lineas.some((l) => !l.producto_id || !l.cantidad)) { setError('Cada línea necesita producto y cantidad.'); return }
     await crear.mutateAsync({
       empresa_id:       empresaId,
       tipo_movimiento:  form.tipo_movimiento,
-      bodega_id:        Number(form.bodega_id),
+      bodega_id:        form.bodega_id ? Number(form.bodega_id) : null,
       fecha:            form.fecha,
       numero_documento: form.numero_documento || null,
       observaciones:    form.observaciones || null,
@@ -156,14 +156,17 @@ export default function MovimientosPage() {
                 {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
-            <Select
-              label="Bodega *"
-              options={bodegas?.map((b) => ({ value: b.id, label: b.nombre })) ?? []}
-              placeholder="Seleccionar bodega"
-              value={form.bodega_id}
-              onChange={(e) => setForm((f) => ({ ...f, bodega_id: (e.target as HTMLSelectElement).value }))}
-              required
-            />
+            <div>
+              <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide block mb-1">Bodega</label>
+              <select
+                value={form.bodega_id}
+                onChange={(e) => setForm((f) => ({ ...f, bodega_id: e.target.value }))}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
+              >
+                <option value="">— Sin asignar —</option>
+                {bodegas?.map((b) => <option key={b.id} value={b.id}>{b.nombre}</option>)}
+              </select>
+            </div>
             <Input label="Fecha *" type="date" value={form.fecha} onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))} required />
             <Input label="N° Documento" value={form.numero_documento} onChange={(e) => setForm((f) => ({ ...f, numero_documento: e.target.value }))} placeholder="MOV-001" />
             <div className="col-span-2">

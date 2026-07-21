@@ -55,7 +55,7 @@ class InventarioService
 
     private function ajustarExistencia(
         int $empresaId,
-        int $bodegaId,
+        ?int $bodegaId,
         int $productoId,
         float $cantidad,
         string $tipo,
