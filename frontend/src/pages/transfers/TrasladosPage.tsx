@@ -1,4 +1,5 @@
 import { useState, useId, useEffect } from 'react'
+import ComboBox from '@/components/ui/ComboBox'
 import { Plus, Trash2, ArrowRight, CheckCircle, AlertTriangle } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
@@ -170,13 +171,13 @@ export default function TrasladosPage() {
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 className="text-sm font-bold text-[#072B5A] mb-4">Origen y destino</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-              <div>
-                <label className={labelCls}>Bodega origen *</label>
-                <select value={bodegaOrigenId} onChange={e => setBodegaOrigenId(e.target.value)} className={inputCls}>
-                  <option value="">Seleccionar…</option>
-                  {bodegas?.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
-                </select>
-              </div>
+              <ComboBox
+                label="Bodega origen *"
+                placeholder="Seleccionar…"
+                value={bodegaOrigenId}
+                onChange={v => setBodegaOrigenId(v)}
+                options={bodegas?.map(b => ({ value: b.id, label: b.nombre })) ?? []}
+              />
 
               <div className="hidden sm:flex items-center justify-center pt-5">
                 <div className="flex items-center gap-1 text-[#0E78D8]">
@@ -184,15 +185,13 @@ export default function TrasladosPage() {
                 </div>
               </div>
 
-              <div>
-                <label className={labelCls}>Bodega destino *</label>
-                <select value={bodegaDestinoId} onChange={e => setBodegaDestinoId(e.target.value)} className={inputCls}>
-                  <option value="">Seleccionar…</option>
-                  {bodegas?.filter(b => String(b.id) !== bodegaOrigenId).map(b => (
-                    <option key={b.id} value={b.id}>{b.nombre}</option>
-                  ))}
-                </select>
-              </div>
+              <ComboBox
+                label="Bodega destino *"
+                placeholder="Seleccionar…"
+                value={bodegaDestinoId}
+                onChange={v => setBodegaDestinoId(v)}
+                options={bodegas?.filter(b => String(b.id) !== bodegaOrigenId).map(b => ({ value: b.id, label: b.nombre })) ?? []}
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
@@ -228,13 +227,13 @@ export default function TrasladosPage() {
                       <span className="text-xs text-[#5F6B7A] font-bold pt-2.5 w-5 shrink-0">{idx + 1}</span>
                       <div className="flex-1 grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
                         <div>
-                          <label className={labelCls}>Producto *</label>
-                          <select value={l.producto_id} onChange={e => updateLinea(l._id, 'producto_id', e.target.value)} className={inputCls}>
-                            <option value="">Seleccionar producto…</option>
-                            {productos?.map(p => (
-                              <option key={p.id} value={p.id}>{p.codigo ? `[${p.codigo}] ` : ''}{p.nombre}</option>
-                            ))}
-                          </select>
+                          <ComboBox
+                            label="Producto *"
+                            placeholder="Seleccionar producto…"
+                            value={l.producto_id}
+                            onChange={v => updateLinea(l._id, 'producto_id', v)}
+                            options={productos?.map(p => ({ value: p.id, label: p.codigo ? `[${p.codigo}] ${p.nombre}` : p.nombre })) ?? []}
+                          />
                           {l.producto_id && (
                             <StockBodegaInfo
                               productoId={l.producto_id}

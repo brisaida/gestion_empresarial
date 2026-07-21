@@ -8,7 +8,7 @@ import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
-import Select from '@/components/ui/Select'
+import ComboBox from '@/components/ui/ComboBox'
 import { getAxiosError, todayISO } from '@/lib/utils'
 import type { Movimiento, TipoMovimiento } from '@/types'
 
@@ -144,29 +144,20 @@ export default function MovimientosPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Cabecera */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide block mb-1">Tipo *</label>
-              <select
-                value={form.tipo_movimiento}
-                onChange={(e) => setForm((f) => ({ ...f, tipo_movimiento: e.target.value as TipoMovimiento }))}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
-                required
-              >
-                <option value="">Seleccionar tipo</option>
-                {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide block mb-1">Bodega</label>
-              <select
-                value={form.bodega_id}
-                onChange={(e) => setForm((f) => ({ ...f, bodega_id: e.target.value }))}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
-              >
-                <option value="">— Sin asignar —</option>
-                {bodegas?.map((b) => <option key={b.id} value={b.id}>{b.nombre}</option>)}
-              </select>
-            </div>
+            <ComboBox
+              label="Tipo *"
+              placeholder="Seleccionar tipo"
+              value={form.tipo_movimiento}
+              onChange={(v) => setForm((f) => ({ ...f, tipo_movimiento: v as TipoMovimiento }))}
+              options={TIPOS}
+            />
+            <ComboBox
+              label="Bodega"
+              placeholder="— Sin asignar —"
+              value={form.bodega_id}
+              onChange={(v) => setForm((f) => ({ ...f, bodega_id: v }))}
+              options={bodegas?.map((b) => ({ value: b.id, label: b.nombre })) ?? []}
+            />
             <Input label="Fecha *" type="date" value={form.fecha} onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))} required />
             <Input label="N° Documento" value={form.numero_documento} onChange={(e) => setForm((f) => ({ ...f, numero_documento: e.target.value }))} placeholder="MOV-001" />
             <div className="col-span-2">
@@ -191,10 +182,12 @@ export default function MovimientosPage() {
                     <div className="grid grid-cols-12 gap-2 items-end p-3">
                       <div className="col-span-4">
                         {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Producto *</p>}
-                        <select value={l.producto_id} onChange={(e) => setLinea(i, 'producto_id', e.target.value)} className={`${inputCls} text-[#072B5A]`} required>
-                          <option value="">Seleccionar</option>
-                          {productos?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                        </select>
+                        <ComboBox
+                          value={l.producto_id}
+                          onChange={(v) => setLinea(i, 'producto_id', v)}
+                          options={productos?.map((p) => ({ value: p.id, label: p.nombre })) ?? []}
+                          placeholder="Seleccionar"
+                        />
                       </div>
                       <div className="col-span-2">
                         {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Cantidad *</p>}

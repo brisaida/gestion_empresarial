@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ComboBox from '@/components/ui/ComboBox'
 import { Plus, Trash2, ChefHat, Pencil, X, CheckCircle2, AlertCircle, Package } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
@@ -123,17 +124,15 @@ function RecetaFormModal({ open, onClose, empresaId, editando }: RecetaFormProps
               return (
                 <div key={i} className="grid grid-cols-12 gap-2 items-center bg-[#F4F7FA] rounded-lg px-3 py-2">
                   <div className="col-span-6">
-                    <select value={ing.producto_id}
-                      onChange={e => setIngs(p => p.map((x, idx) => idx === i ? { ...x, producto_id: e.target.value } : x))}
-                      className={inputCls}>
-                      <option value="">Seleccionar ingrediente…</option>
-                      {productos.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.codigo ? `[${p.codigo}] ` : ''}{p.nombre}
-                          {p.unidad_medida ? ` (${p.unidad_medida.abreviatura})` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <ComboBox
+                      value={ing.producto_id}
+                      onChange={v => setIngs(p => p.map((x, idx) => idx === i ? { ...x, producto_id: v } : x))}
+                      placeholder="Seleccionar ingrediente…"
+                      options={productos.map(p => ({
+                        value: p.id,
+                        label: `${p.codigo ? `[${p.codigo}] ` : ''}${p.nombre}${p.unidad_medida ? ` (${p.unidad_medida.abreviatura})` : ''}`,
+                      }))}
+                    />
                   </div>
                   <div className="col-span-3">
                     <input type="number" step="any" min="0.0001" value={ing.cantidad} placeholder="Cant."

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Pencil, ToggleLeft, ToggleRight, KeyRound, Trash2, Eye, EyeOff } from 'lucide-react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
+import ComboBox from '@/components/ui/ComboBox'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -10,7 +11,6 @@ import { StatusBadge } from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
-import Select from '@/components/ui/Select'
 import SearchBar from '@/components/ui/SearchBar'
 import { getAxiosError } from '@/lib/utils'
 import type { UsuarioAdmin, UsuarioEmpresaItem } from '@/types'
@@ -249,17 +249,31 @@ export default function UsuariosAdminPage() {
             <div className="border-t border-gray-100 pt-4 space-y-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Asignar a empresa (opcional)</p>
               <div className="grid grid-cols-2 gap-4">
-                <Select
-                  label="Empresa"
-                  placeholder="Sin asignar"
-                  options={empresasOptions}
-                  {...userForm.register('empresa_id')}
+                <Controller
+                  name="empresa_id"
+                  control={userForm.control}
+                  render={({ field }) => (
+                    <ComboBox
+                      label="Empresa"
+                      placeholder="Sin asignar"
+                      options={empresasOptions}
+                      value={field.value ?? ''}
+                      onChange={v => field.onChange(v ? Number(v) : undefined)}
+                    />
+                  )}
                 />
-                <Select
-                  label="Rol"
-                  placeholder="Seleccionar..."
-                  options={rolesOptions}
-                  {...userForm.register('rol_id')}
+                <Controller
+                  name="rol_id"
+                  control={userForm.control}
+                  render={({ field }) => (
+                    <ComboBox
+                      label="Rol"
+                      placeholder="Seleccionar..."
+                      options={rolesOptions}
+                      value={field.value ?? ''}
+                      onChange={v => field.onChange(v ? Number(v) : undefined)}
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -287,16 +301,13 @@ export default function UsuariosAdminPage() {
                 {(accesoData as UsuarioEmpresaItem[]).map(item => (
                   <div key={item.empresa_id} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
                     <p className="text-sm font-medium text-[#072B5A] flex-1 min-w-0 truncate">{item.empresa_nombre}</p>
-                    <select
-                      defaultValue={item.rol_id ?? ''}
-                      onChange={e => cambiarRolMut.mutate({ empresaId: item.empresa_id, rolId: Number(e.target.value) })}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] bg-white transition-all"
-                    >
-                      <option value="" disabled>Sin rol</option>
-                      {(rolesData ?? []).map(r => (
-                        <option key={r.id} value={r.id}>{r.nombre}</option>
-                      ))}
-                    </select>
+                    <ComboBox
+                      value={item.rol_id ?? ''}
+                      onChange={v => v && cambiarRolMut.mutate({ empresaId: item.empresa_id, rolId: Number(v) })}
+                      options={(rolesData ?? []).map(r => ({ value: r.id, label: r.nombre }))}
+                      placeholder="Sin rol"
+                      triggerClassName="text-xs py-1.5"
+                    />
                     <button
                       onClick={() => quitarMut.mutate(item.empresa_id)}
                       className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
@@ -316,19 +327,33 @@ export default function UsuariosAdminPage() {
             {accesoError && <p className="mb-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{accesoError}</p>}
             <form onSubmit={accesoForm.handleSubmit(data => asignarMut.mutate(data))} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <Select
-                  label="Empresa *"
-                  placeholder="Seleccionar..."
-                  options={empresasOptions}
-                  error={accesoForm.formState.errors.empresa_id?.message}
-                  {...accesoForm.register('empresa_id')}
+                <Controller
+                  name="empresa_id"
+                  control={accesoForm.control}
+                  render={({ field }) => (
+                    <ComboBox
+                      label="Empresa *"
+                      placeholder="Seleccionar..."
+                      options={empresasOptions}
+                      error={accesoForm.formState.errors.empresa_id?.message}
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
-                <Select
-                  label="Rol *"
-                  placeholder="Seleccionar..."
-                  options={rolesOptions}
-                  error={accesoForm.formState.errors.rol_id?.message}
-                  {...accesoForm.register('rol_id')}
+                <Controller
+                  name="rol_id"
+                  control={accesoForm.control}
+                  render={({ field }) => (
+                    <ComboBox
+                      label="Rol *"
+                      placeholder="Seleccionar..."
+                      options={rolesOptions}
+                      error={accesoForm.formState.errors.rol_id?.message}
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
               </div>
               <div className="flex justify-end">

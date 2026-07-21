@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import ComboBox from '@/components/ui/ComboBox'
 import { Plus, XCircle, Search, Minus, Trash2, Receipt, User, Warehouse,
          CalendarDays, Hash, Lock, ChefHat, Package, LayoutGrid, List, UtensilsCrossed, TableProperties, Banknote, AlertTriangle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -467,20 +468,24 @@ export default function VentasPage() {
               <label className={labelCls}>
                 <span className="flex items-center gap-1.5"><User size={11} /> Cliente</span>
               </label>
-              <select value={clienteId} onChange={e => setClienteId(e.target.value)} className={selectCls}>
-                <option value="">— Consumidor final —</option>
-                {clientes?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
+              <ComboBox
+                placeholder="— Consumidor final —"
+                value={clienteId}
+                onChange={v => setClienteId(v)}
+                options={clientes?.map(c => ({ value: c.id, label: c.nombre })) ?? []}
+              />
             </div>
 
             <div>
               <label className={labelCls}>
                 <span className="flex items-center gap-1.5"><Warehouse size={11} /> Bodega *</span>
               </label>
-              <select value={bodegaId} onChange={e => setBodegaId(e.target.value)} required className={selectCls}>
-                <option value="">Seleccionar</option>
-                {bodegas?.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
-              </select>
+              <ComboBox
+                placeholder="Seleccionar"
+                value={bodegaId}
+                onChange={v => setBodegaId(v)}
+                options={bodegas?.map(b => ({ value: b.id, label: b.nombre })) ?? []}
+              />
             </div>
 
             <div>
@@ -494,12 +499,16 @@ export default function VentasPage() {
               <label className={labelCls}>
                 <span className="flex items-center gap-1.5"><Banknote size={11} /> Método de pago</span>
               </label>
-              <select value={metodoPago} onChange={e => setMetodoPago(e.target.value as typeof metodoPago)} className={selectCls}>
-                <option value="efectivo">Efectivo</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="mixto">Mixto</option>
-              </select>
+              <ComboBox
+                value={metodoPago}
+                onChange={v => setMetodoPago(v as typeof metodoPago)}
+                options={[
+                  { value: 'efectivo',      label: 'Efectivo' },
+                  { value: 'tarjeta',       label: 'Tarjeta' },
+                  { value: 'transferencia', label: 'Transferencia' },
+                  { value: 'mixto',         label: 'Mixto' },
+                ]}
+              />
             </div>
           </div>
         </div>

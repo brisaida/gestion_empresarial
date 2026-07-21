@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useForm, type Resolver } from 'react-hook-form'
+import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -12,7 +12,7 @@ import { getAxiosError } from '@/lib/utils'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
-import Select from '@/components/ui/Select'
+import ComboBox from '@/components/ui/ComboBox'
 import type { Producto } from '@/types'
 
 const schema = z.object({
@@ -76,7 +76,7 @@ export default function ProductoFormPage() {
     enabled:  isEdit,
   })
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: { costo: 0, precio_venta: 0, stock_minimo: 0, activo: true },
   })
@@ -463,8 +463,32 @@ export default function ProductoFormPage() {
               })()}
             </div>
 
-            <Select label="Marca"     options={marcas?.map(m => ({ value: m.id, label: m.nombre })) ?? []} placeholder="Sin marca" {...register('marca_id')} />
-            <Select label="Unidad de medida" options={unidades?.map(u => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? []} placeholder="Sin unidad" {...register('unidad_medida_id')} />
+            <Controller
+              name="marca_id"
+              control={control}
+              render={({ field }) => (
+                <ComboBox
+                  label="Marca"
+                  options={marcas?.map(m => ({ value: m.id, label: m.nombre })) ?? []}
+                  placeholder="Sin marca"
+                  value={field.value ?? ''}
+                  onChange={v => field.onChange(v)}
+                />
+              )}
+            />
+            <Controller
+              name="unidad_medida_id"
+              control={control}
+              render={({ field }) => (
+                <ComboBox
+                  label="Unidad de medida"
+                  options={unidades?.map(u => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? []}
+                  placeholder="Sin unidad"
+                  value={field.value ?? ''}
+                  onChange={v => field.onChange(v)}
+                />
+              )}
+            />
           </div>
         </div>
 

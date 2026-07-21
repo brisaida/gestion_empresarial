@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import ComboBox from '@/components/ui/ComboBox'
 import { Plus, XCircle, Search, Minus, Trash2, FileText, User,
          CalendarDays, Hash, CheckCircle2, Lock, AlignLeft } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -173,11 +174,13 @@ export default function CotizacionesPage() {
 
             {/* Cliente */}
             <div>
-              <label className={labelCls}><span className="flex items-center gap-1.5"><User size={11} /> Cliente</span></label>
-              <select value={clienteId} onChange={e => setClienteId(e.target.value)} className={selectCls}>
-                <option value="">— Sin cliente —</option>
-                {clientes?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
+              <ComboBox
+                label="Cliente"
+                placeholder="— Sin cliente —"
+                value={clienteId}
+                onChange={v => setClienteId(v)}
+                options={clientes?.map(c => ({ value: c.id, label: c.nombre })) ?? []}
+              />
             </div>
 
             {/* Fecha */}

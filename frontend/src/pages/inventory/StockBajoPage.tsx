@@ -9,9 +9,19 @@ import { formatNumber } from '@/lib/utils'
 import type { Existencia } from '@/types'
 
 function NivelBar({ cantidad, minimo }: { cantidad: number; minimo: number }) {
+  if (cantidad === 0) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-full rounded-full bg-red-500" style={{ width: '100%' }} />
+        </div>
+        <span className="text-xs text-red-600 w-8 text-right font-medium">0%</span>
+      </div>
+    )
+  }
   if (minimo <= 0) return null
   const pct = Math.min((cantidad / minimo) * 100, 100)
-  const color = pct === 0 ? 'bg-red-500' : pct < 50 ? 'bg-amber-400' : 'bg-emerald-400'
+  const color = pct < 50 ? 'bg-amber-400' : 'bg-emerald-400'
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -98,7 +108,7 @@ export default function StockBajoPage() {
             Alertas de Stock
           </h1>
           <p className="text-sm text-[#5F6B7A] mt-0.5">
-            Productos con stock actual igual o por debajo del mínimo configurado
+            Productos con stock en cero o por debajo del mínimo configurado
           </p>
         </div>
         <button

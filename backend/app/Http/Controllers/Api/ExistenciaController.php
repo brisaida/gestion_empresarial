@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\ExistenciaResource;
 use App\Models\Existencia;
+use App\Models\Producto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,10 +24,14 @@ class ExistenciaController extends ApiController
         }
 
         if ($request->boolean('stock_bajo', false)) {
-            // productos con cantidad <= stock_minimo
-            $query->whereHas('producto', function ($q) {
-                $q->whereColumn('existencias.cantidad', '<=', 'productos.stock_minimo')
-                  ->where('productos.stock_minimo', '>', 0);
+            return $this->stockBajoResponse($request);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->string('search');
+            $query->whereHas('producto', function ($q) use ($search) {
+                $q->where('nombre', 'ilike', "%{$search}%")
+                  ->orWhere('codigo', 'ilike', "%{$search}%");
             });
         }
 
@@ -39,6 +44,64 @@ class ExistenciaController extends ApiController
                 'total'        => $data->total(),
                 'current_page' => $data->currentPage(),
                 'last_page'    => $data->lastPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * Alertas de stock: productos con stock = 0 o por debajo del mínimo.
+     * Consulta productos directamente para incluir los que no tienen filas en existencias.
+     */
+    private function stockBajoResponse(Request $request): JsonResponse
+    {
+        $empresaId = $request->integer('empresa_id');
+        $perPage   = $request->integer('per_page', 20);
+        $page      = $request->integer('page', 1);
+        $search    = $request->string('search');
+
+        $query = Producto::where('empresa_id', $empresaId)
+            ->where('activo', true)
+            ->withSum('existencias', 'cantidad')
+            ->with('existencias.bodega');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre', 'ilike', "%{$search}%")
+                  ->orWhere('codigo', 'ilike', "%{$search}%");
+            });
+        }
+
+        $todos = $query->get()->filter(function ($p) {
+            $total  = (float) ($p->existencias_sum_cantidad ?? 0);
+            $minimo = (float) $p->stock_minimo;
+            // stock = 0 (sin importar el mínimo) o por debajo del mínimo
+            return $total === 0.0 || ($minimo > 0 && $total <= $minimo);
+        })->values();
+
+        $total    = $todos->count();
+        $items    = $todos->forPage($page, $perPage);
+
+        $data = $items->map(fn($p) => [
+            'id'          => $p->id,
+            'producto_id' => $p->id,
+            'bodega_id'   => null,
+            'cantidad'    => (float) ($p->existencias_sum_cantidad ?? 0),
+            'producto'    => [
+                'id'          => $p->id,
+                'nombre'      => $p->nombre,
+                'codigo'      => $p->codigo,
+                'stock_minimo'=> (float) $p->stock_minimo,
+            ],
+            'bodega' => null,
+        ])->values();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $data,
+            'meta'    => [
+                'total'        => $total,
+                'current_page' => $page,
+                'last_page'    => (int) ceil($total / $perPage) ?: 1,
             ],
         ]);
     }

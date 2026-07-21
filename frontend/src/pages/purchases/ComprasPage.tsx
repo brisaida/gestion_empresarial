@@ -7,7 +7,7 @@ import { comprasApi, proveedoresApi, bodegasApi, productosApi } from '@/api/recu
 import type { FacturaEscaneada } from '@/api/recursos'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
-import Select from '@/components/ui/Select'
+import ComboBox from '@/components/ui/ComboBox'
 import Modal from '@/components/ui/Modal'
 import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
 import type { Proveedor, Producto } from '@/types'
@@ -479,13 +479,12 @@ export default function ComprasPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Proveedor con botón crear */}
             <div className="flex flex-col gap-1">
-              <Select
+              <ComboBox
                 label="Proveedor *"
                 options={proveedores.map(p => ({ value: p.id, label: p.nombre }))}
                 placeholder="Seleccionar"
                 value={form.proveedor_id}
-                onChange={e => setForm(f => ({ ...f, proveedor_id: (e.target as HTMLSelectElement).value }))}
-                required
+                onChange={v => setForm(f => ({ ...f, proveedor_id: v }))}
               />
               <div className="flex items-center justify-between">
                 {proveedorHint && !form.proveedor_id && (
@@ -502,13 +501,12 @@ export default function ComprasPage() {
               </div>
             </div>
 
-            <Select
+            <ComboBox
               label="Bodega destino *"
               options={bodegas.map(b => ({ value: b.id, label: b.nombre }))}
               placeholder="Seleccionar"
               value={form.bodega_id}
-              onChange={e => setForm(f => ({ ...f, bodega_id: (e.target as HTMLSelectElement).value }))}
-              required
+              onChange={v => setForm(f => ({ ...f, bodega_id: v }))}
             />
             <Input label="Fecha *" type="date" value={form.fecha_compra} onChange={e => setForm(f => ({ ...f, fecha_compra: e.target.value }))} required />
             <Input label="N° Factura proveedor" value={form.numero_factura} onChange={e => setForm(f => ({ ...f, numero_factura: e.target.value }))} placeholder="FAC-001" />
@@ -535,10 +533,12 @@ export default function ComprasPage() {
                   <div className="grid grid-cols-12 gap-2 items-end p-3">
                     <div className="col-span-4">
                       {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Producto *</p>}
-                      <select value={l.producto_id} onChange={e => setLinea(i, 'producto_id', e.target.value)} required className={`${inputCls} text-[#072B5A]`}>
-                        <option value="">{l.hint ? `— ${l.hint}` : 'Seleccionar'}</option>
-                        {productos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                      </select>
+                      <ComboBox
+                        value={l.producto_id}
+                        onChange={v => setLinea(i, 'producto_id', v)}
+                        placeholder={l.hint ? `— ${l.hint}` : 'Seleccionar'}
+                        options={productos.map(p => ({ value: p.id, label: p.nombre }))}
+                      />
                       <div className="flex items-center justify-between mt-0.5">
                         {l.hint && !l.producto_id && (
                           <p className="text-[10px] text-[#0E78D8] truncate max-w-[120px]" title={l.hint}>IA: {l.hint}</p>

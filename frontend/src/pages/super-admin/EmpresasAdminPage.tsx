@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Pencil, ToggleLeft, ToggleRight } from 'lucide-react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
+import ComboBox from '@/components/ui/ComboBox'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -46,7 +47,7 @@ export default function EmpresasAdminPage() {
     queryFn:  () => saEmpresasApi.list({ page, search: search || undefined, per_page: 15 }).then(r => r.data),
   })
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   })
 
@@ -160,14 +161,19 @@ export default function EmpresasAdminPage() {
             <Input label="Teléfono" {...register('telefono')} />
             <Input label="Dirección" {...register('direccion')} />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5">Rubro</label>
-            <select {...register('rubro')}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-purple-400/30 focus:border-purple-500 transition-all">
-              <option value="">— Sin especificar —</option>
-              {RUBROS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
-          </div>
+          <Controller
+            name="rubro"
+            control={control}
+            render={({ field }) => (
+              <ComboBox
+                label="Rubro"
+                placeholder="— Sin especificar —"
+                value={field.value ?? ''}
+                onChange={v => field.onChange(v)}
+                options={RUBROS}
+              />
+            )}
+          />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={closeModal}>Cancelar</Button>
             <Button type="submit" loading={isSubmitting}>{modal === 'create' ? 'Crear' : 'Guardar'}</Button>

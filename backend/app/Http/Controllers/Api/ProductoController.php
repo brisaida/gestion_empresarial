@@ -15,7 +15,8 @@ class ProductoController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $query = Producto::where('empresa_id', $request->integer('empresa_id'))
-            ->with(['categorias', 'marca', 'unidadMedida']);
+            ->with(['categorias', 'marca', 'unidadMedida'])
+            ->withSum('existencias', 'cantidad');
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {

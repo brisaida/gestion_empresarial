@@ -36,7 +36,11 @@ class ProductoResource extends JsonResource
             'categorias'         => $this->whenLoaded('categorias', fn() => $this->categorias->map(fn($c) => ['id' => $c->id, 'nombre' => $c->nombre])->values()),
             'marca'              => $this->whenLoaded('marca', fn() => ['id' => $this->marca->id, 'nombre' => $this->marca->nombre]),
             'unidad_medida'      => $this->whenLoaded('unidadMedida', fn() => ['id' => $this->unidadMedida->id, 'nombre' => $this->unidadMedida->nombre, 'abreviatura' => $this->unidadMedida->abreviatura]),
-            'stock_total'        => $this->whenLoaded('existencias', fn() => (float) $this->existencias->sum('cantidad')),
+            'stock_total'        => $this->whenLoaded(
+                'existencias',
+                fn() => (float) $this->existencias->sum('cantidad'),
+                fn() => (float) ($this->existencias_sum_cantidad ?? 0),
+            ),
         ];
     }
 }

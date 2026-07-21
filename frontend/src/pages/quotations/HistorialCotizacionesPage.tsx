@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import ComboBox from '@/components/ui/ComboBox'
 import { ArrowRightCircle, CheckCircle, XCircle, Send, RotateCcw, Download, Loader2,
          Pencil, Plus, Minus, Trash2, Search, Banknote } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -385,20 +386,26 @@ export default function HistorialCotizacionesPage() {
         </p>
         <div className="space-y-3 mb-4">
           <div>
-            <label className={labelCls}>Bodega de despacho *</label>
-            <select value={bodegaId} onChange={e => setBodegaId(e.target.value)} className={selectCls}>
-              <option value="">Seleccionar bodega</option>
-              {bodegas?.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
-            </select>
+            <ComboBox
+              label="Bodega de despacho *"
+              placeholder="Seleccionar bodega"
+              value={bodegaId}
+              onChange={v => setBodegaId(v)}
+              options={bodegas?.map(b => ({ value: b.id, label: b.nombre })) ?? []}
+            />
           </div>
           <div>
             <label className={labelCls}><span className="flex items-center gap-1.5"><Banknote size={11} /> Método de pago</span></label>
-            <select value={metodoPago} onChange={e => setMetodoPago(e.target.value as MetodoPago)} className={selectCls}>
-              <option value="efectivo">Efectivo</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="transferencia">Transferencia</option>
-              <option value="mixto">Mixto</option>
-            </select>
+            <ComboBox
+              value={metodoPago}
+              onChange={v => setMetodoPago(v as MetodoPago)}
+              options={[
+                { value: 'efectivo',      label: 'Efectivo' },
+                { value: 'tarjeta',       label: 'Tarjeta' },
+                { value: 'transferencia', label: 'Transferencia' },
+                { value: 'mixto',         label: 'Mixto' },
+              ]}
+            />
           </div>
         </div>
         {convertirError && <p className="mb-4 text-sm text-red-600">{convertirError}</p>}
@@ -423,11 +430,13 @@ export default function HistorialCotizacionesPage() {
             {/* Cabecera */}
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className={labelCls}>Cliente</label>
-                <select value={editClienteId} onChange={e => setEditClienteId(e.target.value)} className={selectCls}>
-                  <option value="">— Sin cliente —</option>
-                  {clientes?.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                </select>
+                <ComboBox
+                  label="Cliente"
+                  placeholder="— Sin cliente —"
+                  value={editClienteId}
+                  onChange={v => setEditClienteId(v)}
+                  options={clientes?.map(c => ({ value: c.id, label: c.nombre })) ?? []}
+                />
               </div>
               <div>
                 <label className={labelCls}>Fecha *</label>
