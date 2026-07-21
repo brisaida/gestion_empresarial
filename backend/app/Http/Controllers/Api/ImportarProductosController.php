@@ -194,8 +194,27 @@ class ImportarProductosController extends ApiController
                 continue;
             }
 
-            // Saltar duplicados por nombre
+            // Si el producto ya existe, solo sumar stock si viene stock_inicial
             if (isset($nombresExistentes[strtolower($nombre)])) {
+                $stockInicial = self::parseNumero($get($row, 'stock_inicial')) ?? 0.0;
+                if ($stockInicial > 0) {
+                    $productoExistente = Producto::where('empresa_id', $empresaId)
+                        ->whereRaw('LOWER(nombre) = ?', [strtolower($nombre)])
+                        ->first();
+                    if ($productoExistente) {
+                        $existencia = Existencia::firstOrCreate(
+                            [
+                                'empresa_id'  => $empresaId,
+                                'bodega_id'   => $bodegaPredeterminada?->id,
+                                'producto_id' => $productoExistente->id,
+                                'lote'        => null,
+                                'numero_serie' => null,
+                            ],
+                            ['cantidad' => 0, 'cantidad_reservada' => 0]
+                        );
+                        $existencia->increment('cantidad', $stockInicial);
+                    }
+                }
                 $omitidos++;
                 continue;
             }
