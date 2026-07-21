@@ -53,6 +53,10 @@ sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-avail
 find /etc/apache2/mods-enabled -name 'mpm_*.load' ! -name 'mpm_prefork.load' -delete 2>/dev/null || true
 find /etc/apache2/mods-enabled -name 'mpm_*.conf' ! -name 'mpm_prefork.conf' -delete 2>/dev/null || true
 
+# ── Storage symlink ───────────────────────────────────────────────────────────
+echo "[backend] Creando storage:link..."
+php artisan storage:link --force
+
 # ── Migraciones ───────────────────────────────────────────────────────────────
 echo "[backend] Ejecutando migraciones..."
 php artisan migrate --force --no-interaction
