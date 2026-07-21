@@ -23,6 +23,12 @@ class ExistenciaController extends ApiController
             $query->where('producto_id', $request->integer('producto_id'));
         }
 
+        if ($request->filled('categoria_id')) {
+            $query->whereHas('producto.categorias', function ($q) use ($request) {
+                $q->where('categorias.id', $request->integer('categoria_id'));
+            });
+        }
+
         if ($request->boolean('stock_bajo', false)) {
             return $this->stockBajoResponse($request);
         }
