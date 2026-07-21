@@ -48,6 +48,7 @@ export default function ProductoFormPage() {
   const qc = useQueryClient()
   const { state } = useAuth()
   const empresaId: number = state.empresaActiva?.id ?? 0
+  const esRestaurante = state.empresaActiva?.rubro === 'restaurante'
 
   // Image
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -499,41 +500,37 @@ export default function ProductoFormPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
           <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Opciones de rastreo</p>
 
-          {/* Tipo */}
-          <div>
-            <p className="text-xs font-medium text-gray-600 mb-2">Tipo de producto</p>
-            <div className="flex gap-3">
-              {([
-                { value: 'venta',       label: 'Para venta',  desc: 'Aparece en el punto de venta' },
-                { value: 'ingrediente', label: 'Ingrediente', desc: 'Solo se usa en recetas'        },
-              ] as const).map(opt => (
-                <label key={opt.value}
-                  className={`flex-1 flex items-start gap-2.5 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    watch('tipo') === opt.value
-                      ? 'border-[#0E78D8] bg-[#0E78D8]/5'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                  <input type="radio" value={opt.value} {...register('tipo')} className="mt-0.5 accent-[#0E78D8]" />
-                  <div>
-                    <p className="text-sm font-semibold text-[#072B5A]">{opt.label}</p>
-                    <p className="text-xs text-[#5F6B7A]">{opt.desc}</p>
-                  </div>
-                </label>
-              ))}
+          {/* Tipo — solo visible para restaurantes */}
+          {esRestaurante && (
+            <div>
+              <p className="text-xs font-medium text-gray-600 mb-2">Tipo de producto</p>
+              <div className="flex gap-3">
+                {([
+                  { value: 'venta',       label: 'Para venta',  desc: 'Aparece en el punto de venta' },
+                  { value: 'ingrediente', label: 'Ingrediente', desc: 'Solo se usa en recetas'        },
+                ] as const).map(opt => (
+                  <label key={opt.value}
+                    className={`flex-1 flex items-start gap-2.5 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      watch('tipo') === opt.value
+                        ? 'border-[#0E78D8] bg-[#0E78D8]/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                    <input type="radio" value={opt.value} {...register('tipo')} className="mt-0.5 accent-[#0E78D8]" />
+                    <div>
+                      <p className="text-sm font-semibold text-[#072B5A]">{opt.label}</p>
+                      <p className="text-xs text-[#5F6B7A]">{opt.desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex flex-wrap gap-6">
-            {([
-              ['maneja_lote',        'Maneja lote'],
-              ['maneja_vencimiento', 'Maneja vencimiento'],
-              ['maneja_serie',       'Maneja serie'],
-            ] as const).map(([k, l]) => (
-              <label key={k} className="flex items-center gap-2 text-sm text-[#5F6B7A] cursor-pointer">
-                <input type="checkbox" {...register(k)} className="rounded accent-[#0E78D8]" />
-                {l}
-              </label>
-            ))}
+            <label className="flex items-center gap-2 text-sm text-[#5F6B7A] cursor-pointer">
+              <input type="checkbox" {...register('maneja_vencimiento')} className="rounded accent-[#0E78D8]" />
+              Maneja vencimiento
+            </label>
           </div>
           <div className="pt-1 border-t border-gray-50">
             <label className="flex items-center gap-2 text-sm text-[#5F6B7A] cursor-pointer">

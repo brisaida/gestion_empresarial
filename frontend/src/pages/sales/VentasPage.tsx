@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, XCircle, Search, Minus, Trash2, Receipt, User, Warehouse,
-         CalendarDays, Hash, Lock, ChefHat, Package, LayoutGrid, UtensilsCrossed, TableProperties, Banknote, AlertTriangle } from 'lucide-react'
+         CalendarDays, Hash, Lock, ChefHat, Package, LayoutGrid, List, UtensilsCrossed, TableProperties, Banknote, AlertTriangle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi, recetasApi, comandasApi, sesionCajaApi } from '@/api/recursos'
@@ -54,6 +54,7 @@ export default function VentasPage() {
   // Tablet POS state
   const [categoriaActiva, setCategoriaActiva] = useState<CategoriaTab>('todos')
   const [tabletSearch, setTabletSearch]       = useState('')
+  const [vistaProductos, setVistaProductos]   = useState<'lista' | 'mosaico'>('lista')
 
   const { data: sesionActual } = useQuery({
     queryKey: ['caja-actual', empresaId],
@@ -136,6 +137,7 @@ export default function VentasPage() {
 
   const filteredProducts = (productos ?? []).filter(p =>
     search.length > 0 &&
+    (esRestaurante || p.tipo !== 'ingrediente') &&
     (p.nombre.toLowerCase().includes(search.toLowerCase()) ||
      (p.codigo ?? '').toLowerCase().includes(search.toLowerCase()))
   ).slice(0, 6)
@@ -153,9 +155,10 @@ export default function VentasPage() {
     : []
   const gridProductos = categoriaActiva !== 'platos'
     ? (productos ?? []).filter(p =>
-        !tabletSearch ||
-        p.nombre.toLowerCase().includes(tabletSearch.toLowerCase()) ||
-        (p.codigo ?? '').toLowerCase().includes(tabletSearch.toLowerCase()))
+        (esRestaurante || p.tipo !== 'ingrediente') &&
+        (!tabletSearch ||
+         p.nombre.toLowerCase().includes(tabletSearch.toLowerCase()) ||
+         (p.codigo ?? '').toLowerCase().includes(tabletSearch.toLowerCase())))
     : []
 
   const getQtyReceta   = (id: number) => lineas.find(l => l.tipo === 'receta'   && l.receta?.id   === id)?.cantidad ?? 0
@@ -399,9 +402,31 @@ export default function VentasPage() {
       </Modal>
 
 
-      <div>
-        <h1 className="text-xl font-bold text-[#072B5A]">Nueva Venta</h1>
-        <p className="text-sm text-[#5F6B7A]">Registra una factura de venta</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-[#072B5A]">Nueva Venta</h1>
+          <p className="text-sm text-[#5F6B7A]">Registra una factura de venta</p>
+        </div>
+        {!esRestaurante && (
+          <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg p-1 shadow-sm shrink-0">
+            <button
+              type="button"
+              onClick={() => setVistaProductos('lista')}
+              title="Vista lista"
+              className={`p-1.5 rounded transition-all ${vistaProductos === 'lista' ? 'bg-[#0E78D8] text-white shadow-sm' : 'text-[#5F6B7A] hover:text-[#0E78D8] hover:bg-[#F4F7FA]'}`}
+            >
+              <List size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setVistaProductos('mosaico')}
+              title="Vista mosaico"
+              className={`p-1.5 rounded transition-all ${vistaProductos === 'mosaico' ? 'bg-[#0E78D8] text-white shadow-sm' : 'text-[#5F6B7A] hover:text-[#0E78D8] hover:bg-[#F4F7FA]'}`}
+            >
+              <LayoutGrid size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
       {sinSesion && (
@@ -686,7 +711,133 @@ export default function VentasPage() {
         )}
 
         {/* ── VISTA ESTÁNDAR: mobile siempre; desktop solo si NO es restaurante ── */}
-        <div className={`flex flex-col sm:flex-row gap-4 items-start${esRestaurante ? ' md:hidden' : ''}`}>
+        {/* Mosaico: grid de productos + carrito lateral */}
+        {vistaProductos === 'mosaico' && !esRestaurante && (
+          <div className="flex gap-4" style={{ height: 'calc(100vh - 280px)', minHeight: 500 }}>
+
+            {/* Grilla de productos */}
+            <div className="flex-1 flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-4 pt-4 pb-3 border-b border-gray-100 shrink-0">
+                <div className="flex items-center gap-2 px-3 py-2 bg-[#F4F7FA] border border-gray-200 rounded-lg focus-within:border-[#0E78D8] focus-within:ring-2 focus-within:ring-[#0E78D8]/20 transition-all">
+                  <Search size={14} className="text-[#5F6B7A] shrink-0" />
+                  <input type="text" placeholder="Buscar producto..." value={tabletSearch}
+                    onChange={e => setTabletSearch(e.target.value)}
+                    className="flex-1 bg-transparent text-sm text-[#072B5A] placeholder-gray-400 focus:outline-none min-w-0" />
+                  {tabletSearch && (
+                    <button type="button" onClick={() => setTabletSearch('')} className="text-gray-400 hover:text-gray-600">
+                      <XCircle size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4">
+                {gridProductos.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <Package size={28} className="text-gray-200 mb-2" />
+                    <p className="text-sm text-[#5F6B7A]">No se encontraron productos</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {gridProductos.map(p => {
+                      const qty = getQtyProducto(p.id)
+                      return (
+                        <button key={p.id} type="button" onClick={() => addProduct(p)}
+                          className={`relative text-left p-3 rounded-xl border transition-all active:scale-95 select-none ${
+                            qty > 0 ? 'border-[#0E78D8] bg-[#0E78D8]/5 shadow-sm' : 'border-gray-100 bg-white hover:border-[#0E78D8]/40 hover:bg-[#F4F7FA]'
+                          }`}>
+                          {p.imagen_url
+                            ? <img src={p.imagen_url} className="w-full aspect-square rounded-lg object-cover border border-gray-100 mb-2" alt="" />
+                            : <div className="w-full aspect-square rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-2">
+                                <Package size={20} className="text-gray-300" />
+                              </div>
+                          }
+                          <p className="text-xs font-semibold text-[#072B5A] leading-tight line-clamp-2">{p.nombre}</p>
+                          <p className="text-sm font-bold text-[#0E78D8] mt-1">{formatCurrency(p.precio_venta)}</p>
+                          {p.stock_total !== undefined && (
+                            <p className="text-[10px] text-gray-400 mt-0.5">Stock: {p.stock_total}</p>
+                          )}
+                          {qty > 0 && (
+                            <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 bg-[#0E78D8] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                              {qty}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Carrito */}
+            <div className="w-72 flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden shrink-0">
+              <div className="px-4 py-3 border-b border-gray-100 shrink-0">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold text-[#072B5A]">Pedido actual</p>
+                  {totalItems > 0 && (
+                    <span className="text-xs font-bold text-[#0E78D8] bg-[#0E78D8]/10 px-2 py-0.5 rounded-full">
+                      {totalItems} ítem{totalItems !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {lineas.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
+                    <div className="w-12 h-12 rounded-xl bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-2">
+                      <Receipt size={20} className="text-gray-300" />
+                    </div>
+                    <p className="text-sm text-[#5F6B7A] font-medium">Pedido vacío</p>
+                    <p className="text-xs text-gray-400 mt-1">Toca un producto para agregar</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {lineas.map((l, i) => (
+                      <div key={l._key} className="px-4 py-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center overflow-hidden">
+                              {l.producto?.imagen_url
+                                ? <img src={l.producto.imagen_url} className="w-full h-full object-cover" alt="" />
+                                : <Package size={12} className="text-gray-300" />
+                              }
+                            </div>
+                            <p className="text-xs font-semibold text-[#072B5A] leading-tight truncate">{l.producto!.nombre}</p>
+                          </div>
+                          <button type="button" onClick={() => removeLinea(i)} className="text-gray-300 hover:text-red-500 transition-colors shrink-0 p-0.5">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-1">
+                            <button type="button" onClick={() => updateCantidad(i, -1)}
+                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] active:scale-95 transition-all">
+                              <Minus size={11} />
+                            </button>
+                            <span className="w-8 text-center text-sm font-bold text-[#072B5A]">{l.cantidad}</span>
+                            <button type="button" onClick={() => updateCantidad(i, +1)}
+                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] active:scale-95 transition-all">
+                              <Plus size={11} />
+                            </button>
+                          </div>
+                          <span className="text-sm font-bold text-[#072B5A]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-gray-100 p-4 shrink-0">
+                <CartTotals compact />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`flex flex-col sm:flex-row gap-4 items-start${esRestaurante ? ' md:hidden' : ''}${vistaProductos === 'mosaico' && !esRestaurante ? ' hidden' : ''}`}>
 
           {/* Tabla de detalle */}
           <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-visible">
