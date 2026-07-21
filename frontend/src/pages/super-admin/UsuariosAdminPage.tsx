@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Pencil, ToggleLeft, ToggleRight, KeyRound, Trash2 } from 'lucide-react'
+import { Plus, Pencil, ToggleLeft, ToggleRight, KeyRound, Trash2, Eye, EyeOff } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -36,6 +36,7 @@ export default function UsuariosAdminPage() {
   const [page, setPage]     = useState(1)
   const [search, setSearch] = useState('')
   const [modal, setModal]   = useState<'create' | 'edit' | null>(null)
+  const [showPass, setShowPass] = useState(false)
   const [selected, setSelected]     = useState<UsuarioAdmin | null>(null)
   const [accesoUser, setAccesoUser] = useState<UsuarioAdmin | null>(null)
   const [error, setError]       = useState('')
@@ -97,6 +98,15 @@ export default function UsuariosAdminPage() {
     onError: (e) => setAccesoError(getAxiosError(e)),
   })
 
+  const cambiarRolMut = useMutation({
+    mutationFn: ({ empresaId, rolId }: { empresaId: number; rolId: number }) =>
+      saUsuariosApi.cambiarRol(accesoUser!.id, empresaId, rolId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sa-usuario-empresas', accesoUser?.id] })
+      invalidate()
+    },
+  })
+
   const quitarMut = useMutation({
     mutationFn: (empresaId: number) => saUsuariosApi.quitarEmpresa(accesoUser!.id, empresaId),
     onSuccess:  () => {
@@ -107,14 +117,14 @@ export default function UsuariosAdminPage() {
 
   const openCreate = () => {
     userForm.reset({ nombre: '', correo: '', password: '', es_super_admin: false })
-    setError('')
+    setError(''); setShowPass(false)
     setModal('create')
   }
 
   const openEdit = (u: UsuarioAdmin) => {
     setSelected(u)
     userForm.reset({ nombre: u.nombre, correo: u.correo, password: '', es_super_admin: u.es_super_admin })
-    setError('')
+    setError(''); setShowPass(false)
     setModal('edit')
   }
 
@@ -207,12 +217,29 @@ export default function UsuariosAdminPage() {
             <Input label="Nombre *" error={userForm.formState.errors.nombre?.message} {...userForm.register('nombre')} />
             <Input label="Correo *" type="email" error={userForm.formState.errors.correo?.message} {...userForm.register('correo')} />
           </div>
-          <Input
-            label={modal === 'create' ? 'Contraseña *' : 'Nueva contraseña (dejar vacío para no cambiar)'}
-            type="password"
-            error={userForm.formState.errors.password?.message}
-            {...userForm.register('password')}
-          />
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">
+              {modal === 'create' ? 'Contraseña *' : 'Nueva contraseña (dejar vacío para no cambiar)'}
+            </label>
+            <div className="relative">
+              <input
+                type={showPass ? 'text' : 'password'}
+                placeholder={modal === 'create' ? 'Mínimo 8 caracteres' : '••••••••'}
+                className={`w-full rounded-lg border px-3 py-2.5 text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all ${userForm.formState.errors.password ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                {...userForm.register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0E78D8] transition-colors"
+              >
+                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {userForm.formState.errors.password && (
+              <p className="text-xs text-red-600">{userForm.formState.errors.password.message}</p>
+            )}
+          </div>
           <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
             <input type="checkbox" {...userForm.register('es_super_admin')} className="rounded" />
             Es super administrador
@@ -258,14 +285,21 @@ export default function UsuariosAdminPage() {
             ) : (
               <div className="space-y-2">
                 {(accesoData as UsuarioEmpresaItem[]).map(item => (
-                  <div key={item.empresa_id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium text-[#072B5A]">{item.empresa_nombre}</p>
-                      <p className="text-xs text-gray-400">{item.rol_nombre}</p>
-                    </div>
+                  <div key={item.empresa_id} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
+                    <p className="text-sm font-medium text-[#072B5A] flex-1 min-w-0 truncate">{item.empresa_nombre}</p>
+                    <select
+                      defaultValue={item.rol_id ?? ''}
+                      onChange={e => cambiarRolMut.mutate({ empresaId: item.empresa_id, rolId: Number(e.target.value) })}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] bg-white transition-all"
+                    >
+                      <option value="" disabled>Sin rol</option>
+                      {(rolesData ?? []).map(r => (
+                        <option key={r.id} value={r.id}>{r.nombre}</option>
+                      ))}
+                    </select>
                     <button
                       onClick={() => quitarMut.mutate(item.empresa_id)}
-                      className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
                       title="Quitar acceso"
                     >
                       <Trash2 size={14} />

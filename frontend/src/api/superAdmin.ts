@@ -41,6 +41,9 @@ export const saUsuariosApi = {
   asignarEmpresa: (id: number, data: { empresa_id: number; rol_id: number }) =>
     client.post<ApiResponse<null>>(`/sa/usuarios/${id}/empresas`, data),
 
+  cambiarRol: (usuarioId: number, empresaId: number, rolId: number) =>
+    client.patch<ApiResponse<null>>(`/sa/usuarios/${usuarioId}/empresas/${empresaId}/rol`, { rol_id: rolId }),
+
   quitarEmpresa: (usuarioId: number, empresaId: number) =>
     client.delete<ApiResponse<null>>(`/sa/usuarios/${usuarioId}/empresas/${empresaId}`),
 }

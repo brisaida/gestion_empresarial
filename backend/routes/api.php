@@ -160,6 +160,7 @@ Route::middleware(['auth:sanctum', 'super.admin'])->prefix('sa')->group(function
     Route::patch('usuarios/{usuario}/toggle',                 [UsuarioAdminController::class, 'toggle']);
     Route::get('usuarios/{usuario}/empresas',                 [UsuarioAdminController::class, 'empresas']);
     Route::post('usuarios/{usuario}/empresas',                [UsuarioAdminController::class, 'asignarEmpresa']);
+    Route::patch('usuarios/{usuario}/empresas/{empresa}/rol', [UsuarioAdminController::class, 'cambiarRol']);
     Route::delete('usuarios/{usuario}/empresas/{empresa}',    [UsuarioAdminController::class, 'quitarEmpresa']);
 
     Route::get('roles',             [RolAdminController::class, 'index']);

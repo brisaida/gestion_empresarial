@@ -147,6 +147,19 @@ class UsuarioAdminController extends ApiController
         return $this->created(null, 'Acceso asignado correctamente.');
     }
 
+    public function cambiarRol(Request $request, User $usuario, Empresa $empresa): JsonResponse
+    {
+        $validated = $request->validate([
+            'rol_id' => ['required', 'integer', 'exists:roles,id'],
+        ]);
+
+        UsuarioEmpresa::where('usuario_id', $usuario->id)
+            ->where('empresa_id', $empresa->id)
+            ->update(['rol_id' => $validated['rol_id']]);
+
+        return response()->json(['success' => true, 'message' => 'Rol actualizado.']);
+    }
+
     public function quitarEmpresa(User $usuario, Empresa $empresa): JsonResponse
     {
         UsuarioEmpresa::where('usuario_id', $usuario->id)
