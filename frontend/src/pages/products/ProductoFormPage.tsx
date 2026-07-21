@@ -20,7 +20,7 @@ const schema = z.object({
   codigo:             z.string().optional(),
   codigo_barra:       z.string().optional(),
   descripcion:        z.string().optional(),
-  categoria_id:       z.string().optional(),
+  categoria_ids:      z.array(z.number()).default([]),
   marca_id:           z.string().optional(),
   unidad_medida_id:   z.string().optional(),
   costo:              z.coerce.number().min(0),
@@ -87,7 +87,7 @@ export default function ProductoFormPage() {
         codigo:             producto.codigo ?? '',
         codigo_barra:       producto.codigo_barra ?? '',
         descripcion:        producto.descripcion ?? '',
-        categoria_id:       String(producto.categoria_id ?? ''),
+        categoria_ids:      producto.categorias?.map(c => c.id) ?? [],
         marca_id:           String(producto.marca_id ?? ''),
         unidad_medida_id:   String(producto.unidad_medida_id ?? ''),
         costo:              producto.costo,
@@ -124,7 +124,7 @@ export default function ProductoFormPage() {
   const prepareData = (v: FormValues) => ({
     ...v,
     empresa_id:       empresaId,
-    categoria_id:     v.categoria_id ? Number(v.categoria_id) : null,
+    categoria_ids:    v.categoria_ids ?? [],
     marca_id:         v.marca_id ? Number(v.marca_id) : null,
     unidad_medida_id: v.unidad_medida_id ? Number(v.unidad_medida_id) : null,
   })
@@ -414,7 +414,54 @@ export default function ProductoFormPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
           <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Clasificación</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Select label="Categoría" options={cats?.map(c => ({ value: c.id, label: c.nombre })) ?? []} placeholder="Sin categoría" {...register('categoria_id')} />
+
+            {/* Multi-select de categorías */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Categorías</label>
+              {(() => {
+                const selected = watch('categoria_ids') ?? []
+                const toggle = (id: number) => {
+                  const next = selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id]
+                  setValue('categoria_ids', next, { shouldDirty: true })
+                }
+                return (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    {/* chips seleccionados */}
+                    {selected.length > 0 && (
+                      <div className="flex flex-wrap gap-1 p-2 border-b border-gray-100 bg-[#F4F7FA]">
+                        {selected.map(id => {
+                          const cat = cats?.find(c => c.id === id)
+                          return cat ? (
+                            <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#0E78D8]/10 text-[#0E78D8] border border-[#0E78D8]/20">
+                              {cat.nombre}
+                              <button type="button" onClick={() => toggle(id)} className="hover:text-red-500 transition-colors leading-none">&times;</button>
+                            </span>
+                          ) : null
+                        })}
+                      </div>
+                    )}
+                    {/* lista de opciones */}
+                    <div className="max-h-36 overflow-y-auto">
+                      {(cats ?? []).length === 0
+                        ? <p className="text-xs text-gray-400 px-3 py-2">Sin categorías disponibles</p>
+                        : (cats ?? []).map(c => (
+                            <label key={c.id} className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-[#F4F7FA] transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={selected.includes(c.id)}
+                                onChange={() => toggle(c.id)}
+                                className="accent-[#0E78D8] w-3.5 h-3.5 rounded"
+                              />
+                              <span className="text-sm text-[#072B5A]">{c.nombre}</span>
+                            </label>
+                          ))
+                      }
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+
             <Select label="Marca"     options={marcas?.map(m => ({ value: m.id, label: m.nombre })) ?? []} placeholder="Sin marca" {...register('marca_id')} />
             <Select label="Unidad de medida" options={unidades?.map(u => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? []} placeholder="Sin unidad" {...register('unidad_medida_id')} />
           </div>

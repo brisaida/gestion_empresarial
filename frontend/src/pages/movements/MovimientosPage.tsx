@@ -62,7 +62,7 @@ export default function MovimientosPage() {
   }, [bodegas])
   const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then((r) => r.data.data), enabled: empresaId > 0 })
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['movimientos', empresaId, page],
     queryFn:  () => movimientosApi.list({ empresa_id: empresaId, page, per_page: 15 }).then((r) => r.data),
     enabled:  empresaId > 0,
@@ -135,7 +135,7 @@ export default function MovimientosPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <Table columns={columns} data={data?.data ?? []} loading={isLoading} emptyMessage="No hay movimientos registrados." />
+        <Table columns={columns} data={data?.data ?? []} loading={isLoading} error={isError ? 'Error al cargar los movimientos.' : undefined} emptyMessage="No hay movimientos registrados." />
         {data?.meta && <Pagination currentPage={data.meta.current_page} lastPage={data.meta.last_page} total={data.meta.total} onPage={setPage} />}
       </div>
 

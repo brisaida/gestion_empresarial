@@ -3,7 +3,8 @@ import { Navigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff, Package } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import logoVilena from '@/assets/logo-vilena.png'
 import { useAuth } from '@/stores/authStore'
 import { authApi } from '@/api/auth'
 import { getAxiosError } from '@/lib/utils'
@@ -59,12 +60,9 @@ export default function LoginPage() {
             <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(ellipse at 50% -20%, rgba(255,255,255,0.4), transparent 70%)' }} />
 
             <div className="relative z-10">
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-white/15 rounded-xl mb-4 backdrop-blur-sm border border-white/20">
-                <Package size={28} className="text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Vilena</h1>
-              <p className="text-white/70 text-sm mt-1 font-medium">Sistema de gestión empresarial</p>
-              <p className="text-[#38D6D4] text-xs mt-1 font-semibold tracking-widest uppercase">Vilena Dev Studio</p>
+              <img src={logoVilena} alt="Vilena Cloud" className="h-40 w-auto mx-auto -mb-3" style={{ mixBlendMode: 'screen' }} />
+              <p className="text-white/70 text-sm font-medium">Sistema de gestión empresarial</p>
+              <p className="text-[#38D6D4] text-xs mt-1 font-semibold tracking-widest uppercase">By Vilena Dev Studio</p>
             </div>
           </div>
 
@@ -80,21 +78,28 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <Input
-                label="Correo electrónico"
-                type="email"
-                placeholder="tu@correo.com"
-                error={errors.correo?.message}
-                {...register('correo')}
-              />
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Correo electrónico</label>
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    placeholder="tu@correo.com"
+                    className={`w-full rounded-lg border pl-9 pr-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all ${errors.correo ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-[#0E78D8]/50'}`}
+                    {...register('correo')}
+                  />
+                </div>
+                {errors.correo && <p className="text-xs text-red-600">{errors.correo.message}</p>}
+              </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Contraseña</label>
                 <div className="relative">
+                  <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type={showPass ? 'text' : 'password'}
                     placeholder="••••••••"
-                    className={`w-full rounded-lg border px-3 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-[#0E78D8]/50'}`}
+                    className={`w-full rounded-lg border pl-9 pr-10 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-[#0E78D8]/50'}`}
                     {...register('password')}
                   />
                   <button

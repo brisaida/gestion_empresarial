@@ -13,7 +13,8 @@ class StoreProductoRequest extends FormRequest
     {
         return [
             'empresa_id'         => ['required', 'integer', 'exists:empresas,id'],
-            'categoria_id'       => ['nullable', 'integer', 'exists:categorias,id'],
+            'categoria_ids'      => ['nullable', 'array'],
+            'categoria_ids.*'    => ['integer', 'exists:categorias,id'],
             'marca_id'           => ['nullable', 'integer', 'exists:marcas,id'],
             'unidad_medida_id'   => ['nullable', 'integer', 'exists:unidades_medida,id'],
             'codigo'             => ['nullable', 'string', 'max:60', Rule::unique('productos')->where('empresa_id', $this->empresa_id)],

@@ -265,7 +265,6 @@ class ImportarProductosController extends ApiController
                         'codigo'             => $codigo      ? trim((string) $codigo)      : null,
                         'codigo_barra'       => $codigoBarra ? trim((string) $codigoBarra) : null,
                         'descripcion'        => $descripcion ? trim((string) $descripcion) : null,
-                        'categoria_id'       => $categoriaId,
                         'marca_id'           => $marcaId,
                         'unidad_medida_id'   => $unidadId,
                         'costo'              => $costo,
@@ -278,6 +277,10 @@ class ImportarProductosController extends ApiController
                         'maneja_serie'       => false,
                         'activo'             => true,
                     ]);
+
+                    if ($categoriaId) {
+                        $producto->categorias()->sync([$categoriaId]);
+                    }
 
                     if ($stockInicial > 0 && $bodegaPredeterminada) {
                         Existencia::create([

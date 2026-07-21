@@ -10,7 +10,7 @@ class Producto extends Model
     use HasFactory;
 
     protected $fillable = [
-        'empresa_id', 'categoria_id', 'marca_id', 'unidad_medida_id',
+        'empresa_id', 'marca_id', 'unidad_medida_id',
         'codigo', 'codigo_barra', 'nombre', 'descripcion',
         'tamaño', 'peso', 'largo', 'ancho', 'alto',
         'costo', 'precio_venta', 'tasa_isv', 'stock_minimo',
@@ -40,9 +40,9 @@ class Producto extends Model
         return $this->belongsTo(Empresa::class);
     }
 
-    public function categoria()
+    public function categorias()
     {
-        return $this->belongsTo(Categoria::class);
+        return $this->belongsToMany(Categoria::class, 'producto_categorias');
     }
 
     public function marca()

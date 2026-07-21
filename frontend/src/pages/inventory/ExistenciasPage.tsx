@@ -23,7 +23,7 @@ export default function ExistenciasPage() {
     enabled:  empresaId > 0,
   })
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['existencias', empresaId, page, bodegaId, soloStockBajo],
     queryFn:  () => existenciasApi.list({ empresa_id: empresaId, page, per_page: 20, bodega_id: bodegaId || undefined, stock_bajo: soloStockBajo || undefined }).then((r) => r.data),
     enabled:  empresaId > 0,
@@ -92,7 +92,7 @@ export default function ExistenciasPage() {
           </label>
         </div>
 
-        <Table columns={columns} data={data?.data ?? []} loading={isLoading} emptyMessage="No hay existencias con esos filtros." />
+        <Table columns={columns} data={data?.data ?? []} loading={isLoading} error={isError ? 'Error al cargar las existencias.' : undefined} emptyMessage="No hay existencias con esos filtros." />
         {data?.meta && <Pagination currentPage={data.meta.current_page} lastPage={data.meta.last_page} total={data.meta.total} onPage={setPage} />}
       </div>
     </div>

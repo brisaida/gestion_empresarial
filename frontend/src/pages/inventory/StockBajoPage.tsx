@@ -29,7 +29,7 @@ export default function StockBajoPage() {
   const [page, setPage]     = useState(1)
   const [search, setSearch] = useState('')
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['existencias-stock-bajo', empresaId, page, search],
     queryFn:  () => existenciasApi.list({
       empresa_id: empresaId,
@@ -111,7 +111,7 @@ export default function StockBajoPage() {
         </button>
       </div>
 
-      {!isLoading && data?.data.length === 0 && (
+      {!isLoading && !isError && data?.data.length === 0 && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-4 flex items-center gap-3">
           <span className="text-2xl">✓</span>
           <div>
@@ -121,7 +121,7 @@ export default function StockBajoPage() {
         </div>
       )}
 
-      {(isLoading || (data?.data.length ?? 0) > 0) && (
+      {(isLoading || isError || (data?.data.length ?? 0) > 0) && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-100">
             <SearchBar value={search} onChange={v => { setSearch(v); setPage(1) }}
@@ -131,6 +131,7 @@ export default function StockBajoPage() {
             columns={columns}
             data={data?.data ?? []}
             loading={isLoading}
+            error={isError ? 'Error al cargar el stock.' : undefined}
             emptyMessage="No hay productos bajo el mínimo."
           />
           {data?.meta && (

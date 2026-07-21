@@ -48,14 +48,16 @@ export function useCrud<T>(api: CrudApi<T>, { queryKey, empresaId }: Options) {
   })
 
   return {
-    data:      query.data?.data ?? [],
-    meta:      query.data?.meta ?? { total: 0, current_page: 1, last_page: 1 },
-    loading:   query.isLoading,
-    page,      setPage,
-    search,    setSearch,
-    error,     setError,
-    create:    createMut,
-    update:    updateMut,
-    remove:    deleteMut,
+    data:       query.data?.data ?? [],
+    meta:       query.data?.meta ?? { total: 0, current_page: 1, last_page: 1 },
+    loading:    query.isLoading,
+    isError:    query.isError,
+    refetch:    query.refetch,
+    page,       setPage,
+    search,     setSearch,
+    error,      setError,
+    create:     createMut,
+    update:     updateMut,
+    remove:     deleteMut,
   }
 }

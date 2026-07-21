@@ -50,7 +50,7 @@ export default function HistorialVentasPage() {
   const [loadingPdf, setLoadingPdf]   = useState<number | null>(null)
   const [pdfError, setPdfError]       = useState('')
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['ventas', empresaId, page, search],
     queryFn:  () => ventasApi.list({ empresa_id: empresaId, page, per_page: 15, search: search || undefined }).then(r => r.data),
     enabled:  empresaId > 0,
@@ -181,7 +181,7 @@ export default function HistorialVentasPage() {
             className="max-w-sm"
           />
         </div>
-        <Table columns={columns} data={data?.data ?? []} loading={isLoading} emptyMessage="No hay ventas registradas." />
+        <Table columns={columns} data={data?.data ?? []} loading={isLoading} error={isError ? 'Error al cargar el historial de ventas.' : undefined} emptyMessage="No hay ventas registradas." />
         {data?.meta && (
           <Pagination
             currentPage={data.meta.current_page}

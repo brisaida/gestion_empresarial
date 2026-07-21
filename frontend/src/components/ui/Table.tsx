@@ -1,5 +1,5 @@
 import { type ReactNode, type CSSProperties } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ── Column definition ──────────────────────────────────────────────────────
@@ -18,10 +18,11 @@ interface TableProps<T> {
   data: T[]
   loading?: boolean
   emptyMessage?: string
+  error?: string | null
   expandedRow?: { id: number; content: ReactNode }
 }
 
-export function Table<T extends { id: number }>({ columns, data, loading, emptyMessage = 'No hay registros.', expandedRow }: TableProps<T>) {
+export function Table<T extends { id: number }>({ columns, data, loading, emptyMessage = 'No hay registros.', error, expandedRow }: TableProps<T>) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -51,6 +52,16 @@ export function Table<T extends { id: number }>({ columns, data, loading, emptyM
                 ))}
               </tr>
             ))
+          ) : error ? (
+            <tr>
+              <td colSpan={columns.length} className="px-4 py-12 text-center">
+                <div className="flex flex-col items-center gap-2 text-red-500">
+                  <AlertCircle size={28} className="text-red-400" />
+                  <p className="text-sm font-medium text-red-600">{error}</p>
+                  <p className="text-xs text-gray-400">Recarga la página o intenta de nuevo.</p>
+                </div>
+              </td>
+            </tr>
           ) : data.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="px-4 py-12 text-center text-gray-400">

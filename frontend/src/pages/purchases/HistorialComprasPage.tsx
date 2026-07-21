@@ -76,7 +76,7 @@ export default function HistorialComprasPage() {
   const [cancelarId, setCancelarId] = useState<number | null>(null)
   const [actionError, setActionError] = useState('')
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['compras', empresaId, page, filtro, search],
     queryFn:  () => comprasApi.list({
       empresa_id: empresaId,
@@ -203,6 +203,7 @@ export default function HistorialComprasPage() {
           columns={columns}
           data={data?.data ?? []}
           loading={isLoading}
+          error={isError ? 'Error al cargar las compras.' : undefined}
           emptyMessage="No hay órdenes de compra registradas."
           expandedRow={expanded !== null ? { id: expanded, content: <DetalleFila id={expanded} /> } : undefined}
         />

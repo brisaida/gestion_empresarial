@@ -15,7 +15,7 @@ class ProductoController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $query = Producto::where('empresa_id', $request->integer('empresa_id'))
-            ->with(['categoria', 'marca', 'unidadMedida']);
+            ->with(['categorias', 'marca', 'unidadMedida']);
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -26,7 +26,7 @@ class ProductoController extends ApiController
         }
 
         if ($request->filled('categoria_id')) {
-            $query->where('categoria_id', $request->integer('categoria_id'));
+            $query->whereHas('categorias', fn($q) => $q->where('categorias.id', $request->integer('categoria_id')));
         }
 
         if ($request->filled('marca_id')) {
@@ -57,21 +57,31 @@ class ProductoController extends ApiController
 
     public function store(StoreProductoRequest $request): JsonResponse
     {
-        $producto = Producto::create($request->validated());
-        $producto->load(['categoria', 'marca', 'unidadMedida']);
+        $data = $request->validated();
+        $categoriaIds = $data['categoria_ids'] ?? [];
+        unset($data['categoria_ids']);
+
+        $producto = Producto::create($data);
+        $producto->categorias()->sync($categoriaIds);
+        $producto->load(['categorias', 'marca', 'unidadMedida']);
         return $this->created(new ProductoResource($producto));
     }
 
     public function show(Producto $producto): JsonResponse
     {
-        $producto->load(['categoria', 'marca', 'unidadMedida', 'existencias.bodega']);
+        $producto->load(['categorias', 'marca', 'unidadMedida', 'existencias.bodega']);
         return response()->json(['success' => true, 'data' => new ProductoResource($producto)]);
     }
 
     public function update(UpdateProductoRequest $request, Producto $producto): JsonResponse
     {
-        $producto->update($request->validated());
-        $producto->load(['categoria', 'marca', 'unidadMedida']);
+        $data = $request->validated();
+        $categoriaIds = $data['categoria_ids'] ?? [];
+        unset($data['categoria_ids']);
+
+        $producto->update($data);
+        $producto->categorias()->sync($categoriaIds);
+        $producto->load(['categorias', 'marca', 'unidadMedida']);
         return response()->json([
             'success' => true,
             'message' => 'Producto actualizado.',
@@ -134,4 +144,5 @@ class ProductoController extends ApiController
             'message' => "{$eliminados} producto(s) eliminado(s).",
         ]);
     }
+
 }

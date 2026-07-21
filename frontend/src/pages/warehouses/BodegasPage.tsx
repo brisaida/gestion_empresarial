@@ -88,7 +88,7 @@ export default function BodegasPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <Table columns={columns} data={crud.data} loading={crud.loading} emptyMessage="No hay bodegas registradas." />
+        <Table columns={columns} data={crud.data} loading={crud.loading} error={crud.isError ? 'Error al cargar las bodegas.' : undefined} emptyMessage="No hay bodegas registradas." />
         <Pagination currentPage={crud.meta.current_page} lastPage={crud.meta.last_page} total={crud.meta.total} onPage={crud.setPage} />
       </div>
 

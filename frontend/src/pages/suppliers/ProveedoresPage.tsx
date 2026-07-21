@@ -88,7 +88,7 @@ export default function ProveedoresPage() {
         <div className="p-4 border-b border-gray-100">
           <SearchBar value={crud.search} onChange={(v) => { crud.setSearch(v); crud.setPage(1) }} placeholder="Buscar proveedores..." className="max-w-xs" />
         </div>
-        <Table columns={columns} data={crud.data} loading={crud.loading} />
+        <Table columns={columns} data={crud.data} loading={crud.loading} error={crud.isError ? 'Error al cargar los proveedores.' : undefined} />
         <Pagination currentPage={crud.meta.current_page} lastPage={crud.meta.last_page} total={crud.meta.total} onPage={crud.setPage} />
       </div>
 

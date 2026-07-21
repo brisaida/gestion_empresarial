@@ -116,7 +116,6 @@ export interface Bodega {
 export interface Producto {
   id: number
   empresa_id: number
-  categoria_id?: number
   marca_id?: number
   unidad_medida_id?: number
   codigo?: string
@@ -138,7 +137,7 @@ export interface Producto {
   activo: boolean
   tipo: 'venta' | 'ingrediente'
   imagen_url?: string | null
-  categoria?: { id: number; nombre: string }
+  categorias?: { id: number; nombre: string }[]
   marca?: { id: number; nombre: string }
   unidad_medida?: { id: number; nombre: string; abreviatura: string }
   stock_total?: number

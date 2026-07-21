@@ -100,10 +100,20 @@ export default function ProductosPage() {
     },
     {
       key: 'nombre', header: 'Producto',
+      cell: (r) => <p className="font-medium text-[#072B5A]">{r.nombre}</p>,
+    },
+    {
+      key: 'categorias', header: 'Categorías',
       cell: (r) => (
-        <div>
-          <p className="font-medium text-[#072B5A]">{r.nombre}</p>
-          {r.categoria && <p className="text-xs text-gray-400">{r.categoria.nombre}</p>}
+        <div className="flex flex-wrap gap-1">
+          {(r.categorias ?? []).length === 0
+            ? <span className="text-xs text-gray-300">—</span>
+            : (r.categorias ?? []).map(c => (
+                <span key={c.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#0E78D8]/8 text-[#0E78D8] border border-[#0E78D8]/15">
+                  {c.nombre}
+                </span>
+              ))
+          }
         </div>
       ),
     },
@@ -189,7 +199,7 @@ export default function ProductosPage() {
           </div>
         )}
 
-        <Table columns={columns} data={crud.data} loading={crud.loading} emptyMessage="No hay productos registrados." />
+        <Table columns={columns} data={crud.data} loading={crud.loading} error={crud.isError ? 'Error al cargar los productos.' : undefined} emptyMessage="No hay productos registrados." />
         <Pagination currentPage={crud.meta.current_page} lastPage={crud.meta.last_page} total={crud.meta.total} onPage={crud.setPage} />
       </div>
 

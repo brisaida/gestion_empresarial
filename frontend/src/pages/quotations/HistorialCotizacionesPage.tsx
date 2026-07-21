@@ -86,7 +86,7 @@ export default function HistorialCotizacionesPage() {
   const editSearchRef = useRef<HTMLDivElement>(null)
 
   /* ── Queries ── */
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['cotizaciones', empresaId, page, search],
     queryFn:  () => cotizacionesApi.list({ empresa_id: empresaId, page, per_page: 15, search: search || undefined }).then(r => r.data),
     enabled:  empresaId > 0,
@@ -357,7 +357,7 @@ export default function HistorialCotizacionesPage() {
           <SearchBar value={search} onChange={v => { setSearch(v); setPage(1) }}
             placeholder="Buscar por N° cotización..." className="max-w-sm" />
         </div>
-        <Table columns={columns} data={data?.data ?? []} loading={isLoading} emptyMessage="No hay cotizaciones registradas." />
+        <Table columns={columns} data={data?.data ?? []} loading={isLoading} error={isError ? 'Error al cargar las cotizaciones.' : undefined} emptyMessage="No hay cotizaciones registradas." />
         {data?.meta && <Pagination currentPage={data.meta.current_page} lastPage={data.meta.last_page} total={data.meta.total} onPage={setPage} />}
       </div>
 

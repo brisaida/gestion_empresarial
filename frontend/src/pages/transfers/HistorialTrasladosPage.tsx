@@ -66,7 +66,7 @@ export default function HistorialTrasladosPage() {
   const [page, setPage]         = useState(1)
   const [expanded, setExpanded] = useState<number | null>(null)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['transferencias', empresaId, page],
     queryFn:  () => transferenciasApi.list({ empresa_id: empresaId, page, per_page: 15 }).then(r => r.data),
     enabled:  empresaId > 0,
@@ -132,6 +132,7 @@ export default function HistorialTrasladosPage() {
           columns={columns}
           data={data?.data ?? []}
           loading={isLoading}
+          error={isError ? 'Error al cargar los traslados.' : undefined}
           emptyMessage="No hay traslados registrados."
           expandedRow={expanded !== null ? {
             id: expanded,

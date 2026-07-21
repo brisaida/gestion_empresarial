@@ -98,7 +98,7 @@ export default function CategoriasPage() {
           <SearchBar value={crud.search} onChange={(v) => { crud.setSearch(v); crud.setPage(1) }} placeholder="Buscar categorías..." className="max-w-xs" />
         </div>
 
-        <Table columns={columns} data={crud.data} loading={crud.loading} emptyMessage="No hay categorías registradas." />
+        <Table columns={columns} data={crud.data} loading={crud.loading} error={crud.isError ? 'Error al cargar las categorías.' : undefined} emptyMessage="No hay categorías registradas." />
         <Pagination currentPage={crud.meta.current_page} lastPage={crud.meta.last_page} total={crud.meta.total} onPage={crud.setPage} />
       </div>
 
