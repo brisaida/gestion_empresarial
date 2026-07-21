@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
-import logoVilena from '@/assets/logo-vilena.png'
+import logoVilena from '@/assets/logo-vilena.jpg'
 import { useAuth } from '@/stores/authStore'
 import { authApi } from '@/api/auth'
 import { getAxiosError } from '@/lib/utils'
@@ -48,26 +48,17 @@ export default function LoginPage() {
       <div className="absolute bottom-[-5%] left-[-10%] w-80 h-80 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #0E78D8, transparent 70%)' }} />
 
       <div className="w-full max-w-md relative z-10">
-        {/* Card */}
+        {/* Card — completamente blanca */}
         <div className="bg-white rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
 
-          {/* Header — brand gradient */}
-          <div
-            className="px-8 py-8 text-center relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 55%, #38D6D4 100%)' }}
-          >
-            {/* Subtle shine overlay */}
-            <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(ellipse at 50% -20%, rgba(255,255,255,0.4), transparent 70%)' }} />
-
-            <div className="relative z-10">
-              <img src={logoVilena} alt="Vilena Cloud" className="h-40 w-auto mx-auto -mb-3" style={{ mixBlendMode: 'screen' }} />
-              <p className="text-white/70 text-sm font-medium">Sistema de gestión empresarial</p>
-              <p className="text-[#38D6D4] text-xs mt-1 font-semibold tracking-widest uppercase">By Vilena Dev Studio</p>
-            </div>
+          {/* Logo */}
+          <div className="px-8 pt-8 pb-4 text-center border-b border-gray-100">
+            <img src={logoVilena} alt="Vilena Cloud" className="h-16 w-auto mx-auto" />
+            <p className="text-[#5F6B7A] text-xs mt-3 font-medium">Sistema de gestión empresarial</p>
           </div>
 
           {/* Form */}
-          <div className="px-8 py-8">
+          <div className="px-8 py-7">
             <h2 className="text-base font-bold text-[#072B5A] mb-6">Iniciar sesión</h2>
 
             {serverError && (
@@ -135,8 +126,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-white/30 text-xs mt-6 font-medium">
-          © {new Date().getFullYear()} Vilena Dev Studio · Todos los derechos reservados
+        <p className="text-center text-white/40 text-xs mt-5 font-medium">
+          © {new Date().getFullYear()} Vilena Dev Studio
         </p>
       </div>
     </div>
