@@ -282,12 +282,13 @@ class ImportarProductosController extends ApiController
                         $producto->categorias()->sync([$categoriaId]);
                     }
 
-                    if ($stockInicial > 0 && $bodegaPredeterminada) {
+                    if ($stockInicial > 0) {
                         Existencia::create([
-                            'empresa_id' => $empresaId,
-                            'bodega_id'  => $bodegaPredeterminada->id,
+                            'empresa_id'  => $empresaId,
+                            'bodega_id'   => $bodegaPredeterminada?->id,
                             'producto_id' => $producto->id,
-                            'cantidad'   => $stockInicial,
+                            'cantidad'    => $stockInicial,
+                            'cantidad_reservada' => 0,
                         ]);
                     }
 
