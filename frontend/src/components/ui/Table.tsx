@@ -1,4 +1,4 @@
-import { type ReactNode, type CSSProperties } from 'react'
+import { type ReactNode, type CSSProperties, Fragment } from 'react'
 import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -70,8 +70,8 @@ export function Table<T extends { id: number }>({ columns, data, loading, emptyM
             </tr>
           ) : (
             data.map((row) => (
-              <>
-                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+              <Fragment key={row.id}>
+                <tr className="hover:bg-gray-50 transition-colors">
                   {columns.map((col) => (
                     <td
                       key={col.key}
@@ -84,13 +84,13 @@ export function Table<T extends { id: number }>({ columns, data, loading, emptyM
                   ))}
                 </tr>
                 {expandedRow?.id === row.id && (
-                  <tr key={`${row.id}-expanded`}>
+                  <tr>
                     <td colSpan={columns.length} className="px-4 pb-3">
                       {expandedRow.content}
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))
           )}
         </tbody>

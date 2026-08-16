@@ -27,6 +27,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 export default function Button({ variant = 'primary', size = 'md', loading, icon, children, className, disabled, ...props }: Props) {
   return (
     <button
+      type="button"
       {...props}
       disabled={disabled || loading}
       className={cn(

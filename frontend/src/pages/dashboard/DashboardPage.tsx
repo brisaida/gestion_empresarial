@@ -51,7 +51,7 @@ export default function DashboardPage() {
   const { data: filasActual } = useQuery<FilaIngreso[]>({
     queryKey: ['chart-mes-actual', empresaId],
     queryFn: () => reportesApi.ingresos({ empresa_id: empresaId, fecha_desde: inicioMes, fecha_hasta: hoyStr, agrupacion: 'dia' })
-      .then(r => (r as unknown as RespIngresos).data.filas),
+      .then(r => (r as unknown as RespIngresos).data.filas ?? []),
     enabled: empresaId > 0,
     staleTime: 5 * 60_000,
   })
@@ -59,7 +59,7 @@ export default function DashboardPage() {
   const { data: filasAnt } = useQuery<FilaIngreso[]>({
     queryKey: ['chart-mes-anterior', empresaId],
     queryFn: () => reportesApi.ingresos({ empresa_id: empresaId, fecha_desde: inicioMesAnt, fecha_hasta: finMesAnt, agrupacion: 'dia' })
-      .then(r => (r as unknown as RespIngresos).data.filas),
+      .then(r => (r as unknown as RespIngresos).data.filas ?? []),
     enabled: empresaId > 0,
     staleTime: 5 * 60_000,
   })

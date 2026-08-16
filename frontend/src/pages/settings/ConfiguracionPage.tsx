@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Building2, Upload, Trash2, Save, ImageOff, FileText } from 'lucide-react'
+import { Building2, Upload, Trash2, Save, ImageOff, FileText, Printer } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
@@ -30,6 +30,7 @@ export default function ConfiguracionPage() {
 
   const [form, setForm] = useState({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', isv_rate: '15', rubro: '' })
   const [configCot, setConfigCot] = useState({ mostrar_descripcion: false, mostrar_foto: false })
+  const [tipoFacturacion, setTipoFacturacion] = useState<'factura_a4' | 'ticket'>('factura_a4')
 
   // Inicializar form cuando llegan los datos
   const initialized = useRef(false)
@@ -49,24 +50,44 @@ export default function ConfiguracionPage() {
       mostrar_descripcion: empresa.config_cotizacion?.mostrar_descripcion ?? false,
       mostrar_foto:        empresa.config_cotizacion?.mostrar_foto        ?? false,
     })
+    setTipoFacturacion((empresa.tipo_facturacion ?? 'factura_a4') as 'factura_a4' | 'ticket')
   }
 
-  /* ── Guardar datos ──────────────────────────────────────────── */
+  /* ── Guardar datos generales + cotizaciones ─────────────────── */
   const guardar = useMutation({
     mutationFn: () => empresaApi.update(empresaId, {
       ...form,
       isv_rate: parseFloat(form.isv_rate) || 0,
       rubro: (form.rubro as Rubro) || null,
       config_cotizacion: configCot,
+      tipo_facturacion: tipoFacturacion,
     }),
     onSuccess: (res) => {
       setSaveOk(true); setSaveError('')
       setTimeout(() => setSaveOk(false), 3000)
-      // Actualiza nombre y rubro en el auth state
       setEmpresa({ ...state.empresaActiva!, nombre: res.data.data.nombre, rubro: res.data.data.rubro ?? null })
       qc.invalidateQueries({ queryKey: ['empresa', empresaId] })
     },
     onError: (err) => { setSaveError(getAxiosError(err)); setSaveOk(false) },
+  })
+
+  /* ── Guardar formato de facturación (mutación independiente) ─ */
+  const [facturacionOk,    setFacturacionOk]    = useState(false)
+  const [facturacionError, setFacturacionError] = useState('')
+  const guardarFacturacion = useMutation({
+    mutationFn: (tipo: 'ticket' | 'factura_a4') => empresaApi.update(empresaId, {
+      ...form,
+      isv_rate: parseFloat(form.isv_rate) || 0,
+      rubro: (form.rubro as Rubro) || null,
+      config_cotizacion: configCot,
+      tipo_facturacion: tipo,
+    }),
+    onSuccess: () => {
+      setFacturacionOk(true); setFacturacionError('')
+      setTimeout(() => setFacturacionOk(false), 3000)
+      qc.invalidateQueries({ queryKey: ['empresa', empresaId] })
+    },
+    onError: (err) => { setFacturacionError(getAxiosError(err)); setFacturacionOk(false) },
   })
 
   /* ── Subir logo ─────────────────────────────────────────────── */
@@ -240,6 +261,71 @@ export default function ConfiguracionPage() {
         <div className="mt-5 flex justify-end">
           <Button icon={<Save size={15} />} loading={guardar.isPending} onClick={() => guardar.mutate()}>
             Guardar cambios
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Tipo de facturación ────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <h2 className="text-sm font-bold text-[#072B5A] mb-1 flex items-center gap-2">
+          <Printer size={16} className="text-[#0E78D8]" /> Formato de facturas
+        </h2>
+        <p className="text-xs text-[#5F6B7A] mb-5">Elige el formato que se usará al imprimir facturas de venta.</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Opción A4 */}
+          <button
+            type="button"
+            onClick={() => setTipoFacturacion('factura_a4')}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-colors ${
+              tipoFacturacion === 'factura_a4'
+                ? 'border-[#0E78D8] bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300 bg-[#F4F7FA]'
+            }`}
+          >
+            <div className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+              tipoFacturacion === 'factura_a4' ? 'border-[#0E78D8]' : 'border-gray-400'
+            }`}>
+              {tipoFacturacion === 'factura_a4' && <div className="w-2 h-2 rounded-full bg-[#0E78D8]" />}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#072B5A]">Factura A4</p>
+              <p className="text-xs text-[#5F6B7A] mt-0.5">Formato carta completo, con logo y tabla de productos. Ideal para impresoras de oficina.</p>
+            </div>
+          </button>
+
+          {/* Opción Ticket */}
+          <button
+            type="button"
+            onClick={() => setTipoFacturacion('ticket')}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-colors ${
+              tipoFacturacion === 'ticket'
+                ? 'border-[#0E78D8] bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300 bg-[#F4F7FA]'
+            }`}
+          >
+            <div className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+              tipoFacturacion === 'ticket' ? 'border-[#0E78D8]' : 'border-gray-400'
+            }`}>
+              {tipoFacturacion === 'ticket' && <div className="w-2 h-2 rounded-full bg-[#0E78D8]" />}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#072B5A]">Ticket 80mm</p>
+              <p className="text-xs text-[#5F6B7A] mt-0.5">Formato angosto estilo supermercado o restaurante. Ideal para impresoras térmicas de 80 mm.</p>
+            </div>
+          </button>
+        </div>
+
+        {facturacionError && <p className="mt-3 text-sm text-red-600">{facturacionError}</p>}
+        {facturacionOk    && <p className="mt-3 text-sm text-emerald-600">Formato guardado correctamente.</p>}
+
+        <div className="mt-5 flex justify-end">
+          <Button
+            icon={<Save size={15} />}
+            loading={guardarFacturacion.isPending}
+            onClick={() => guardarFacturacion.mutate(tipoFacturacion)}
+          >
+            Guardar formato
           </Button>
         </div>
       </div>

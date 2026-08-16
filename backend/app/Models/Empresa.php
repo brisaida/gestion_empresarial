@@ -13,6 +13,7 @@ class Empresa extends Model
         'nombre', 'nombre_legal', 'rtn', 'correo',
         'telefono', 'direccion', 'isv_rate', 'logo', 'activo', 'rubro',
         'config_cotizacion',
+        'tipo_facturacion',
     ];
 
     protected function casts(): array

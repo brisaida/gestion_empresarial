@@ -34,6 +34,7 @@ class EmpresaController extends ApiController
             'config_cotizacion'                          => ['nullable', 'array'],
             'config_cotizacion.mostrar_descripcion'      => ['boolean'],
             'config_cotizacion.mostrar_foto'             => ['boolean'],
+            'tipo_facturacion'                           => ['nullable', 'string', 'in:ticket,factura_a4'],
         ]);
 
         $empresa->update($validated);
@@ -123,6 +124,7 @@ class EmpresaController extends ApiController
             'rubro'              => $e->rubro,
             'logo_url'           => $e->logo ? '/' . ltrim($e->logo, '/') : null,
             'config_cotizacion'  => array_merge($defaultConfig, $e->config_cotizacion ?? []),
+            'tipo_facturacion'   => $e->tipo_facturacion ?? 'factura_a4',
         ];
     }
 }

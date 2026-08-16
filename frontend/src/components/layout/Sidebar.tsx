@@ -96,8 +96,8 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
       style={{ background: 'linear-gradient(180deg, #031B3A 0%, #072B5A 100%)' }}
     >
       {/* Logo */}
-      <div className={cn(
-        'flex items-center border-b border-white/8 shrink-0',
+      <NavLink to="/dashboard" className={cn(
+        'flex items-center border-b border-white/8 shrink-0 hover:bg-white/5 transition-colors',
         collapsed ? 'justify-center py-4 px-2' : 'gap-3 px-4 py-4',
       )}>
         {/* Logo / inicial */}
@@ -117,7 +117,7 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
             <p className="text-[10px] text-[#38D6D4] font-medium tracking-widest uppercase leading-tight">Vilena</p>
           </div>
         )}
-      </div>
+      </NavLink>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto scrollbar-dark py-3 space-y-4 px-2">

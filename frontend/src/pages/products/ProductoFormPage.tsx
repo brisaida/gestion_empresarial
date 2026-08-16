@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ImagePlus, X, ScanBarcode, Camera, CameraOff } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
-import { productosApi, categoriasApi, marcasApi, unidadesApi } from '@/api/recursos'
+import { productosApi, categoriasApi, marcasApi, unidadesApi, bodegasApi } from '@/api/recursos'
 import { getAxiosError } from '@/lib/utils'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import Button from '@/components/ui/Button'
@@ -37,6 +37,8 @@ const schema = z.object({
   maneja_serie:       z.boolean().default(false),
   activo:             z.boolean().default(true),
   tipo:               z.enum(['venta', 'ingrediente']).default('venta'),
+  stock_inicial:      z.coerce.number().min(0).default(0),
+  bodega_id:          z.string().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -69,6 +71,7 @@ export default function ProductoFormPage() {
   const { data: cats }     = useQuery({ queryKey: ['cats-all', empresaId],     queryFn: () => categoriasApi.list({ empresa_id: empresaId, per_page: 100, solo_activos: true }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: marcas }   = useQuery({ queryKey: ['marcas-all', empresaId],   queryFn: () => marcasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: unidades } = useQuery({ queryKey: ['unidades-all', empresaId], queryFn: () => unidadesApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 })
+  const { data: bodegas }  = useQuery({ queryKey: ['bodegas-all', empresaId],  queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 && !isEdit })
 
   const { data: producto, isLoading: loadingProducto } = useQuery({
     queryKey: ['producto', id],
@@ -128,6 +131,7 @@ export default function ProductoFormPage() {
     categoria_ids:    v.categoria_ids ?? [],
     marca_id:         v.marca_id ? Number(v.marca_id) : null,
     unidad_medida_id: v.unidad_medida_id ? Number(v.unidad_medida_id) : null,
+    bodega_id:        v.bodega_id ? Number(v.bodega_id) : null,
   })
 
   const onSubmit = async (v: FormValues) => {
@@ -563,6 +567,42 @@ export default function ProductoFormPage() {
             </label>
           </div>
         </div>
+
+        {/* ── Stock inicial (solo al crear) ── */}
+        {!isEdit && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+            <div>
+              <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Stock inicial</p>
+              <p className="text-xs text-[#5F6B7A] mt-0.5">Opcional — puedes registrar las unidades disponibles al crear el producto.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Cantidad inicial"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0"
+                {...register('stock_inicial')}
+              />
+              <Controller
+                name="bodega_id"
+                control={control}
+                render={({ field }) => (
+                  <ComboBox
+                    label="Bodega"
+                    options={[
+                      { value: '', label: 'Sin asignar' },
+                      ...(bodegas?.map(b => ({ value: b.id, label: b.predeterminada ? `${b.nombre} (predeterminada)` : b.nombre })) ?? []),
+                    ]}
+                    placeholder="Sin asignar"
+                    value={field.value ?? ''}
+                    onChange={v => field.onChange(v)}
+                  />
+                )}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Botones al final (útil en móvil) */}
         <div className="flex justify-end gap-2 pt-2">

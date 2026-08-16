@@ -35,6 +35,8 @@ class StoreProductoRequest extends FormRequest
             'maneja_serie'       => ['boolean'],
             'activo'             => ['boolean'],
             'tipo'               => ['nullable', 'in:venta,ingrediente'],
+            'stock_inicial'      => ['nullable', 'numeric', 'min:0'],
+            'bodega_id'          => ['nullable', 'integer', 'exists:bodegas,id'],
         ];
     }
 }

@@ -35,6 +35,7 @@ export interface EmpresaConfig {
   rubro?: Rubro | null
   logo_url?: string | null
   config_cotizacion?: ConfigCotizacion
+  tipo_facturacion?: 'ticket' | 'factura_a4'
 }
 
 export interface AuthState {

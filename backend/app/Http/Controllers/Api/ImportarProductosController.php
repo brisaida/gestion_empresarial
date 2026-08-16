@@ -41,15 +41,16 @@ class ImportarProductosController extends ApiController
             'G1' => 'unidad (UND/KG/LT...)',
             'H1' => 'costo',
             'I1' => 'precio_venta *',
-            'J1' => 'tasa_isv (%, ej: 15)',
-            'K1' => 'stock_minimo',
+            'J1' => 'precio_incluye_isv (si/no)',
+            'K1' => 'tasa_isv (%, ej: 15)',
+            'L1' => 'stock_minimo',
         ];
 
         if ($esRestaurante) {
-            $headers['L1'] = 'tipo (venta/ingrediente)';
-            $headers['M1'] = 'stock_inicial';
+            $headers['M1'] = 'tipo (venta/ingrediente)';
+            $headers['N1'] = 'stock_inicial';
         } else {
-            $headers['L1'] = 'stock_inicial';
+            $headers['M1'] = 'stock_inicial';
         }
 
         foreach ($headers as $cell => $value) {
@@ -59,19 +60,19 @@ class ImportarProductosController extends ApiController
         if ($esRestaurante) {
             $sheet->fromArray([
                 'Cerveza Heineken 6-Pack', 'HEIN6PK', '7501054800083', 'Six pack botellas de vidrio 355ml',
-                'Bebidas', 'Heineken', 'CJA', 198.00, 240.00, 15, 5, 'venta', 24,
+                'Bebidas', 'Heineken', 'CJA', 198.00, 240.00, 'no', 15, 5, 'venta', 24,
             ], null, 'A2');
             $sheet->fromArray([
                 'Harina de trigo', null, null, 'Bolsa 1 kg',
-                'Ingredientes', null, 'KG', 32.00, 0, 0, 0, 'ingrediente', 10,
+                'Ingredientes', null, 'KG', 32.00, 0, 'no', 0, 0, 'ingrediente', 10,
             ], null, 'A3');
-            $lastCol = 'M';
+            $lastCol = 'N';
         } else {
             $sheet->fromArray([
                 'Cerveza Heineken 6-Pack', 'HEIN6PK', '7501054800083', 'Six pack botellas de vidrio 355ml',
-                'Bebidas', 'Heineken', 'CJA', 198.00, 240.00, 15, 5, 24,
+                'Bebidas', 'Heineken', 'CJA', 198.00, 240.00, 'no', 15, 5, 24,
             ], null, 'A2');
-            $lastCol = 'L';
+            $lastCol = 'M';
         }
 
         $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
@@ -116,28 +117,33 @@ class ImportarProductosController extends ApiController
         }
 
         $mapaCampos = [
-            'nombre'       => ['nombre'],
-            'codigo'       => ['codigo', 'código'],
-            'codigo_barra' => ['codigo_barra', 'código_barra', 'codigobarra', 'barcode', 'ean'],
-            'descripcion'  => ['descripcion', 'descripción', 'detalle'],
-            'categoria'    => ['categoria', 'categoría', 'category'],
-            'marca'        => ['marca', 'brand'],
-            'unidad'       => ['unidad', 'und', 'unidad (und/kg/lt...)'],
-            'costo'        => ['costo', 'cost'],
-            'precio_venta' => ['precio_venta', 'precio venta', 'precio', 'price'],
-            'tasa_isv'     => ['tasa_isv', 'isv', 'impuesto', 'tasa isv'],
-            'stock_minimo' => ['stock_minimo', 'stock minimo', 'stock mínimo', 'minimo'],
-            'tipo'         => ['tipo', 'type'],
-            'stock_inicial' => ['stock_inicial', 'stock inicial', 'existencia', 'cantidad'],
+            'nombre'             => ['nombre'],
+            'codigo'             => ['codigo', 'código'],
+            'codigo_barra'       => ['codigo_barra', 'código_barra', 'codigobarra', 'barcode', 'ean'],
+            'descripcion'        => ['descripcion', 'descripción', 'detalle'],
+            'categoria'          => ['categoria', 'categoría', 'category'],
+            'marca'              => ['marca', 'brand'],
+            'unidad'             => ['unidad', 'und', 'unidad (und/kg/lt...)'],
+            'costo'              => ['costo', 'cost'],
+            'precio_venta'       => ['precio_venta', 'precio venta', 'precio', 'price'],
+            // Debe ir ANTES de tasa_isv para evitar que 'isv' capte esta columna
+            'precio_incluye_isv' => ['precio_incluye_isv', 'incluye_isv', 'precio incluye isv'],
+            'tasa_isv'           => ['tasa_isv', 'isv', 'impuesto', 'tasa isv'],
+            'stock_minimo'       => ['stock_minimo', 'stock minimo', 'stock mínimo', 'minimo'],
+            'tipo'               => ['tipo', 'type'],
+            'stock_inicial'      => ['stock_inicial', 'stock inicial', 'existencia', 'cantidad'],
         ];
 
         $headerRow = array_map(fn($h) => strtolower(trim((string) $h)), $rows[0]);
         $cols = [];
+        $claimedCols = []; // evita que dos campos capturen la misma columna
         foreach ($mapaCampos as $campo => $claves) {
             foreach ($headerRow as $idx => $header) {
+                if (isset($claimedCols[$idx])) continue;
                 foreach ($claves as $clave) {
                     if (str_contains($header, $clave)) {
                         $cols[$campo] = $idx;
+                        $claimedCols[$idx] = $campo;
                         break 2;
                     }
                 }
@@ -225,8 +231,16 @@ class ImportarProductosController extends ApiController
                 continue;
             }
 
-            $costo       = self::parseNumero($get($row, 'costo')) ?? 0.0;
-            $tasaIsv     = $get($row, 'tasa_isv');
+            $costo    = self::parseNumero($get($row, 'costo')) ?? 0.0;
+            $tasaIsv  = $get($row, 'tasa_isv');
+            $isvRate  = is_numeric($tasaIsv) ? (float) $tasaIsv : 15.0;
+
+            // Si el precio ya incluye ISV, extraer el precio base (sin ISV)
+            $incluyeIsv = strtolower(trim((string) $get($row, 'precio_incluye_isv')));
+            if (in_array($incluyeIsv, ['si', 'sí', 'yes', 'y', '1', 'true', 'x']) && $isvRate > 0) {
+                $precioVenta = round($precioVenta / (1 + $isvRate / 100), 4);
+            }
+
             $stockMinimo = $get($row, 'stock_minimo');
             $stockInicial = self::parseNumero($get($row, 'stock_inicial')) ?? 0.0;
 
@@ -288,7 +302,7 @@ class ImportarProductosController extends ApiController
                         'unidad_medida_id'   => $unidadId,
                         'costo'              => $costo,
                         'precio_venta'       => $precioVenta,
-                        'tasa_isv'           => is_numeric($tasaIsv) ? (float) $tasaIsv : 15,
+                        'tasa_isv'           => $isvRate,
                         'stock_minimo'       => is_numeric($stockMinimo) ? (float) $stockMinimo : 0,
                         'tipo'               => $tipo,
                         'maneja_lote'        => false,

@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\Product\StoreProductoRequest;
 use App\Http\Requests\Product\UpdateProductoRequest;
 use App\Http\Resources\ProductoResource;
+use App\Models\Existencia;
 use App\Models\Producto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends ApiController
@@ -59,11 +61,30 @@ class ProductoController extends ApiController
     public function store(StoreProductoRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $categoriaIds = $data['categoria_ids'] ?? [];
-        unset($data['categoria_ids']);
 
-        $producto = Producto::create($data);
-        $producto->categorias()->sync($categoriaIds);
+        $categoriaIds = $data['categoria_ids'] ?? [];
+        $stockInicial = (float) ($data['stock_inicial'] ?? 0);
+        $bodegaId     = $data['bodega_id'] ?? null;
+
+        unset($data['categoria_ids'], $data['stock_inicial'], $data['bodega_id']);
+
+        $producto = DB::transaction(function () use ($data, $categoriaIds, $stockInicial, $bodegaId) {
+            $producto = Producto::create($data);
+            $producto->categorias()->sync($categoriaIds);
+
+            if ($stockInicial > 0) {
+                Existencia::create([
+                    'empresa_id'         => $producto->empresa_id,
+                    'producto_id'        => $producto->id,
+                    'bodega_id'          => $bodegaId,
+                    'cantidad'           => $stockInicial,
+                    'cantidad_reservada' => 0,
+                ]);
+            }
+
+            return $producto;
+        });
+
         $producto->load(['categorias', 'marca', 'unidadMedida']);
         return $this->created(new ProductoResource($producto));
     }

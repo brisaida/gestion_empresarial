@@ -72,19 +72,24 @@ export default function HistorialVentasPage() {
     setPdfError('')
     setLoadingPdf(venta.id)
     try {
-      const [ventaRes, empresaRes, logoRes, { printVenta }] = await Promise.all([
+      const [ventaRes, empresaRes] = await Promise.all([
         ventasApi.get(venta.id),
         empresaApi.get(empresaId),
-        empresaApi.logoBase64(empresaId),
-        import('@/lib/printVenta'),
       ])
-      printVenta(
-        ventaRes.data.data,
-        empresaRes.data.data,
-        logoRes.data.data.logo_base64 ?? undefined,
-      )
+      const emp = empresaRes.data.data
+      console.log('[PDF] tipo_facturacion:', emp.tipo_facturacion, '| empresa:', emp.nombre)
+      if (emp.tipo_facturacion === 'ticket') {
+        const { printTicket } = await import('@/lib/printTicket')
+        printTicket(ventaRes.data.data, emp)
+      } else {
+        const [logoRes, { printVenta }] = await Promise.all([
+          empresaApi.logoBase64(empresaId),
+          import('@/lib/printVenta'),
+        ])
+        printVenta(ventaRes.data.data, emp, logoRes.data.data.logo_base64 ?? undefined)
+      }
     } catch (err) {
-      console.error('Error generando PDF:', err)
+      console.error('Error generando documento:', err)
       setPdfError('No se pudo generar el documento.')
     } finally {
       setLoadingPdf(null)
