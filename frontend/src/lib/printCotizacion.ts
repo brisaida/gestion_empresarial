@@ -12,72 +12,93 @@ const NAVY = '#072B5A'
 const BLUE = '#0E78D8'
 const CYAN = '#38D6D4'
 
-function empresaHeader(e: PrintEmpresa, logoSrc?: string): string {
-  const fiscal = [
-    e.nombre_legal && e.nombre_legal !== e.nombre ? `<div style="font-size:11px;color:#555;margin-top:1px">${e.nombre_legal}</div>` : '',
-    e.rtn       ? `<div style="font-size:11px;color:#888;margin-top:2px">RTN: ${e.rtn}</div>` : '',
-    e.telefono  ? `<div style="font-size:11px;color:#888">${e.telefono}${e.correo ? ` · ${e.correo}` : ''}</div>` : (e.correo ? `<div style="font-size:11px;color:#888">${e.correo}</div>` : ''),
-    e.direccion ? `<div style="font-size:11px;color:#888">${e.direccion}</div>` : '',
-  ].filter(Boolean).join('')
-
-  return `
-    ${logoSrc
-      ? `<img src="${logoSrc}" style="height:48px;max-width:150px;object-fit:contain;display:block;margin-bottom:8px" alt="Logo">`
-      : `<div style="width:40px;height:40px;background:linear-gradient(135deg,${BLUE},${CYAN});border-radius:9px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px"><span style="color:#fff;font-size:18px;font-weight:700">V</span></div>`
-    }
-    <div style="font-size:17px;font-weight:700;color:${NAVY}">${e.nombre}</div>
-    ${fiscal}
-  `
-}
-
 export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: string, configCot?: ConfigCotizacion): void {
-  const detalles          = c.detalles ?? []
-  const mostrarDesc       = configCot?.mostrar_descripcion ?? false
-  const mostrarFoto       = configCot?.mostrar_foto ?? false
+  const detalles    = c.detalles ?? []
+  const mostrarDesc = configCot?.mostrar_descripcion ?? false
+  const mostrarFoto = configCot?.mostrar_foto ?? false
+  const isvPct      = empresa.isv_rate ?? 15
 
+  const estados: Record<string, { label: string; color: string }> = {
+    borrador:   { label: 'BORRADOR',   color: '#6B7280' },
+    enviada:    { label: 'ENVIADA',    color: '#0E78D8' },
+    aprobada:   { label: 'APROBADA',   color: '#059669' },
+    rechazada:  { label: 'RECHAZADA',  color: '#DC2626' },
+    convertida: { label: 'CONVERTIDA', color: '#7C3AED' },
+    vencida:    { label: 'VENCIDA',    color: '#D97706' },
+  }
+  const estadoInfo = estados[c.estado] ?? { label: c.estado.toUpperCase(), color: '#6B7280' }
+
+  /* ── Filas de productos ─────────────────────────────────── */
   const filas = detalles.map((d, i) => {
     const imgUrl = d.producto?.imagen_url
       ? (d.producto.imagen_url.startsWith('http') ? d.producto.imagen_url : `${API_BASE}${d.producto.imagen_url}`)
       : null
     const fotoHtml = mostrarFoto && imgUrl
-      ? `<img src="${imgUrl}" style="width:44px;height:44px;object-fit:contain;border-radius:6px;border:1px solid #E5E9EE;display:block;margin-bottom:4px" alt="">`
+      ? `<img src="${imgUrl}" style="width:40px;height:40px;object-fit:contain;border-radius:5px;border:1px solid #E5E9EE;display:block;margin-bottom:3px" alt="">`
       : ''
     const descHtml = mostrarDesc && d.producto?.descripcion
-      ? `<span style="color:#888;font-size:11px;display:block;margin-top:3px;line-height:1.4">${d.producto.descripcion}</span>`
+      ? `<div style="color:#888;font-size:10.5px;margin-top:2px;line-height:1.4">${d.producto.descripcion}</div>`
       : ''
+
+    const bg = i % 2 === 0 ? '#ffffff' : '#F4F7FA'
     return `
-    <tr style="background:${i % 2 === 0 ? '#ffffff' : '#F4F7FA'}">
-      <td style="padding:8px 12px">
+    <tr style="background:${bg}">
+      <td style="padding:9px 10px;text-align:center;color:#555;font-size:12px;border-bottom:1px solid #EEF0F4">${Number(d.cantidad).toFixed(2)}</td>
+      <td style="padding:9px 10px;border-bottom:1px solid #EEF0F4">
         ${fotoHtml}
-        <strong style="color:${NAVY};font-size:13px">${d.producto?.nombre ?? 'Producto'}</strong>
-        ${d.producto?.codigo ? `<br><span style="color:#888;font-size:11px;font-family:monospace">${d.producto.codigo}</span>` : ''}
+        <span style="color:${NAVY};font-size:12.5px;font-weight:600">${d.producto?.nombre ?? 'Producto'}</span>
+        ${d.producto?.codigo ? `<span style="color:#aaa;font-size:10px;font-family:monospace;margin-left:5px">[${d.producto.codigo}]</span>` : ''}
         ${descHtml}
       </td>
-      <td style="padding:8px 12px;text-align:center;color:#555;font-size:13px">${Number(d.cantidad).toFixed(2)}</td>
-      <td style="padding:8px 12px;text-align:right;color:#555;font-size:13px">${fmt(d.precio_unitario)}</td>
-      <td style="padding:8px 12px;text-align:right;font-weight:700;color:${NAVY};font-size:13px">${fmt(d.subtotal)}</td>
+      <td style="padding:9px 10px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #EEF0F4">${fmt(d.precio_unitario)}</td>
+      <td style="padding:9px 10px;text-align:center;color:#555;font-size:12px;border-bottom:1px solid #EEF0F4">${isvPct}%</td>
+      <td style="padding:9px 10px;text-align:right;font-weight:700;color:${NAVY};font-size:12.5px;border-bottom:1px solid #EEF0F4">${fmt(d.subtotal)}</td>
     </tr>`
   }).join('')
 
-  const filaDescuento = c.descuento > 0
-    ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">Descuento</td><td style="padding:4px 12px;text-align:right;color:#dc2626;font-weight:600">− ${fmt(c.descuento)}</td></tr>`
-    : ''
+  /* ── Logo o inicial ─────────────────────────────────────── */
+  const logoHtml = logoSrc
+    ? `<img src="${logoSrc}" style="height:52px;max-width:160px;object-fit:contain;display:block;margin-bottom:6px" alt="Logo">`
+    : `<div style="width:44px;height:44px;background:linear-gradient(135deg,${BLUE},${CYAN});border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:6px"><span style="color:#fff;font-size:20px;font-weight:700">${empresa.nombre[0].toUpperCase()}</span></div>`
 
-  const isvPct = empresa.isv_rate ?? 15
-  const filaISV = c.impuesto > 0
-    ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">ISV (${isvPct}%)</td><td style="padding:4px 12px;text-align:right;color:#555">${fmt(c.impuesto)}</td></tr>`
-    : ''
+  /* ── Datos fiscales empresa ─────────────────────────────── */
+  const empresaFiscal = [
+    empresa.nombre_legal && empresa.nombre_legal !== empresa.nombre
+      ? `<div style="font-size:10.5px;color:#555;margin-top:1px;font-style:italic">${empresa.nombre_legal}</div>` : '',
+    empresa.rtn       ? `<div style="font-size:10.5px;color:#666;margin-top:2px">RTN: ${empresa.rtn}</div>` : '',
+    empresa.direccion ? `<div style="font-size:10.5px;color:#666;margin-top:1px">${empresa.direccion}</div>` : '',
+    empresa.telefono  ? `<div style="font-size:10.5px;color:#666;margin-top:1px">Tel: ${empresa.telefono}${empresa.correo ? `  ·  ${empresa.correo}` : ''}</div>`
+                      : (empresa.correo ? `<div style="font-size:10.5px;color:#666;margin-top:1px">${empresa.correo}</div>` : ''),
+  ].filter(Boolean).join('')
 
+  /* ── Datos del cliente ──────────────────────────────────── */
+  const cli = c.cliente as (typeof c.cliente & { rtn?: string; telefono?: string; direccion?: string; correo?: string }) | undefined
+  const clienteDetalle = [
+    cli?.rtn       ? `<div style="font-size:11px;color:#555;margin-top:2px">RTN: ${cli.rtn}</div>` : '',
+    cli?.direccion ? `<div style="font-size:11px;color:#555;margin-top:1px">${cli.direccion}</div>` : '',
+    cli?.telefono  ? `<div style="font-size:11px;color:#555;margin-top:1px">Tel: ${cli.telefono}</div>` : '',
+    cli?.correo    ? `<div style="font-size:11px;color:#555;margin-top:1px">${cli.correo}</div>` : '',
+  ].filter(Boolean).join('')
+
+  /* ── Observaciones ──────────────────────────────────────── */
   const obsBlock = c.observaciones ? `
-    <div style="margin-top:28px;padding:14px 16px;border-left:4px solid ${BLUE};background:#F4F7FA;border-radius:4px">
-      <p style="margin:0 0 6px;font-size:10px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.6px">Observaciones</p>
-      <p style="margin:0;font-size:13px;color:#555;line-height:1.6">${c.observaciones}</p>
+    <div style="margin-bottom:18px;padding:12px 14px;border-left:4px solid ${BLUE};background:#F4F7FA;border-radius:4px">
+      <p style="margin:0 0 4px;font-size:9.5px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.6px">Comentarios o instrucciones especiales</p>
+      <p style="margin:0;font-size:12px;color:#444;line-height:1.6">${c.observaciones}</p>
     </div>` : ''
 
-  const estados: Record<string, string> = {
-    borrador: 'BORRADOR', enviada: 'ENVIADA', aprobada: 'APROBADA',
-    rechazada: 'RECHAZADA', convertida: 'CONVERTIDA', vencida: 'VENCIDA',
-  }
+  /* ── Totales ────────────────────────────────────────────── */
+  const filaDescuento = c.descuento > 0
+    ? `<tr>
+        <td style="padding:5px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5">Descuento</td>
+        <td style="padding:5px 14px;text-align:right;color:#DC2626;font-weight:600;font-size:12px;border-bottom:1px solid #F0F2F5">− ${fmt(c.descuento)}</td>
+       </tr>` : ''
+
+  const filaISV = c.impuesto > 0
+    ? `<tr>
+        <td style="padding:5px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5">ISV (${isvPct}%)</td>
+        <td style="padding:5px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5">${fmt(c.impuesto)}</td>
+       </tr>` : ''
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -86,90 +107,162 @@ export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: 
   <title>${c.numero_cotizacion} — Cotización</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
     body { font-family: Arial, Helvetica, sans-serif; color: #333; background: #fff; }
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      @page { size: A4; margin: 20mm 16mm; }
+      @page { size: A4; margin: 12mm 14mm; }
       .no-print { display: none !important; }
     }
-    .page { max-width: 760px; margin: 0 auto; padding: 40px 32px; }
+    .page {
+      width: 100%;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 28px 32px 24px;
+      display: flex;
+      flex-direction: column;
+      min-height: calc(297mm - 24mm); /* A4 menos márgenes de impresión */
+    }
     table { width: 100%; border-collapse: collapse; }
+    .label { font-size: 9px; font-weight: 700; color: ${BLUE}; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 3px; }
+    .value { font-size: 13px; font-weight: 700; color: ${NAVY}; }
+    /* La sección de la tabla crece para llenar el espacio disponible */
+    .tabla-section { flex: 1; display: flex; flex-direction: column; }
+    .tabla-productos { flex: 1; height: 100%; border-collapse: collapse; width: 100%; }
+    /* Fila vacía que absorbe el espacio sobrante */
+    .filler-row { height: 100%; }
+    .filler-row td { border-left: 1px solid #E5E9EE; border-right: 1px solid #E5E9EE; }
+    .filler-row td:first-child { border-left: none; }
+    .filler-row td:last-child  { border-right: none; }
   </style>
 </head>
 <body>
 <div class="page">
 
-  <div class="no-print" style="text-align:right;margin-bottom:20px">
-    <button onclick="window.print()" style="background:${BLUE};color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">
+  <div class="no-print" style="text-align:right;margin-bottom:16px">
+    <button onclick="window.print()" style="background:${BLUE};color:#fff;border:none;padding:9px 22px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:600">
       🖨️ Guardar / Imprimir PDF
     </button>
   </div>
 
-  <!-- HEADER -->
-  <table style="margin-bottom:24px">
+  <!-- ═══ ENCABEZADO ═══ -->
+  <table style="margin-bottom:0">
     <tr>
-      <td>${empresaHeader(empresa, logoSrc)}</td>
-      <td style="text-align:right;vertical-align:top">
-        <div style="font-size:26px;font-weight:800;color:${BLUE};letter-spacing:2px">COTIZACIÓN</div>
-        <div style="font-size:16px;font-weight:700;color:${NAVY};margin-top:4px">${c.numero_cotizacion}</div>
-        <div style="font-size:11px;color:#888;margin-top:3px">${estados[c.estado] ?? c.estado}</div>
+      <td style="width:55%;vertical-align:top;padding-right:20px">
+        ${logoHtml}
+        <div style="font-size:18px;font-weight:800;color:${NAVY};margin-bottom:3px">${empresa.nombre}</div>
+        ${empresaFiscal}
+      </td>
+      <td style="vertical-align:top;text-align:right">
+        <div style="font-size:40px;font-weight:900;font-style:italic;color:${BLUE};letter-spacing:1px;line-height:1">Cotización</div>
+        <div style="margin-top:10px;display:inline-block;text-align:left;min-width:200px">
+          <table style="width:auto;margin-left:auto">
+            <tr>
+              <td style="font-size:10.5px;color:#888;padding:2px 8px 2px 0;white-space:nowrap">FECHA</td>
+              <td style="font-size:10.5px;font-weight:700;color:${NAVY};padding:2px 0">${c.fecha_cotizacion}</td>
+            </tr>
+            <tr>
+              <td style="font-size:10.5px;color:#888;padding:2px 8px 2px 0;white-space:nowrap">N.° COTIZACIÓN</td>
+              <td style="font-size:10.5px;font-weight:700;color:${NAVY};padding:2px 0">${c.numero_cotizacion}</td>
+            </tr>
+            <tr>
+              <td style="font-size:10.5px;color:#888;padding:2px 8px 2px 0;white-space:nowrap">ESTADO</td>
+              <td style="padding:2px 0">
+                <span style="font-size:9.5px;font-weight:700;color:#fff;background:${estadoInfo.color};padding:2px 8px;border-radius:20px">${estadoInfo.label}</span>
+              </td>
+            </tr>
+          </table>
+        </div>
       </td>
     </tr>
   </table>
 
-  <div style="height:3px;background:linear-gradient(90deg,${NAVY},${BLUE},${CYAN});border-radius:2px;margin-bottom:20px"></div>
+  <!-- Barra de color -->
+  <div style="height:3px;background:linear-gradient(90deg,${NAVY},${BLUE},${CYAN});border-radius:2px;margin:12px 0 14px"></div>
 
-  <!-- INFO GRID -->
-  <table style="margin-bottom:20px;border-spacing:0">
-    <tr>
-      <td style="width:33%;padding:10px 12px;background:#F4F7FA;border-radius:6px 0 0 6px;border-right:2px solid #fff">
-        <div style="font-size:9px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cotizado para</div>
-        <div style="font-size:14px;font-weight:700;color:${NAVY}">${c.cliente?.nombre ?? 'Consumidor general'}</div>
+  <!-- ═══ CLIENTE + VALIDEZ ═══ -->
+  <table style="margin-bottom:14px">
+    <tr style="vertical-align:top">
+      <td style="width:55%;padding-right:20px">
+        <div style="font-size:10px;font-weight:700;color:${NAVY};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;border-bottom:2px solid ${BLUE};padding-bottom:3px;display:inline-block">Cotización para:</div>
+        <div style="font-size:14px;font-weight:700;color:${NAVY};margin-top:4px">${cli?.nombre ?? 'Consumidor general'}</div>
+        ${clienteDetalle}
       </td>
-      <td style="width:33%;padding:10px 12px;background:#F4F7FA;border-right:2px solid #fff">
-        <div style="font-size:9px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fecha de emisión</div>
-        <div style="font-size:14px;font-weight:700;color:${NAVY}">${c.fecha_cotizacion}</div>
-      </td>
-      <td style="width:33%;padding:10px 12px;background:#F4F7FA;border-radius:0 6px 6px 0">
-        <div style="font-size:9px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Válida hasta</div>
-        <div style="font-size:14px;font-weight:700;color:${c.fecha_vencimiento ? NAVY : '#aaa'}">${c.fecha_vencimiento ?? '—'}</div>
+      <td style="vertical-align:top">
+        <table style="width:100%">
+          <tr>
+            <td style="background:#F4F7FA;padding:9px 14px;border-radius:6px 6px 0 0;border-bottom:2px solid #fff">
+              <div class="label">Válida hasta</div>
+              <div class="value" style="color:${c.fecha_vencimiento ? NAVY : '#bbb'}">${c.fecha_vencimiento ?? 'Sin vencimiento'}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#F4F7FA;padding:9px 14px;border-radius:0 0 6px 6px">
+              <div class="label">Tasa ISV</div>
+              <div class="value">${isvPct}%</div>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   </table>
 
-  <!-- TABLA DE PRODUCTOS -->
-  <table style="border-radius:8px;overflow:hidden;margin-bottom:16px">
-    <thead>
-      <tr style="background:${NAVY}">
-        <th style="padding:10px 12px;text-align:left;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Descripción</th>
-        <th style="padding:10px 12px;text-align:center;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.5px;width:80px">Cant.</th>
-        <th style="padding:10px 12px;text-align:right;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.5px;width:130px">Precio unit.</th>
-        <th style="padding:10px 12px;text-align:right;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.5px;width:130px">Subtotal</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${filas || `<tr><td colspan="4" style="padding:20px;text-align:center;color:#aaa">Sin productos</td></tr>`}
-    </tbody>
-    <tfoot style="border-top:2px solid #E5E9EE">
-      <tr><td colspan="2"></td>
-        <td style="padding:6px 12px;color:#888;text-align:right;font-size:13px">Subtotal</td>
-        <td style="padding:6px 12px;text-align:right;font-size:13px;color:#555">${fmt(c.subtotal)}</td>
-      </tr>
-      ${filaDescuento}
-      ${filaISV}
-      <tr style="border-top:2px solid ${NAVY}">
-        <td colspan="2"></td>
-        <td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:700;color:${NAVY}">TOTAL</td>
-        <td style="padding:10px 12px;text-align:right;font-size:16px;font-weight:700;color:${NAVY}">${fmt(c.total)}</td>
-      </tr>
-    </tfoot>
-  </table>
-
+  <!-- Observaciones -->
   ${obsBlock}
 
-  <!-- FOOTER -->
-  <div style="margin-top:40px;padding-top:12px;border-top:1px solid #E5E9EE;text-align:center">
-    <span style="font-size:10px;color:#aaa">${empresa.nombre} · ${c.numero_cotizacion}</span>
+  <!-- ═══ TABLA DE PRODUCTOS (flex:1 → llena el resto de la página) ═══ -->
+  <div class="tabla-section">
+    <table class="tabla-productos">
+      <thead>
+        <tr style="background:${NAVY}">
+          <th style="padding:10px;text-align:center;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:65px">Cantidad</th>
+          <th style="padding:10px;text-align:left;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Descripción</th>
+          <th style="padding:10px;text-align:right;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:110px">Precio unit.</th>
+          <th style="padding:10px;text-align:center;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:70px">ISV %</th>
+          <th style="padding:10px;text-align:right;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:110px">Monto</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filas}
+        <!-- Fila vacía que estira la tabla hasta llenar la página -->
+        <tr class="filler-row">
+          <td style="border-bottom:1px solid #E5E9EE"></td>
+          <td style="border-bottom:1px solid #E5E9EE"></td>
+          <td style="border-bottom:1px solid #E5E9EE"></td>
+          <td style="border-bottom:1px solid #E5E9EE"></td>
+          <td style="border-bottom:1px solid #E5E9EE"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ TOTALES ═══ -->
+  <table style="margin-top:0;margin-bottom:20px">
+    <tr>
+      <td style="width:55%"></td>
+      <td>
+        <table style="width:100%;border:1px solid #E5E9EE;border-top:none;border-radius:0 0 6px 6px;overflow:hidden">
+          <tr>
+            <td style="padding:6px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5">Subtotal</td>
+            <td style="padding:6px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5;width:110px">${fmt(c.subtotal)}</td>
+          </tr>
+          ${filaDescuento}
+          ${filaISV}
+          <tr style="background:${NAVY}">
+            <td style="padding:10px 14px;text-align:right;font-size:13px;font-weight:700;color:#fff">TOTAL</td>
+            <td style="padding:10px 14px;text-align:right;font-size:15px;font-weight:800;color:#fff">${fmt(c.total)}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div style="border-top:1px solid #E5E9EE;padding-top:12px;display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:10px;color:#aaa">
+      ${empresa.nombre}${empresa.telefono ? ` · Tel: ${empresa.telefono}` : ''}${empresa.correo ? ` · ${empresa.correo}` : ''}
+    </div>
+    <div style="font-size:11px;font-weight:700;color:${BLUE};letter-spacing:.5px">¡GRACIAS POR SU PREFERENCIA!</div>
   </div>
 
 </div>

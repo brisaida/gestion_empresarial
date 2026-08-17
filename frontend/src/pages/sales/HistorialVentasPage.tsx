@@ -77,7 +77,6 @@ export default function HistorialVentasPage() {
         empresaApi.get(empresaId),
       ])
       const emp = empresaRes.data.data
-      console.log('[PDF] tipo_facturacion:', emp.tipo_facturacion, '| empresa:', emp.nombre)
       if (emp.tipo_facturacion === 'ticket') {
         const { printTicket } = await import('@/lib/printTicket')
         printTicket(ventaRes.data.data, emp)
