@@ -57,7 +57,7 @@ export default function StockBajoPage() {
       key: 'producto', header: 'Producto',
       cell: r => (
         <div>
-          <p className="font-semibold text-[#072B5A]">{r.producto?.nombre ?? `#${r.producto_id}`}</p>
+          <p className="font-semibold text-[var(--cs)]">{r.producto?.nombre ?? `#${r.producto_id}`}</p>
           {r.producto?.codigo && <p className="text-xs text-[#5F6B7A] font-mono">{r.producto.codigo}</p>}
         </div>
       ),
@@ -103,7 +103,7 @@ export default function StockBajoPage() {
 
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A] flex items-center gap-2">
+          <h1 className="text-xl font-bold text-[var(--cs)] flex items-center gap-2">
             <AlertTriangle size={20} className="text-amber-500" />
             Alertas de Stock
           </h1>
@@ -114,7 +114,7 @@ export default function StockBajoPage() {
         <button
           onClick={() => refetch()}
           disabled={isFetching}
-          className="flex items-center gap-1.5 text-xs font-semibold text-[#5F6B7A] hover:text-[#0E78D8] transition-colors px-3 py-2 rounded-lg hover:bg-[#F4F7FA]"
+          className="flex items-center gap-1.5 text-xs font-semibold text-[#5F6B7A] hover:text-[var(--cp)] transition-colors px-3 py-2 rounded-lg hover:bg-[#F4F7FA]"
         >
           <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
           Actualizar

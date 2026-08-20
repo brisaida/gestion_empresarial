@@ -54,7 +54,7 @@ export default function BarcodeScannerModal({ onScan, onClose }: Props) {
       <div className="relative w-full max-w-sm bg-black rounded-2xl overflow-hidden shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-[#072B5A]">
+        <div className="flex items-center justify-between px-4 py-3 bg-[var(--cs)]">
           <div className="flex items-center gap-2 text-white">
             <Camera size={18} />
             <span className="text-sm font-semibold">Escanear código de barras</span>

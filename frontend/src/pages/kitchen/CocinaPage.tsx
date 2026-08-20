@@ -61,10 +61,10 @@ function FacturarModal({ comanda, onClose, onDone }: FacturarModalProps) {
           {comanda.detalles.map(d => (
             <div key={d.id} className="flex justify-between text-sm">
               <span className="text-[#5F6B7A]">{d.nombre_item} × {d.cantidad}</span>
-              <span className="font-medium text-[#072B5A]">{formatCurrency(d.cantidad * d.precio_unitario)}</span>
+              <span className="font-medium text-[var(--cs)]">{formatCurrency(d.cantidad * d.precio_unitario)}</span>
             </div>
           ))}
-          <div className="border-t border-gray-200 pt-2 flex justify-between text-sm font-bold text-[#072B5A]">
+          <div className="border-t border-gray-200 pt-2 flex justify-between text-sm font-bold text-[var(--cs)]">
             <span>Total</span>
             <span>{formatCurrency(total)}</span>
           </div>
@@ -145,11 +145,11 @@ export default function CocinaPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 100%)' }}>
+            style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' }}>
             <ChefHat size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#072B5A]">Pantalla de Cocina</h1>
+            <h1 className="text-xl font-bold text-[var(--cs)]">Pantalla de Cocina</h1>
             <p className="text-xs text-[#5F6B7A]">
               Actualizado: {lastUpdate.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
             </p>
@@ -159,7 +159,7 @@ export default function CocinaPage() {
           <span className="text-sm text-[#5F6B7A]">{comandas.length} pedido{comandas.length !== 1 ? 's' : ''}</span>
           <button
             onClick={fetchComandas}
-            className="p-2 rounded-lg border border-gray-200 text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all"
+            className="p-2 rounded-lg border border-gray-200 text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all"
           >
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -171,11 +171,11 @@ export default function CocinaPage() {
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${
-              tab === t.key ? 'bg-white text-[#072B5A] shadow-sm' : 'text-[#5F6B7A] hover:text-[#072B5A]'
+              tab === t.key ? 'bg-white text-[var(--cs)] shadow-sm' : 'text-[#5F6B7A] hover:text-[var(--cs)]'
             }`}>
             {t.label}
             {t.key === 'activos' && comandas.length > 0 && tab === 'activos' && (
-              <span className="ml-1.5 text-xs font-bold text-white bg-[#0E78D8] px-1.5 py-0.5 rounded-full">{comandas.length}</span>
+              <span className="ml-1.5 text-xs font-bold text-white bg-[var(--cp)] px-1.5 py-0.5 rounded-full">{comandas.length}</span>
             )}
           </button>
         ))}
@@ -216,7 +216,7 @@ export default function CocinaPage() {
                 <div className="px-4 pt-4 pb-3 border-b border-gray-100">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-bold text-[#072B5A] text-base leading-tight">{comanda.numero_comanda}</p>
+                      <p className="font-bold text-[var(--cs)] text-base leading-tight">{comanda.numero_comanda}</p>
                       {comanda.mesa && (
                         <p className="text-sm text-[#5F6B7A] font-medium mt-0.5">{comanda.mesa}</p>
                       )}
@@ -242,12 +242,12 @@ export default function CocinaPage() {
                         type="checkbox"
                         checked={det.listo}
                         onChange={e => marcarItem.mutate({ comandaId: comanda.id, detalleId: det.id, listo: e.target.checked })}
-                        className="mt-0.5 w-4 h-4 accent-[#0E78D8] rounded cursor-pointer shrink-0"
+                        className="mt-0.5 w-4 h-4 accent-[var(--cp)] rounded cursor-pointer shrink-0"
                       />
                       <div className="min-w-0">
-                        <p className={`text-sm font-semibold leading-tight ${det.listo ? 'line-through text-gray-400' : 'text-[#072B5A]'}`}>
+                        <p className={`text-sm font-semibold leading-tight ${det.listo ? 'line-through text-gray-400' : 'text-[var(--cs)]'}`}>
                           {det.nombre_item}
-                          {det.cantidad !== 1 && <span className="text-[#0E78D8] ml-1">×{det.cantidad}</span>}
+                          {det.cantidad !== 1 && <span className="text-[var(--cp)] ml-1">×{det.cantidad}</span>}
                         </p>
                         {det.notas && (
                           <p className="text-xs text-amber-600 mt-0.5">{det.notas}</p>

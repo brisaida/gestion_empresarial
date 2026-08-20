@@ -98,12 +98,12 @@ export default function HistorialVentasPage() {
   const columns: Column<Venta>[] = [
     {
       key: 'numero_factura', header: 'N° Factura',
-      cell: r => <span className="font-mono text-sm font-bold text-[#0E78D8]">{r.numero_factura ?? '—'}</span>,
+      cell: r => <span className="font-mono text-sm font-bold text-[var(--cp)]">{r.numero_factura ?? '—'}</span>,
       width: '120px',
     },
     {
       key: 'cliente', header: 'Cliente',
-      cell: r => <span className="font-semibold text-[#072B5A]">{r.cliente?.nombre ?? 'Consumidor final'}</span>,
+      cell: r => <span className="font-semibold text-[var(--cs)]">{r.cliente?.nombre ?? 'Consumidor final'}</span>,
     },
     {
       key: 'bodega', header: 'Bodega',
@@ -166,7 +166,7 @@ export default function HistorialVentasPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
 
       <div>
-        <h1 className="text-xl font-bold text-[#072B5A]">Historial de Ventas</h1>
+        <h1 className="text-xl font-bold text-[var(--cs)]">Historial de Ventas</h1>
         <p className="text-sm text-[#5F6B7A]">Consulta y gestiona todas las facturas emitidas</p>
       </div>
 

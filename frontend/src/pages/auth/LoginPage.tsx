@@ -41,11 +41,11 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #031B3A 0%, #072B5A 60%, #0E78D8 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #031B3A 0%, var(--cs) 60%, var(--cp) 100%)' }}
     >
       {/* Background decorative circles */}
       <div className="absolute top-[-10%] right-[-5%] w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #38D6D4, transparent 70%)' }} />
-      <div className="absolute bottom-[-5%] left-[-10%] w-80 h-80 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #0E78D8, transparent 70%)' }} />
+      <div className="absolute bottom-[-5%] left-[-10%] w-80 h-80 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, var(--cp), transparent 70%)' }} />
 
       <div className="w-full max-w-md relative z-10">
         {/* Card — completamente blanca */}
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
           {/* Form */}
           <div className="px-8 py-7">
-            <h2 className="text-base font-bold text-[#072B5A] mb-6">Iniciar sesión</h2>
+            <h2 className="text-base font-bold text-[var(--cs)] mb-6">Iniciar sesión</h2>
 
             {serverError && (
               <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-start gap-2">
@@ -70,13 +70,13 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Correo electrónico</label>
+                <label className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Correo electrónico</label>
                 <div className="relative">
                   <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="email"
                     placeholder="tu@correo.com"
-                    className={`w-full rounded-lg border pl-9 pr-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all ${errors.correo ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-[#0E78D8]/50'}`}
+                    className={`w-full rounded-lg border pl-9 pr-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all ${errors.correo ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-[var(--cp)]/50'}`}
                     {...register('correo')}
                   />
                 </div>
@@ -84,19 +84,19 @@ export default function LoginPage() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Contraseña</label>
+                <label className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Contraseña</label>
                 <div className="relative">
                   <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type={showPass ? 'text' : 'password'}
                     placeholder="••••••••"
-                    className={`w-full rounded-lg border pl-9 pr-10 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-[#0E78D8]/50'}`}
+                    className={`w-full rounded-lg border pl-9 pr-10 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-[var(--cp)]/50'}`}
                     {...register('password')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0E78D8] transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[var(--cp)] transition-colors"
                   >
                     {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -109,7 +109,7 @@ export default function LoginPage() {
                   type="submit"
                   disabled={isSubmitting}
                   className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ background: isSubmitting ? '#5F6B7A' : 'linear-gradient(135deg, #0E78D8 0%, #38D6D4 100%)', boxShadow: '0 4px 20px rgba(14, 120, 216, 0.4)' }}
+                  style={{ background: isSubmitting ? '#5F6B7A' : 'linear-gradient(135deg, var(--cp) 0%, #38D6D4 100%)', boxShadow: '0 4px 20px rgba(14, 120, 216, 0.4)' }}
                 >
                   {isSubmitting ? (
                     <>

@@ -56,7 +56,7 @@ export default function ReportesProductosPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Top productos</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Top productos</h1>
           <p className="text-sm text-[#5F6B7A]">Los 10 productos con mayor ingreso en el período</p>
         </div>
 
@@ -65,7 +65,7 @@ export default function ReportesProductosPage() {
             <button key={p.key} onClick={() => setPreset(p.key)}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                 preset === p.key
-                  ? 'bg-[#0E78D8] text-white shadow-sm'
+                  ? 'bg-[var(--cp)] text-white shadow-sm'
                   : 'text-[#5F6B7A] hover:bg-gray-100'
               }`}>
               {p.label}
@@ -98,20 +98,20 @@ export default function ReportesProductosPage() {
                   <tr key={r.producto_id} className="hover:bg-[#F4F7FA]">
                     <td className="px-4 py-3.5">
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                        i === 0 ? 'bg-[#0E78D8] text-white' :
-                        i === 1 ? 'bg-[#072B5A] text-white' :
+                        i === 0 ? 'bg-[var(--cp)] text-white' :
+                        i === 1 ? 'bg-[var(--cs)] text-white' :
                         i === 2 ? 'bg-[#38D6D4] text-white' :
                         'bg-gray-100 text-[#5F6B7A]'
                       }`}>{i + 1}</span>
                     </td>
                     <td className="px-4 py-3.5">
-                      <p className="font-semibold text-[#072B5A]">{r.nombre}</p>
+                      <p className="font-semibold text-[var(--cs)]">{r.nombre}</p>
                       {r.codigo && <p className="text-xs text-[#5F6B7A] font-mono">{r.codigo}</p>}
                     </td>
                     <td className="px-4 py-3.5 text-right text-[#5F6B7A]">
                       {Number(r.total_unidades).toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="px-4 py-3.5 text-right font-bold text-[#072B5A]">
+                    <td className="px-4 py-3.5 text-right font-bold text-[var(--cs)]">
                       {formatCurrency(r.total_monto)}
                     </td>
                     <td className="px-4 py-3.5">
@@ -122,8 +122,8 @@ export default function ReportesProductosPage() {
                             style={{
                               width: `${pct}%`,
                               background: i === 0
-                                ? 'linear-gradient(90deg, #0E78D8, #38D6D4)'
-                                : '#0E78D8',
+                                ? 'linear-gradient(90deg, var(--cp), #38D6D4)'
+                                : 'var(--cp)',
                               opacity: 1 - i * 0.07,
                             }}
                           />

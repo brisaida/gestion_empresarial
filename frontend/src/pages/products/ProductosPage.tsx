@@ -86,7 +86,7 @@ export default function ProductosPage() {
           checked={allSelected}
           ref={el => { if (el) el.indeterminate = someSelected && !allSelected }}
           onChange={e => toggleAll(e.target.checked)}
-          className="w-4 h-4 rounded border-gray-300 accent-[#0E78D8] cursor-pointer"
+          className="w-4 h-4 rounded border-gray-300 accent-[var(--cp)] cursor-pointer"
           aria-label="Seleccionar todos"
         />
       ),
@@ -96,7 +96,7 @@ export default function ProductosPage() {
           checked={selectedIds.has(r.id)}
           onChange={e => toggleOne(r.id, e.target.checked)}
           onClick={e => e.stopPropagation()}
-          className="w-4 h-4 rounded border-gray-300 accent-[#0E78D8] cursor-pointer"
+          className="w-4 h-4 rounded border-gray-300 accent-[var(--cp)] cursor-pointer"
           aria-label={`Seleccionar ${r.nombre}`}
         />
       ),
@@ -113,7 +113,7 @@ export default function ProductosPage() {
     },
     {
       key: 'nombre', header: 'Producto',
-      cell: (r) => <p className="font-medium text-[#072B5A]">{r.nombre}</p>,
+      cell: (r) => <p className="font-medium text-[var(--cs)]">{r.nombre}</p>,
     },
     {
       key: 'categorias', header: 'Categorías',
@@ -122,7 +122,7 @@ export default function ProductosPage() {
           {(r.categorias ?? []).length === 0
             ? <span className="text-xs text-gray-300">—</span>
             : (r.categorias ?? []).map(c => (
-                <span key={c.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#0E78D8]/8 text-[#0E78D8] border border-[#0E78D8]/15">
+                <span key={c.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--cp)]/8 text-[var(--cp)] border border-[var(--cp)]/15">
                   {c.nombre}
                 </span>
               ))
@@ -132,7 +132,7 @@ export default function ProductosPage() {
     },
     { key: 'codigo',       header: 'Código',       cell: (r) => <span className="font-mono text-xs text-gray-400">{r.codigo ?? '—'}</span>, width: '90px' },
     { key: 'costo',        header: 'Costo',         cell: (r) => <span className="text-[#5F6B7A]">{formatCurrency(r.costo)}</span>, align: 'right' },
-    { key: 'precio_venta', header: 'Precio Venta',  cell: (r) => <span className="font-semibold text-[#072B5A]">{formatCurrency(r.precio_venta)}</span>, align: 'right' },
+    { key: 'precio_venta', header: 'Precio Venta',  cell: (r) => <span className="font-semibold text-[var(--cs)]">{formatCurrency(r.precio_venta)}</span>, align: 'right' },
     {
       key: 'stock', header: 'Stock', align: 'right',
       cell: (r) => (
@@ -152,7 +152,7 @@ export default function ProductosPage() {
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
           r.tipo === 'ingrediente'
             ? 'bg-amber-50 text-amber-700 border border-amber-200'
-            : 'bg-[#0E78D8]/8 text-[#0E78D8] border border-[#0E78D8]/20'
+            : 'bg-[var(--cp)]/8 text-[var(--cp)] border border-[var(--cp)]/20'
         }`}>
           {r.tipo === 'ingrediente' ? 'Ingrediente' : 'Venta'}
         </span>
@@ -163,7 +163,7 @@ export default function ProductosPage() {
       key: 'acciones', header: '', align: 'right', width: '80px',
       cell: (r) => (
         <div className="flex items-center justify-end gap-1">
-          <button onClick={() => navigate(`/productos/${r.id}/editar`)} className="p-1.5 rounded text-gray-400 hover:text-[#0E78D8] hover:bg-[#0E78D8]/8 transition-colors"><Pencil size={15} /></button>
+          <button onClick={() => navigate(`/productos/${r.id}/editar`)} className="p-1.5 rounded text-gray-400 hover:text-[var(--cp)] hover:bg-[var(--cp)]/8 transition-colors"><Pencil size={15} /></button>
           <button onClick={() => setDeleteId(r.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={15} /></button>
         </div>
       ),
@@ -174,7 +174,7 @@ export default function ProductosPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Productos</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Productos</h1>
           <p className="text-sm text-[#5F6B7A]">Catálogo de productos</p>
         </div>
         <div className="flex gap-2">
@@ -192,7 +192,7 @@ export default function ProductosPage() {
               <select
                 value={categoriaId ?? ''}
                 onChange={e => { setCategoriaId(e.target.value ? Number(e.target.value) : null); crud.setPage(1) }}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-colors"
+                className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-colors"
               >
                 <option value="">Todas las categorías</option>
                 {categorias.map(c => (
@@ -214,14 +214,14 @@ export default function ProductosPage() {
 
         {/* Barra de selección masiva */}
         {selectedIds.size > 0 && (
-          <div className="flex items-center justify-between px-4 py-2.5 bg-[#0E78D8]/5 border-b border-[#0E78D8]/20">
-            <span className="text-sm font-medium text-[#0E78D8]">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--cp)]/5 border-b border-[var(--cp)]/20">
+            <span className="text-sm font-medium text-[var(--cp)]">
               {selectedIds.size} producto{selectedIds.size !== 1 ? 's' : ''} seleccionado{selectedIds.size !== 1 ? 's' : ''}
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSelectedIds(new Set())}
-                className="text-xs text-[#5F6B7A] hover:text-[#072B5A] font-medium transition-colors"
+                className="text-xs text-[#5F6B7A] hover:text-[var(--cs)] font-medium transition-colors"
               >
                 Deseleccionar
               </button>
@@ -274,11 +274,11 @@ export default function ProductosPage() {
           {!importResult ? (
             <>
               <div className="bg-[#F4F7FA] rounded-lg p-4 space-y-2">
-                <p className="text-sm font-semibold text-[#072B5A]">Paso 1 — Descarga la plantilla</p>
+                <p className="text-sm font-semibold text-[var(--cs)]">Paso 1 — Descarga la plantilla</p>
                 <p className="text-xs text-[#5F6B7A]">Completa el Excel con tus productos y luego súbelo aquí.</p>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0E78D8] hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--cp)] hover:underline"
                   onClick={async () => {
                     const token = localStorage.getItem('token') ?? ''
                     const res = await fetch(productosApi.plantillaUrl(empresaId), { headers: { Authorization: `Bearer ${token}` } })
@@ -293,7 +293,7 @@ export default function ProductosPage() {
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-[#072B5A] mb-2">Paso 2 — Sube tu archivo</p>
+                <p className="text-sm font-semibold text-[var(--cs)] mb-2">Paso 2 — Sube tu archivo</p>
                 <input ref={importRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => setImportFile(e.target.files?.[0] ?? null)} />
                 {importFile ? (
                   <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
@@ -304,7 +304,7 @@ export default function ProductosPage() {
                   <button
                     type="button"
                     onClick={() => importRef.current?.click()}
-                    className="w-full border-2 border-dashed border-gray-200 rounded-lg px-4 py-6 text-center text-sm text-[#5F6B7A] hover:border-[#0E78D8]/50 hover:bg-[#0E78D8]/5 transition-all"
+                    className="w-full border-2 border-dashed border-gray-200 rounded-lg px-4 py-6 text-center text-sm text-[#5F6B7A] hover:border-[var(--cp)]/50 hover:bg-[var(--cp)]/5 transition-all"
                   >
                     <Upload size={20} className="mx-auto mb-1 text-gray-300" />
                     Haz clic para seleccionar un archivo .xlsx

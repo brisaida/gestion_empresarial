@@ -270,7 +270,7 @@ export default function VentasPage() {
     await crear.mutateAsync(buildPayload(bodegaId))
   }
 
-  const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
+  const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
   const labelCls  = "block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5"
 
   // ── Panel de carrito (compartido entre tablet y móvil) ─────────────────
@@ -283,7 +283,7 @@ export default function VentasPage() {
           <input type="number" min="0" step="0.01"
             value={descuento || ''} onChange={e => setDescuento(Number(e.target.value) || 0)}
             placeholder="0.00"
-            className="w-full pl-5 pr-2 py-1.5 rounded-lg border border-gray-200 text-xs text-right text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]"
+            className="w-full pl-5 pr-2 py-1.5 rounded-lg border border-gray-200 text-xs text-right text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
           />
         </div>
       </div>
@@ -292,7 +292,7 @@ export default function VentasPage() {
         <span className="text-sm font-medium text-[#5F6B7A]">ISV ({empresaConfig?.isv_rate ?? 15}%)</span>
         <button type="button" onClick={() => setAplicarISV(v => !v)}
           style={{ height: '22px', width: '40px' }}
-          className={`rounded-full transition-all flex items-center px-0.5 ${aplicarISV ? 'bg-[#0E78D8]' : 'bg-gray-200'}`}>
+          className={`rounded-full transition-all flex items-center px-0.5 ${aplicarISV ? 'bg-[var(--cp)]' : 'bg-gray-200'}`}>
           <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${aplicarISV ? 'translate-x-[18px]' : 'translate-x-0'}`} />
         </button>
       </div>
@@ -315,7 +315,7 @@ export default function VentasPage() {
       </div>
 
       <div className="flex justify-between items-center px-4 py-3.5 rounded-xl text-white font-bold"
-        style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 60%, #38D6D4 100%)' }}>
+        style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 60%, #38D6D4 100%)' }}>
         <span className="text-sm">TOTAL</span>
         <span className="text-lg tracking-tight">{formatCurrency(total)}</span>
       </div>
@@ -331,7 +331,7 @@ export default function VentasPage() {
             value={mesa}
             onChange={e => setMesa(e.target.value)}
             placeholder="Mesa 3, Juan..."
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
           />
         </div>
       )}
@@ -346,7 +346,7 @@ export default function VentasPage() {
               disabled={lineas.length === 0 || !bodegaId || sinSesion}
               onClick={() => { setError(''); enviarCocina.mutate() }}
               className="w-full justify-center"
-              style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 100%)' }}
+              style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' }}
             >
               Enviar a cocina
             </Button>
@@ -388,7 +388,7 @@ export default function VentasPage() {
               </p>
               {stockModal.alternativas.map(b => (
                 <button key={b.id} type="button" onClick={() => cambiarBodega(b.id)}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-[#072B5A] font-medium hover:bg-[#0E78D8] hover:text-white hover:border-[#0E78D8] transition-colors text-left">
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-[var(--cs)] font-medium hover:bg-[var(--cp)] hover:text-white hover:border-[var(--cp)] transition-colors text-left">
                   <Warehouse size={15} className="shrink-0" /> Cambiar a "{b.nombre}"
                 </button>
               ))}
@@ -407,7 +407,7 @@ export default function VentasPage() {
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Nueva Venta</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Nueva Venta</h1>
           <p className="text-sm text-[#5F6B7A]">Registra una factura de venta</p>
         </div>
         {!esRestaurante && (
@@ -416,7 +416,7 @@ export default function VentasPage() {
               type="button"
               onClick={() => setVistaProductos('lista')}
               title="Vista lista"
-              className={`p-1.5 rounded transition-all ${vistaProductos === 'lista' ? 'bg-[#0E78D8] text-white shadow-sm' : 'text-[#5F6B7A] hover:text-[#0E78D8] hover:bg-[#F4F7FA]'}`}
+              className={`p-1.5 rounded transition-all ${vistaProductos === 'lista' ? 'bg-[var(--cp)] text-white shadow-sm' : 'text-[#5F6B7A] hover:text-[var(--cp)] hover:bg-[#F4F7FA]'}`}
             >
               <List size={16} />
             </button>
@@ -424,7 +424,7 @@ export default function VentasPage() {
               type="button"
               onClick={() => setVistaProductos('mosaico')}
               title="Vista mosaico"
-              className={`p-1.5 rounded transition-all ${vistaProductos === 'mosaico' ? 'bg-[#0E78D8] text-white shadow-sm' : 'text-[#5F6B7A] hover:text-[#0E78D8] hover:bg-[#F4F7FA]'}`}
+              className={`p-1.5 rounded transition-all ${vistaProductos === 'mosaico' ? 'bg-[var(--cp)] text-white shadow-sm' : 'text-[#5F6B7A] hover:text-[var(--cp)] hover:bg-[#F4F7FA]'}`}
             >
               <LayoutGrid size={16} />
             </button>
@@ -461,7 +461,7 @@ export default function VentasPage() {
               </label>
               <div className="relative">
                 <input readOnly value={nFactura}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-8 text-sm font-bold text-[#0E78D8] bg-[#F4F7FA] cursor-default select-none tracking-wide" />
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-8 text-sm font-bold text-[var(--cp)] bg-[#F4F7FA] cursor-default select-none tracking-wide" />
                 <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300" />
               </div>
             </div>
@@ -534,7 +534,7 @@ export default function VentasPage() {
                       onClick={() => setCategoriaActiva(tab.key)}
                       className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                         categoriaActiva === tab.key
-                          ? 'bg-[#0E78D8] text-white shadow-sm'
+                          ? 'bg-[var(--cp)] text-white shadow-sm'
                           : 'text-[#5F6B7A] hover:bg-[#F4F7FA]'
                       }`}>
                       {tab.icon}{tab.label}
@@ -550,7 +550,7 @@ export default function VentasPage() {
                       placeholder="Buscar..."
                       value={tabletSearch}
                       onChange={e => setTabletSearch(e.target.value)}
-                      className="flex-1 bg-transparent text-sm text-[#072B5A] placeholder-gray-400 focus:outline-none min-w-0"
+                      className="flex-1 bg-transparent text-sm text-[var(--cs)] placeholder-gray-400 focus:outline-none min-w-0"
                     />
                     {tabletSearch && (
                       <button type="button" onClick={() => setTabletSearch('')} className="text-gray-400">
@@ -583,16 +583,16 @@ export default function VentasPage() {
                           <button key={r.id} type="button" onClick={() => addReceta(r)}
                             className={`relative text-left p-3.5 rounded-xl border transition-all active:scale-95 select-none ${
                               qty > 0
-                                ? 'border-[#0E78D8] bg-[#0E78D8]/5 shadow-sm'
-                                : 'border-gray-100 bg-white hover:border-[#0E78D8]/40 hover:bg-[#F4F7FA]'
+                                ? 'border-[var(--cp)] bg-[var(--cp)]/5 shadow-sm'
+                                : 'border-gray-100 bg-white hover:border-[var(--cp)]/40 hover:bg-[#F4F7FA]'
                             }`}>
-                            <div className="w-9 h-9 rounded-lg bg-[#0E78D8]/10 border border-[#0E78D8]/20 flex items-center justify-center mb-2">
-                              <ChefHat size={16} className="text-[#0E78D8]" />
+                            <div className="w-9 h-9 rounded-lg bg-[var(--cp)]/10 border border-[var(--cp)]/20 flex items-center justify-center mb-2">
+                              <ChefHat size={16} className="text-[var(--cp)]" />
                             </div>
-                            <p className="text-sm font-semibold text-[#072B5A] leading-tight line-clamp-2">{r.nombre}</p>
-                            <p className="text-sm font-bold text-[#0E78D8] mt-1.5">{formatCurrency(r.precio_venta)}</p>
+                            <p className="text-sm font-semibold text-[var(--cs)] leading-tight line-clamp-2">{r.nombre}</p>
+                            <p className="text-sm font-bold text-[var(--cp)] mt-1.5">{formatCurrency(r.precio_venta)}</p>
                             {qty > 0 && (
-                              <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 bg-[#0E78D8] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                              <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 bg-[var(--cp)] text-white text-xs font-bold rounded-full flex items-center justify-center">
                                 {qty}
                               </span>
                             )}
@@ -617,8 +617,8 @@ export default function VentasPage() {
                           <button key={p.id} type="button" onClick={() => addProduct(p)}
                             className={`relative text-left p-3.5 rounded-xl border transition-all active:scale-95 select-none ${
                               qty > 0
-                                ? 'border-[#0E78D8] bg-[#0E78D8]/5 shadow-sm'
-                                : 'border-gray-100 bg-white hover:border-[#0E78D8]/40 hover:bg-[#F4F7FA]'
+                                ? 'border-[var(--cp)] bg-[var(--cp)]/5 shadow-sm'
+                                : 'border-gray-100 bg-white hover:border-[var(--cp)]/40 hover:bg-[#F4F7FA]'
                             }`}>
                             {p.imagen_url
                               ? <img src={p.imagen_url} className="w-9 h-9 rounded-lg object-cover border border-gray-100 mb-2" alt="" />
@@ -626,10 +626,10 @@ export default function VentasPage() {
                                   <Package size={16} className="text-gray-300" />
                                 </div>
                             }
-                            <p className="text-sm font-semibold text-[#072B5A] leading-tight line-clamp-2">{p.nombre}</p>
-                            <p className="text-sm font-bold text-[#0E78D8] mt-1.5">{formatCurrency(p.precio_venta)}</p>
+                            <p className="text-sm font-semibold text-[var(--cs)] leading-tight line-clamp-2">{p.nombre}</p>
+                            <p className="text-sm font-bold text-[var(--cp)] mt-1.5">{formatCurrency(p.precio_venta)}</p>
                             {qty > 0 && (
-                              <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 bg-[#0E78D8] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                              <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 bg-[var(--cp)] text-white text-xs font-bold rounded-full flex items-center justify-center">
                                 {qty}
                               </span>
                             )}
@@ -648,9 +648,9 @@ export default function VentasPage() {
               {/* Header carrito */}
               <div className="px-4 py-3 border-b border-gray-100 shrink-0">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-[#072B5A]">Pedido actual</p>
+                  <p className="text-sm font-bold text-[var(--cs)]">Pedido actual</p>
                   {totalItems > 0 && (
-                    <span className="text-xs font-bold text-[#0E78D8] bg-[#0E78D8]/10 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-bold text-[var(--cp)] bg-[var(--cp)]/10 px-2 py-0.5 rounded-full">
                       {totalItems} ítem{totalItems !== 1 ? 's' : ''}
                     </span>
                   )}
@@ -674,8 +674,8 @@ export default function VentasPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             {l.tipo === 'receta'
-                              ? <div className="w-7 h-7 rounded-lg bg-[#0E78D8]/10 border border-[#0E78D8]/20 shrink-0 flex items-center justify-center">
-                                  <ChefHat size={12} className="text-[#0E78D8]" />
+                              ? <div className="w-7 h-7 rounded-lg bg-[var(--cp)]/10 border border-[var(--cp)]/20 shrink-0 flex items-center justify-center">
+                                  <ChefHat size={12} className="text-[var(--cp)]" />
                                 </div>
                               : <div className="w-7 h-7 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center overflow-hidden">
                                   {l.producto?.imagen_url
@@ -684,7 +684,7 @@ export default function VentasPage() {
                                   }
                                 </div>
                             }
-                            <p className="text-xs font-semibold text-[#072B5A] leading-tight truncate">
+                            <p className="text-xs font-semibold text-[var(--cs)] leading-tight truncate">
                               {l.tipo === 'receta' ? l.receta!.nombre : l.producto!.nombre}
                             </p>
                           </div>
@@ -696,16 +696,16 @@ export default function VentasPage() {
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-1">
                             <button type="button" onClick={() => updateCantidad(i, -1)}
-                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] active:scale-95 transition-all">
+                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] active:scale-95 transition-all">
                               <Minus size={11} />
                             </button>
-                            <span className="w-8 text-center text-sm font-bold text-[#072B5A]">{l.cantidad}</span>
+                            <span className="w-8 text-center text-sm font-bold text-[var(--cs)]">{l.cantidad}</span>
                             <button type="button" onClick={() => updateCantidad(i, +1)}
-                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] active:scale-95 transition-all">
+                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] active:scale-95 transition-all">
                               <Plus size={11} />
                             </button>
                           </div>
-                          <span className="text-sm font-bold text-[#072B5A]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
+                          <span className="text-sm font-bold text-[var(--cs)]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
                         </div>
                       </div>
                     ))}
@@ -729,11 +729,11 @@ export default function VentasPage() {
             {/* Grilla de productos */}
             <div className="flex-1 flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-4 pt-4 pb-3 border-b border-gray-100 shrink-0">
-                <div className="flex items-center gap-2 px-3 py-2 bg-[#F4F7FA] border border-gray-200 rounded-lg focus-within:border-[#0E78D8] focus-within:ring-2 focus-within:ring-[#0E78D8]/20 transition-all">
+                <div className="flex items-center gap-2 px-3 py-2 bg-[#F4F7FA] border border-gray-200 rounded-lg focus-within:border-[var(--cp)] focus-within:ring-2 focus-within:ring-[var(--cp)]/20 transition-all">
                   <Search size={14} className="text-[#5F6B7A] shrink-0" />
                   <input type="text" placeholder="Buscar producto..." value={tabletSearch}
                     onChange={e => setTabletSearch(e.target.value)}
-                    className="flex-1 bg-transparent text-sm text-[#072B5A] placeholder-gray-400 focus:outline-none min-w-0" />
+                    className="flex-1 bg-transparent text-sm text-[var(--cs)] placeholder-gray-400 focus:outline-none min-w-0" />
                   {tabletSearch && (
                     <button type="button" onClick={() => setTabletSearch('')} className="text-gray-400 hover:text-gray-600">
                       <XCircle size={13} />
@@ -755,7 +755,7 @@ export default function VentasPage() {
                       return (
                         <button key={p.id} type="button" onClick={() => addProduct(p)}
                           className={`relative text-left p-3 rounded-xl border transition-all active:scale-95 select-none ${
-                            qty > 0 ? 'border-[#0E78D8] bg-[#0E78D8]/5 shadow-sm' : 'border-gray-100 bg-white hover:border-[#0E78D8]/40 hover:bg-[#F4F7FA]'
+                            qty > 0 ? 'border-[var(--cp)] bg-[var(--cp)]/5 shadow-sm' : 'border-gray-100 bg-white hover:border-[var(--cp)]/40 hover:bg-[#F4F7FA]'
                           }`}>
                           {p.imagen_url
                             ? <img src={p.imagen_url} className="w-full aspect-square rounded-lg object-cover border border-gray-100 mb-2" alt="" />
@@ -763,13 +763,13 @@ export default function VentasPage() {
                                 <Package size={20} className="text-gray-300" />
                               </div>
                           }
-                          <p className="text-xs font-semibold text-[#072B5A] leading-tight line-clamp-2">{p.nombre}</p>
-                          <p className="text-sm font-bold text-[#0E78D8] mt-1">{formatCurrency(p.precio_venta)}</p>
+                          <p className="text-xs font-semibold text-[var(--cs)] leading-tight line-clamp-2">{p.nombre}</p>
+                          <p className="text-sm font-bold text-[var(--cp)] mt-1">{formatCurrency(p.precio_venta)}</p>
                           {p.stock_total !== undefined && (
                             <p className="text-[10px] text-gray-400 mt-0.5">Stock: {p.stock_total}</p>
                           )}
                           {qty > 0 && (
-                            <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 bg-[#0E78D8] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                            <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 bg-[var(--cp)] text-white text-xs font-bold rounded-full flex items-center justify-center">
                               {qty}
                             </span>
                           )}
@@ -785,9 +785,9 @@ export default function VentasPage() {
             <div className="w-72 flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden shrink-0">
               <div className="px-4 py-3 border-b border-gray-100 shrink-0">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-[#072B5A]">Pedido actual</p>
+                  <p className="text-sm font-bold text-[var(--cs)]">Pedido actual</p>
                   {totalItems > 0 && (
-                    <span className="text-xs font-bold text-[#0E78D8] bg-[#0E78D8]/10 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-bold text-[var(--cp)] bg-[var(--cp)]/10 px-2 py-0.5 rounded-full">
                       {totalItems} ítem{totalItems !== 1 ? 's' : ''}
                     </span>
                   )}
@@ -815,7 +815,7 @@ export default function VentasPage() {
                                 : <Package size={12} className="text-gray-300" />
                               }
                             </div>
-                            <p className="text-xs font-semibold text-[#072B5A] leading-tight truncate">{l.producto!.nombre}</p>
+                            <p className="text-xs font-semibold text-[var(--cs)] leading-tight truncate">{l.producto!.nombre}</p>
                           </div>
                           <button type="button" onClick={() => removeLinea(i)} className="text-gray-300 hover:text-red-500 transition-colors shrink-0 p-0.5">
                             <Trash2 size={13} />
@@ -824,16 +824,16 @@ export default function VentasPage() {
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-1">
                             <button type="button" onClick={() => updateCantidad(i, -1)}
-                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] active:scale-95 transition-all">
+                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] active:scale-95 transition-all">
                               <Minus size={11} />
                             </button>
-                            <span className="w-8 text-center text-sm font-bold text-[#072B5A]">{l.cantidad}</span>
+                            <span className="w-8 text-center text-sm font-bold text-[var(--cs)]">{l.cantidad}</span>
                             <button type="button" onClick={() => updateCantidad(i, +1)}
-                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] active:scale-95 transition-all">
+                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] active:scale-95 transition-all">
                               <Plus size={11} />
                             </button>
                           </div>
-                          <span className="text-sm font-bold text-[#072B5A]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
+                          <span className="text-sm font-bold text-[var(--cs)]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
                         </div>
                       </div>
                     ))}
@@ -856,7 +856,7 @@ export default function VentasPage() {
             {/* Buscador */}
             <div className="p-4 border-b border-gray-100" ref={searchRef}>
               <div className="relative">
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F4F7FA] border border-gray-200 rounded-xl focus-within:border-[#0E78D8] focus-within:ring-2 focus-within:ring-[#0E78D8]/20 transition-all">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F4F7FA] border border-gray-200 rounded-xl focus-within:border-[var(--cp)] focus-within:ring-2 focus-within:ring-[var(--cp)]/20 transition-all">
                   <Search size={16} className="text-[#5F6B7A] shrink-0" />
                   <input
                     type="text"
@@ -864,7 +864,7 @@ export default function VentasPage() {
                     value={search}
                     onChange={e => { setSearch(e.target.value); setShowDrop(true) }}
                     onFocus={() => search && setShowDrop(true)}
-                    className="flex-1 bg-transparent text-sm text-[#072B5A] placeholder-gray-400 focus:outline-none"
+                    className="flex-1 bg-transparent text-sm text-[var(--cs)] placeholder-gray-400 focus:outline-none"
                   />
                   {search && (
                     <button type="button" onClick={() => { setSearch(''); setShowDrop(false) }} className="text-gray-400 hover:text-gray-600">
@@ -882,17 +882,17 @@ export default function VentasPage() {
                           <button key={r.id} type="button" onClick={() => addReceta(r)}
                             className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-[#0E78D8]/10 border border-[#0E78D8]/20 shrink-0 flex items-center justify-center">
-                                <ChefHat size={14} className="text-[#0E78D8]" />
+                              <div className="w-8 h-8 rounded-lg bg-[var(--cp)]/10 border border-[var(--cp)]/20 shrink-0 flex items-center justify-center">
+                                <ChefHat size={14} className="text-[var(--cp)]" />
                               </div>
                               <div>
-                                <p className="text-sm font-semibold text-[#072B5A] group-hover:text-[#0E78D8] transition-colors">{r.nombre}</p>
+                                <p className="text-sm font-semibold text-[var(--cs)] group-hover:text-[var(--cp)] transition-colors">{r.nombre}</p>
                                 <p className="text-xs text-gray-400">{r.ingredientes.length} ingredientes</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-sm font-bold text-[#0E78D8]">{formatCurrency(r.precio_venta)}</span>
-                              <span className="w-6 h-6 bg-[#0E78D8] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Plus size={13} /></span>
+                              <span className="text-sm font-bold text-[var(--cp)]">{formatCurrency(r.precio_venta)}</span>
+                              <span className="w-6 h-6 bg-[var(--cp)] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Plus size={13} /></span>
                             </div>
                           </button>
                         ))}
@@ -911,14 +911,14 @@ export default function VentasPage() {
                                 : <div className="w-8 h-8 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center text-[9px] font-bold text-gray-300">IMG</div>
                               }
                               <div>
-                                <p className="text-sm font-semibold text-[#072B5A] group-hover:text-[#0E78D8] transition-colors">{p.nombre}</p>
+                                <p className="text-sm font-semibold text-[var(--cs)] group-hover:text-[var(--cp)] transition-colors">{p.nombre}</p>
                                 {p.codigo && <p className="text-xs text-gray-400 font-mono">{p.codigo}</p>}
                               </div>
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
                               {p.stock_total !== undefined && <span className="text-xs text-[#5F6B7A]">Stock: {p.stock_total}</span>}
-                              <span className="text-sm font-bold text-[#0E78D8]">{formatCurrency(p.precio_venta)}</span>
-                              <span className="w-6 h-6 bg-[#0E78D8] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Plus size={13} /></span>
+                              <span className="text-sm font-bold text-[var(--cp)]">{formatCurrency(p.precio_venta)}</span>
+                              <span className="w-6 h-6 bg-[var(--cp)] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Plus size={13} /></span>
                             </div>
                           </button>
                         ))}
@@ -963,36 +963,36 @@ export default function VentasPage() {
 
                 <div className="col-span-4 flex items-center gap-2.5">
                   {l.tipo === 'receta'
-                    ? <div className="w-9 h-9 rounded-lg bg-[#0E78D8]/10 border border-[#0E78D8]/20 shrink-0 flex items-center justify-center">
-                        <ChefHat size={16} className="text-[#0E78D8]" />
+                    ? <div className="w-9 h-9 rounded-lg bg-[var(--cp)]/10 border border-[var(--cp)]/20 shrink-0 flex items-center justify-center">
+                        <ChefHat size={16} className="text-[var(--cp)]" />
                       </div>
                     : (l.producto?.imagen_url
                         ? <img src={l.producto.imagen_url} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" alt="" />
                         : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />)
                   }
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#072B5A] leading-tight truncate">
+                    <p className="text-sm font-semibold text-[var(--cs)] leading-tight truncate">
                       {l.tipo === 'receta' ? l.receta!.nombre : l.producto!.nombre}
                     </p>
                     {l.tipo === 'producto' && l.producto?.codigo && (
                       <p className="text-xs text-gray-400 font-mono">{l.producto.codigo}</p>
                     )}
                     {l.tipo === 'receta' && (
-                      <p className="text-xs text-[#0E78D8]">{l.receta!.ingredientes.length} ingredientes</p>
+                      <p className="text-xs text-[var(--cp)]">{l.receta!.ingredientes.length} ingredientes</p>
                     )}
                   </div>
                 </div>
 
                 <div className="col-span-3 flex items-center justify-center gap-1.5">
                   <button type="button" onClick={() => updateCantidad(i, -1)}
-                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
+                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                     <Minus size={12} />
                   </button>
                   <input type="number" min="1" step="1" value={l.cantidad}
                     onChange={e => setLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: Math.max(1, Number(e.target.value) || 1) } : ln))}
-                    className="w-14 text-center rounded-lg border border-gray-200 py-1.5 text-sm font-bold text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
+                    className="w-14 text-center rounded-lg border border-gray-200 py-1.5 text-sm font-bold text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
                   <button type="button" onClick={() => updateCantidad(i, +1)}
-                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
+                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                     <Plus size={12} />
                   </button>
                 </div>
@@ -1000,11 +1000,11 @@ export default function VentasPage() {
                 <div className="col-span-2">
                   <input type="number" min="0" step="0.01" value={l.precio_unitario}
                     onChange={e => updatePrecio(i, e.target.value)}
-                    className="w-full text-right rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
+                    className="w-full text-right rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
                 </div>
 
                 <div className="col-span-2 text-right">
-                  <span className="text-sm font-bold text-[#072B5A]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
+                  <span className="text-sm font-bold text-[var(--cs)]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
                 </div>
 
                 <div className="col-span-1 flex justify-center">
@@ -1020,7 +1020,7 @@ export default function VentasPage() {
 
           {/* Panel de totales */}
           <div className="w-full sm:w-64 shrink-0 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <p className="text-xs font-bold text-[#072B5A] uppercase tracking-wider mb-4">Resumen</p>
+            <p className="text-xs font-bold text-[var(--cs)] uppercase tracking-wider mb-4">Resumen</p>
             <CartTotals />
           </div>
         </div>

@@ -70,7 +70,7 @@ export default function BodegasPage() {
             className={`p-1.5 rounded transition-colors ${r.predeterminada ? 'text-amber-400 cursor-default' : 'text-gray-400 hover:text-amber-500 hover:bg-amber-50'}`}>
             <Star size={15} className={r.predeterminada ? 'fill-amber-400' : ''} />
           </button>
-          <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-[#0E78D8] hover:bg-[#0E78D8]/8"><Pencil size={15} /></button>
+          <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-[var(--cp)] hover:bg-white/10"><Pencil size={15} /></button>
           <button onClick={() => setDeleteId(r.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"><Trash2 size={15} /></button>
         </div>
       ),
@@ -81,7 +81,7 @@ export default function BodegasPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Bodegas</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Bodegas</h1>
           <p className="text-sm text-gray-500">Ubicaciones de almacenamiento</p>
         </div>
         <Button icon={<Plus size={16} />} onClick={openCreate}>Nueva bodega</Button>

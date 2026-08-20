@@ -31,7 +31,7 @@ const emptyLinea = (): LineaItem => ({
   bulto: false, cant_bultos: '', unidades_por_bulto: '', costo_por_bulto: '',
 })
 
-const inputCls = 'w-full rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all'
+const inputCls = 'w-full rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all'
 
 function fileToBase64(file: File): Promise<{ data: string; media_type: string }> {
   return new Promise((resolve, reject) => {
@@ -245,27 +245,27 @@ function ScanPanel({ proveedores, onExtracted }: ScanPanelProps) {
   function reset() { setFile(null); setPreview(null); setScanError(''); setDone(false); if (fileRef.current) fileRef.current.value = '' }
 
   return (
-    <div className="bg-gradient-to-r from-[#072B5A]/5 to-[#0E78D8]/5 border border-[#0E78D8]/20 rounded-xl overflow-hidden">
+    <div className="bg-gradient-to-r from-gray-50 to-blue-50 border border-blue-200 rounded-xl overflow-hidden">
       <button type="button" onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#0E78D8]/5 transition-colors">
-        <div className="w-8 h-8 rounded-lg bg-[#0E78D8] flex items-center justify-center shrink-0">
+        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-white/50 transition-colors">
+        <div className="w-8 h-8 rounded-lg bg-[var(--cp)] flex items-center justify-center shrink-0">
           <Sparkles size={15} className="text-white" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-bold text-[#072B5A]">Escanear factura con IA</p>
+          <p className="text-sm font-bold text-[var(--cs)]">Escanear factura con IA</p>
           <p className="text-xs text-[#5F6B7A]">Sube una foto y el formulario se llena automáticamente</p>
         </div>
-        <span className="text-xs text-[#0E78D8] font-semibold">{open ? 'Cerrar' : 'Abrir'}</span>
+        <span className="text-xs text-[var(--cp)] font-semibold">{open ? 'Cerrar' : 'Abrir'}</span>
       </button>
 
       {open && (
-        <div className="px-5 pb-5 space-y-4 border-t border-[#0E78D8]/15">
+        <div className="px-5 pb-5 space-y-4 border-t border-blue-100">
           <div className="h-3" />
           {!file ? (
             <div onDragOver={e => e.preventDefault()} onDrop={handleDrop} onClick={() => fileRef.current?.click()}
-              className="border-2 border-dashed border-[#0E78D8]/30 rounded-xl p-8 text-center cursor-pointer hover:border-[#0E78D8]/60 hover:bg-[#0E78D8]/5 transition-all">
-              <Camera size={32} className="text-[#0E78D8]/50 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-[#072B5A]">Arrastra un archivo o haz clic para seleccionar</p>
+              className="border-2 border-dashed border-blue-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all">
+              <Camera size={32} className="text-[var(--cp)] mx-auto mb-3 opacity-50" />
+              <p className="text-sm font-semibold text-[var(--cs)]">Arrastra un archivo o haz clic para seleccionar</p>
               <p className="text-xs text-[#5F6B7A] mt-1">JPG, PNG, WebP o PDF · Máx. 10 MB</p>
               <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" className="hidden"
                 onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
@@ -286,7 +286,7 @@ function ScanPanel({ proveedores, onExtracted }: ScanPanelProps) {
                 </button>
               </div>
               <div className="flex-1 space-y-3">
-                <p className="text-sm font-semibold text-[#072B5A]">{file?.name}</p>
+                <p className="text-sm font-semibold text-[var(--cs)]">{file?.name}</p>
                 <p className="text-xs text-[#5F6B7A]">{file ? (file.size / 1024).toFixed(0) : 0} KB</p>
                 {done ? (
                   <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
@@ -294,7 +294,7 @@ function ScanPanel({ proveedores, onExtracted }: ScanPanelProps) {
                   </div>
                 ) : (
                   <button type="button" onClick={handleScan} disabled={scanning}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${scanning ? 'bg-gray-100 text-[#5F6B7A] cursor-not-allowed' : 'bg-[#0E78D8] text-white hover:bg-[#0B69C2] shadow-sm'}`}>
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${scanning ? 'bg-gray-100 text-[#5F6B7A] cursor-not-allowed' : 'bg-[var(--cp)] text-white shadow-sm'}`}>
                     {scanning ? <><Loader2 size={15} className="animate-spin" /> Analizando...</> : <><Sparkles size={15} /> Extraer datos</>}
                   </button>
                 )}
@@ -462,7 +462,7 @@ export default function ComprasPage() {
     <div className="space-y-5 max-w-4xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Nueva orden de compra</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Nueva orden de compra</h1>
           <p className="text-sm text-[#5F6B7A]">Registra una compra a proveedor — queda como pendiente hasta que la recibas</p>
         </div>
         <Link to="/compras/historial">
@@ -494,7 +494,7 @@ export default function ComprasPage() {
                 )}
                 {!form.proveedor_id && (
                   <button type="button" onClick={abrirModalProv}
-                    className="ml-auto text-[11px] text-[#0E78D8] hover:underline font-semibold whitespace-nowrap">
+                    className="ml-auto text-[11px] text-[var(--cp)] hover:underline font-semibold whitespace-nowrap">
                     + Crear proveedor
                   </button>
                 )}
@@ -518,9 +518,9 @@ export default function ComprasPage() {
         {/* Líneas de productos */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Productos</p>
+            <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Productos</p>
             <button type="button" onClick={() => setLineas(p => [...p, emptyLinea()])}
-              className="text-xs text-[#0E78D8] hover:text-[#072B5A] font-semibold flex items-center gap-1 transition-colors">
+              className="text-xs text-[var(--cp)] hover:text-[var(--cs)] font-semibold flex items-center gap-1 transition-colors">
               <Plus size={13} /> Agregar línea
             </button>
           </div>
@@ -541,11 +541,11 @@ export default function ComprasPage() {
                       />
                       <div className="flex items-center justify-between mt-0.5">
                         {l.hint && !l.producto_id && (
-                          <p className="text-[10px] text-[#0E78D8] truncate max-w-[120px]" title={l.hint}>IA: {l.hint}</p>
+                          <p className="text-[10px] text-[var(--cp)] truncate max-w-[120px]" title={l.hint}>IA: {l.hint}</p>
                         )}
                         {!l.producto_id && (
                           <button type="button" onClick={() => abrirModalProd(i)}
-                            className="ml-auto text-[10px] text-[#0E78D8] hover:underline font-semibold whitespace-nowrap">
+                            className="ml-auto text-[10px] text-[var(--cp)] hover:underline font-semibold whitespace-nowrap">
                             + Crear producto
                           </button>
                         )}
@@ -557,7 +557,7 @@ export default function ComprasPage() {
                         readOnly={l.bulto}
                         className={`${inputCls} ${l.bulto ? 'bg-gray-50 text-[#5F6B7A]' : ''}`} />
                       <button type="button" onClick={() => toggleBulto(i)}
-                        className={`mt-0.5 flex items-center gap-1 text-[10px] font-semibold transition-colors ${l.bulto ? 'text-amber-600 hover:text-amber-800' : 'text-[#0E78D8] hover:text-[#072B5A]'}`}>
+                        className={`mt-0.5 flex items-center gap-1 text-[10px] font-semibold transition-colors ${l.bulto ? 'text-amber-600 hover:text-amber-800' : 'text-[var(--cp)] hover:text-[var(--cs)]'}`}>
                         <Package size={10} />
                         {l.bulto ? 'Desactivar modo caja' : 'Comprado en caja'}
                       </button>
@@ -570,7 +570,7 @@ export default function ComprasPage() {
                     </div>
                     <div className="col-span-2">
                       {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Subtotal</p>}
-                      <div className="px-2 py-2 text-sm font-semibold text-[#072B5A] bg-white border border-gray-100 rounded-lg">
+                      <div className="px-2 py-2 text-sm font-semibold text-[var(--cs)] bg-white border border-gray-100 rounded-lg">
                         {formatCurrency(Number(l.cantidad) * Number(l.costo_unitario) || 0)}
                       </div>
                     </div>
@@ -645,7 +645,7 @@ export default function ComprasPage() {
               <div className="flex justify-between text-sm text-[#5F6B7A]"><span>Subtotal</span><span className="font-medium">{formatCurrency(subtotal)}</span></div>
               <div className="flex justify-between text-sm text-[#5F6B7A]"><span>Descuento</span><span className="font-medium text-red-500">− {formatCurrency(Number(form.descuento) || 0)}</span></div>
               <div className="flex justify-between text-sm text-[#5F6B7A]"><span>Impuesto</span><span className="font-medium">{formatCurrency(Number(form.impuesto) || 0)}</span></div>
-              <div className="flex justify-between text-base font-bold text-[#072B5A] pt-1.5 border-t border-gray-200"><span>Total</span><span>{formatCurrency(total)}</span></div>
+              <div className="flex justify-between text-base font-bold text-[var(--cs)] pt-1.5 border-t border-gray-200"><span>Total</span><span>{formatCurrency(total)}</span></div>
             </div>
           </div>
         </div>

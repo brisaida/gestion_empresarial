@@ -14,6 +14,7 @@ class Empresa extends Model
         'telefono', 'direccion', 'isv_rate', 'logo', 'activo', 'rubro',
         'config_cotizacion',
         'tipo_facturacion',
+        'color_primario', 'color_secundario',
     ];
 
     protected function casts(): array

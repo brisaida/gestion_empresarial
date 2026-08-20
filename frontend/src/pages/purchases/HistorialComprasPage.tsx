@@ -47,14 +47,14 @@ function DetalleFila({ id }: { id: number }) {
         {data?.detalles?.map(d => (
           <div key={d.id} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-100 last:border-0">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="font-medium text-[#072B5A] truncate">{d.producto?.nombre ?? '—'}</span>
+              <span className="font-medium text-[var(--cs)] truncate">{d.producto?.nombre ?? '—'}</span>
               {d.lote && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-mono">Lote: {d.lote}</span>}
               {d.fecha_vencimiento && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">Vence: {d.fecha_vencimiento}</span>}
             </div>
             <div className="flex items-center gap-6 shrink-0 text-right">
               <span className="text-[#5F6B7A] w-24">× {d.cantidad} u.</span>
               <span className="text-[#5F6B7A] w-28">@ {formatCurrency(d.costo_unitario)}</span>
-              <span className="font-semibold text-[#072B5A] w-28">{formatCurrency(d.subtotal)}</span>
+              <span className="font-semibold text-[var(--cs)] w-28">{formatCurrency(d.subtotal)}</span>
             </div>
           </div>
         ))}
@@ -115,7 +115,7 @@ export default function HistorialComprasPage() {
       key: 'expand', header: '', width: '40px',
       cell: r => (
         <button onClick={() => toggleExpand(r.id)}
-          className="p-1 rounded text-gray-400 hover:text-[#0E78D8] hover:bg-[#0E78D8]/8 transition-colors">
+          className="p-1 rounded text-gray-400 hover:text-[var(--cp)] hover:bg-white/10 transition-colors">
           {expanded === r.id ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
       ),
@@ -127,7 +127,7 @@ export default function HistorialComprasPage() {
     },
     {
       key: 'proveedor', header: 'Proveedor',
-      cell: r => <span className="font-semibold text-[#072B5A]">{r.proveedor?.nombre ?? '—'}</span>,
+      cell: r => <span className="font-semibold text-[var(--cs)]">{r.proveedor?.nombre ?? '—'}</span>,
     },
     {
       key: 'bodega', header: 'Bodega destino',
@@ -140,7 +140,7 @@ export default function HistorialComprasPage() {
     },
     {
       key: 'total', header: 'Total',
-      cell: r => <span className="font-bold text-[#072B5A]">{formatCurrency(r.total)}</span>,
+      cell: r => <span className="font-bold text-[var(--cs)]">{formatCurrency(r.total)}</span>,
       align: 'right',
     },
     {
@@ -172,7 +172,7 @@ export default function HistorialComprasPage() {
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-xl font-bold text-[#072B5A]">Historial de Compras</h1>
+        <h1 className="text-xl font-bold text-[var(--cs)]">Historial de Compras</h1>
         <p className="text-sm text-[#5F6B7A]">Gestiona tus órdenes de compra — recibe o cancela las pendientes</p>
       </div>
 
@@ -184,7 +184,7 @@ export default function HistorialComprasPage() {
               <button key={f.key} onClick={() => { setFiltro(f.key); setPage(1) }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   filtro === f.key
-                    ? 'bg-[#0E78D8] text-white shadow-sm'
+                    ? 'bg-[var(--cp)] text-white shadow-sm'
                     : 'text-[#5F6B7A] hover:bg-gray-100'
                 }`}>
                 {f.label}

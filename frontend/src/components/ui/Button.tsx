@@ -5,10 +5,10 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
 type Size    = 'sm' | 'md' | 'lg'
 
 const variants: Record<Variant, string> = {
-  primary:   'bg-[#0E78D8] text-white hover:bg-[#072B5A] focus-visible:ring-[#0E78D8] shadow-sm hover:shadow-md',
-  secondary: 'bg-white text-gray-700 border border-gray-200 hover:border-[#0E78D8] hover:text-[#0E78D8] focus-visible:ring-[#0E78D8]',
+  primary:   'text-white shadow-sm hover:shadow-md focus-visible:ring-[var(--cp)]',
+  secondary: 'bg-white text-gray-700 border border-gray-200 focus-visible:ring-[var(--cp)]',
   danger:    'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500',
-  ghost:     'text-[#5F6B7A] hover:bg-[#F4F7FA] hover:text-[#0E78D8] focus-visible:ring-[#0E78D8]',
+  ghost:     'text-[#5F6B7A] hover:bg-[#F4F7FA] focus-visible:ring-[var(--cp)]',
 }
 
 const sizes: Record<Size, string> = {
@@ -30,6 +30,10 @@ export default function Button({ variant = 'primary', size = 'md', loading, icon
       type="button"
       {...props}
       disabled={disabled || loading}
+      style={variant === 'primary' ? { background: 'var(--cp)' }
+           : variant === 'secondary' ? undefined
+           : variant === 'ghost' ? undefined
+           : undefined}
       className={cn(
         'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',

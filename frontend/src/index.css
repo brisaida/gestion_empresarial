@@ -1,6 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+:root {
+  --cp:    #0E78D8;
+  --cs:    #072B5A;
+  --cc:    #38D6D4;
+  --cp-5:  rgba(14, 120, 216, 0.05);
+  --cp-8:  rgba(14, 120, 216, 0.08);
+  --cp-10: rgba(14, 120, 216, 0.10);
+  --cp-15: rgba(14, 120, 216, 0.15);
+  --cp-20: rgba(14, 120, 216, 0.20);
+  --cp-30: rgba(14, 120, 216, 0.30);
+  --cs-8:  rgba(7, 43, 90, 0.08);
+  --cs-30: rgba(7, 43, 90, 0.30);
+}
+
 @theme {
   --color-brand-navy:    #072B5A;
   --color-brand-electric:#0E78D8;

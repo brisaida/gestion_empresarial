@@ -83,21 +83,21 @@ export default function CierreCajaPage() {
   })
 
   const resumen = sesion?.resumen
-  const inputCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
+  const inputCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
 
   return (
     <div className="space-y-5 max-w-4xl mx-auto">
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Cierre de Caja</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Cierre de Caja</h1>
           <p className="text-sm text-[#5F6B7A]">Controla las sesiones de caja y reconcilia el efectivo</p>
         </div>
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
           {(['actual', 'historial'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all capitalize ${
-                tab === t ? 'bg-white text-[#072B5A] shadow-sm' : 'text-[#5F6B7A] hover:text-[#072B5A]'
+                tab === t ? 'bg-white text-[var(--cs)] shadow-sm' : 'text-[#5F6B7A] hover:text-[var(--cs)]'
               }`}>
               {t === 'actual' ? 'Sesión actual' : 'Historial'}
             </button>
@@ -116,7 +116,7 @@ export default function CierreCajaPage() {
         <div className="space-y-4">
           {loadingActual ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 flex items-center justify-center">
-              <RefreshCw size={24} className="animate-spin text-[#0E78D8]" />
+              <RefreshCw size={24} className="animate-spin text-[var(--cp)]" />
             </div>
           ) : !sesion ? (
             /* Sin sesión abierta — formulario de apertura */
@@ -125,7 +125,7 @@ export default function CierreCajaPage() {
                 <div className="w-14 h-14 rounded-2xl bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-3">
                   <Lock size={24} className="text-gray-300" />
                 </div>
-                <p className="text-base font-bold text-[#072B5A]">No hay sesión abierta</p>
+                <p className="text-base font-bold text-[var(--cs)]">No hay sesión abierta</p>
                 <p className="text-sm text-[#5F6B7A] mt-1">Abre una sesión para registrar ventas del turno</p>
               </div>
 
@@ -159,7 +159,7 @@ export default function CierreCajaPage() {
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#072B5A]">Sesión abierta</p>
+                    <p className="text-sm font-bold text-[var(--cs)]">Sesión abierta</p>
                     <p className="text-xs text-[#5F6B7A] flex items-center gap-1">
                       <Clock size={11} /> {formatDateTime(sesion.fecha_apertura)}
                       {sesion.usuario && <><User size={11} className="ml-2" /> {sesion.usuario.nombre}</>}
@@ -168,7 +168,7 @@ export default function CierreCajaPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-[#5F6B7A]">Fondo inicial</p>
-                  <p className="text-base font-bold text-[#072B5A]">{formatCurrency(sesion.monto_inicial)}</p>
+                  <p className="text-base font-bold text-[var(--cs)]">{formatCurrency(sesion.monto_inicial)}</p>
                 </div>
                 <button onClick={() => refetch()} className="p-2 rounded-lg text-[#5F6B7A] hover:bg-[#F4F7FA] transition-colors" title="Actualizar">
                   <RefreshCw size={15} />
@@ -198,24 +198,24 @@ export default function CierreCajaPage() {
               {resumen && (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp size={16} className="text-[#0E78D8]" />
-                    <p className="text-sm font-bold text-[#072B5A]">Resumen del turno</p>
+                    <TrendingUp size={16} className="text-[var(--cp)]" />
+                    <p className="text-sm font-bold text-[var(--cs)]">Resumen del turno</p>
                     <span className="ml-auto text-xs text-[#5F6B7A]">{resumen.cantidad_ventas} venta{resumen.cantidad_ventas !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-[#5F6B7A]">Total ventas</span>
-                        <span className="font-bold text-[#072B5A]">{formatCurrency(resumen.total_ventas)}</span>
+                        <span className="font-bold text-[var(--cs)]">{formatCurrency(resumen.total_ventas)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-[#5F6B7A]">Fondo inicial</span>
-                        <span className="font-medium text-[#072B5A]">{formatCurrency(sesion.monto_inicial)}</span>
+                        <span className="font-medium text-[var(--cs)]">{formatCurrency(sesion.monto_inicial)}</span>
                       </div>
                     </div>
                     <div className="pl-4 border-l border-gray-100">
                       <p className="text-xs text-[#5F6B7A] mb-1">Efectivo esperado en caja</p>
-                      <p className="text-xl font-bold text-[#072B5A]">{formatCurrency(resumen.efectivo_esperado)}</p>
+                      <p className="text-xl font-bold text-[var(--cs)]">{formatCurrency(resumen.efectivo_esperado)}</p>
                       <p className="text-xs text-[#5F6B7A] mt-1">Fondo + ventas en efectivo</p>
                     </div>
                   </div>
@@ -224,7 +224,7 @@ export default function CierreCajaPage() {
 
               {/* Formulario cierre */}
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <p className="text-sm font-bold text-[#072B5A] mb-4">Cerrar sesión</p>
+                <p className="text-sm font-bold text-[var(--cs)] mb-4">Cerrar sesión</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5">
@@ -254,7 +254,7 @@ export default function CierreCajaPage() {
                     </label>
                     <textarea rows={3} value={obsCI} onChange={e => setObsCI(e.target.value)}
                       placeholder="Notas del cierre..."
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[#072B5A] resize-none focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all placeholder-gray-400" />
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all placeholder-gray-400" />
                   </div>
                 </div>
 
@@ -280,7 +280,7 @@ export default function CierreCajaPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           {loadingHist ? (
             <div className="flex items-center justify-center py-12">
-              <RefreshCw size={22} className="animate-spin text-[#0E78D8]" />
+              <RefreshCw size={22} className="animate-spin text-[var(--cp)]" />
             </div>
           ) : !histData?.data?.length ? (
             <div className="flex flex-col items-center justify-center py-14 text-center">
@@ -312,7 +312,7 @@ export default function CierreCajaPage() {
                       <div className="flex items-center gap-6 shrink-0 text-right">
                         <div>
                           <p className="text-xs text-[#5F6B7A]">Ventas</p>
-                          <p className="text-sm font-bold text-[#072B5A]">{formatCurrency(s.total_ventas ?? 0)}</p>
+                          <p className="text-sm font-bold text-[var(--cs)]">{formatCurrency(s.total_ventas ?? 0)}</p>
                           <p className="text-xs text-[#5F6B7A]">{s.cantidad_ventas ?? 0} registros</p>
                         </div>
                         {s.estado === 'cerrada' && (

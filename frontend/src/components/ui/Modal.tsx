@@ -22,10 +22,10 @@ export default function Modal({ open, onClose, title, children, size = 'md' }: P
         {/* Header with brand accent */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <span className="w-1 h-5 rounded-full bg-[#0E78D8] inline-block" />
-            <h2 className="text-base font-semibold text-[#072B5A]">{title}</h2>
+            <span className="w-1 h-5 rounded-full bg-[var(--cp)] inline-block" />
+            <h2 className="text-base font-semibold text-[var(--cs)]">{title}</h2>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:text-[#0E78D8] hover:bg-[#0E78D8]/8 transition-colors">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:text-[var(--cp)] hover:bg-white/10 transition-colors">
             <X size={18} />
           </button>
         </div>

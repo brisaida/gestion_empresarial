@@ -5,10 +5,12 @@ import {
   Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/stores/authStore'
 import { usePermisos } from '@/lib/permisos'
 import { empresaApi } from '@/api/recursos'
+import { applyTheme } from '@/lib/theme'
 
 const nav = [
   { group: 'Principal', items: [
@@ -73,6 +75,12 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
     staleTime: 5 * 60_000,
   })
 
+  useEffect(() => {
+    if (empresaConfig) {
+      applyTheme(empresaConfig.color_primario ?? '#0E78D8', empresaConfig.color_secundario ?? '#072B5A')
+    }
+  }, [empresaConfig])
+
   const nombre  = empresaConfig?.nombre ?? state.empresaActiva?.nombre ?? 'Vilena'
   const rawLogo = empresaConfig?.logo_url
   const logoUrl = rawLogo
@@ -93,7 +101,7 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
         'w-64',
         collapsed ? 'md:w-16' : 'md:w-60',
       )}
-      style={{ background: 'linear-gradient(180deg, #031B3A 0%, #072B5A 100%)' }}
+      style={{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--cs) 60%, #000) 0%, var(--cs) 100%)' }}
     >
       {/* Logo */}
       <NavLink to="/dashboard" className={cn(
@@ -102,7 +110,7 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
       )}>
         {/* Logo / inicial */}
         <div className="w-8 h-8 rounded-lg shrink-0 shadow-lg overflow-hidden flex items-center justify-center"
-          style={!logoUrl ? { background: 'linear-gradient(135deg, #0E78D8 0%, #38D6D4 100%)' } : undefined}
+          style={!logoUrl ? { background: 'linear-gradient(135deg, var(--cp) 0%, #38D6D4 100%)' } : undefined}
         >
           {logoUrl
             ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
@@ -114,7 +122,7 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
         {!collapsed && (
           <div className="min-w-0">
             <p className="font-bold text-white text-sm leading-tight truncate">{nombre}</p>
-            <p className="text-[10px] text-[#38D6D4] font-medium tracking-widest uppercase leading-tight">Vilena</p>
+            <p className="text-[10px] font-medium tracking-widest uppercase leading-tight" style={{ color: 'var(--cp)' }}>Vilena</p>
           </div>
         )}
       </NavLink>
@@ -129,7 +137,7 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
           return (
           <div key={group.group}>
             {!collapsed && (
-              <p className="px-2 mb-1.5 text-[10px] font-bold text-[#38D6D4]/70 uppercase tracking-[0.15em]">
+              <p className="px-2 mb-1.5 text-[10px] font-bold uppercase tracking-[0.15em] opacity-60" style={{ color: 'var(--cp)' }}>
                 {group.group}
               </p>
             )}
@@ -139,11 +147,10 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
                   <NavLink
                     to={to}
                     end={end}
+                    style={({ isActive }) => isActive ? { background: 'var(--cp)', boxShadow: '0 4px 12px var(--cp-30)' } : undefined}
                     className={({ isActive }) => cn(
                       'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
-                      isActive
-                        ? 'bg-[#0E78D8] text-white shadow-md shadow-[#0E78D8]/30'
-                        : 'text-white/55 hover:bg-white/8 hover:text-white',
+                      isActive ? 'text-white' : 'text-white/55 hover:bg-white/8 hover:text-white',
                       collapsed && 'justify-center px-0',
                     )}
                     title={collapsed ? label : undefined}

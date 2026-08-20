@@ -49,7 +49,7 @@ function DateRangePicker({ value, onChange }: { value: DateRange; onChange: (v: 
           type="date"
           value={value.desde}
           onChange={e => onChange({ ...value, desde: e.target.value })}
-          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30"
+          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30"
         />
       </div>
       <div className="flex flex-col gap-0.5">
@@ -58,7 +58,7 @@ function DateRangePicker({ value, onChange }: { value: DateRange; onChange: (v: 
           type="date"
           value={value.hasta}
           onChange={e => onChange({ ...value, hasta: e.target.value })}
-          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30"
+          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30"
         />
       </div>
     </div>
@@ -87,7 +87,7 @@ function ExportCard({ id, title, description, loading, done, onExport, children 
           <FileSpreadsheet size={18} className="text-emerald-600" />
         </div>
         <div>
-          <p className="font-bold text-[#072B5A] text-sm leading-tight">{title}</p>
+          <p className="font-bold text-[var(--cs)] text-sm leading-tight">{title}</p>
           <p className="text-xs text-[#5F6B7A] mt-0.5">{description}</p>
         </div>
       </div>
@@ -102,7 +102,7 @@ function ExportCard({ id, title, description, loading, done, onExport, children 
             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
             : isLoading
               ? 'bg-gray-100 text-[#5F6B7A] cursor-not-allowed'
-              : 'bg-[#0E78D8] text-white hover:bg-[#0B69C2] shadow-sm'
+              : 'bg-[var(--cp)] text-white hover:bg-[#0B69C2] shadow-sm'
         }`}
       >
         {isLoading ? (
@@ -276,7 +276,7 @@ export default function ReportesExportarPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-xl font-bold text-[#072B5A]">Exportar a Excel</h1>
+        <h1 className="text-xl font-bold text-[var(--cs)]">Exportar a Excel</h1>
         <p className="text-sm text-[#5F6B7A]">Descarga los datos de tu empresa en formato .xlsx</p>
       </div>
 
@@ -332,7 +332,7 @@ export default function ReportesExportarPage() {
                 <button key={ag} onClick={() => setAgrupacion(ag)}
                   className={`px-3 py-1 rounded text-xs font-semibold transition-colors capitalize ${
                     agrupacion === ag
-                      ? 'bg-[#0E78D8] text-white shadow-sm'
+                      ? 'bg-[var(--cp)] text-white shadow-sm'
                       : 'text-[#5F6B7A] hover:bg-white'
                   }`}>
                   {ag === 'dia' ? 'Por día' : ag === 'semana' ? 'Por semana' : 'Por mes'}
@@ -365,7 +365,7 @@ export default function ReportesExportarPage() {
 
       {/* Quick tip */}
       <div className="bg-[#F4F7FA] rounded-xl border border-gray-200 p-4 text-sm text-[#5F6B7A]">
-        <span className="font-semibold text-[#072B5A]">Tip:</span> Los archivos se generan directamente en tu navegador — no se almacenan en el servidor.
+        <span className="font-semibold text-[var(--cs)]">Tip:</span> Los archivos se generan directamente en tu navegador — no se almacenan en el servidor.
         Los montos están en Lempiras (L). Para ver el archivo generado revisa tu carpeta de descargas.
       </div>
     </div>

@@ -44,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     success: { bar: 'bg-emerald-500', icon: <CheckCircle2 size={17} className="text-emerald-500 shrink-0" /> },
     error:   { bar: 'bg-red-500',     icon: <XCircle      size={17} className="text-red-500 shrink-0" /> },
     warning: { bar: 'bg-amber-500',   icon: <AlertTriangle size={17} className="text-amber-500 shrink-0" /> },
-    info:    { bar: 'bg-[#0E78D8]',   icon: <Info          size={17} className="text-[#0E78D8] shrink-0" /> },
+    info:    { bar: 'bg-[var(--cp)]',   icon: <Info          size={17} className="text-[var(--cp)] shrink-0" /> },
   }
 
   return (

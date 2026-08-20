@@ -85,7 +85,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-xl font-bold text-[#072B5A]">Dashboard</h1>
+        <h1 className="text-xl font-bold text-[var(--cs)]">Dashboard</h1>
         <p className="text-sm text-[#5F6B7A] mt-0.5">Resumen general del negocio</p>
       </div>
 
@@ -95,11 +95,11 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide">Ventas del mes</p>
-            <div className="w-9 h-9 rounded-lg bg-[#0E78D8]/10 flex items-center justify-center">
-              <TrendingUp size={18} className="text-[#0E78D8]" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--cp-10)' }}>
+              <TrendingUp size={18} className="text-[var(--cp)]" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-[#072B5A] mb-1">
+          <p className="text-2xl font-bold text-[var(--cs)] mb-1">
             {isLoading ? '—' : formatCurrency(r?.ventas_mes ?? 0)}
           </p>
           {!isLoading && <VariacionBadge pct={r?.variacion_ventas_pct} />}
@@ -113,7 +113,7 @@ export default function DashboardPage() {
               <BarChart2 size={18} className="text-emerald-600" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-[#072B5A] mb-1">
+          <p className="text-2xl font-bold text-[var(--cs)] mb-1">
             {isLoading ? '—' : formatCurrency(r?.margen_bruto_mes ?? 0)}
           </p>
           {!isLoading && (
@@ -131,7 +131,7 @@ export default function DashboardPage() {
               <Boxes size={18} className="text-purple-600" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-[#072B5A] mb-1">
+          <p className="text-2xl font-bold text-[var(--cs)] mb-1">
             {isLoading ? '—' : formatCurrency(r?.valor_inventario ?? 0)}
           </p>
           <span className="text-xs text-[#5F6B7A]">Capital en stock actual</span>
@@ -146,7 +146,7 @@ export default function DashboardPage() {
                 <ShoppingCart size={18} className="text-amber-600" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-[#072B5A] mb-1">
+            <p className="text-2xl font-bold text-[var(--cs)] mb-1">
               {isLoading ? '—' : `${r?.compras_pendientes_count ?? 0} órdenes`}
             </p>
             <span className="text-xs text-[#5F6B7A]">
@@ -187,10 +187,10 @@ export default function DashboardPage() {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-sm font-semibold text-[#072B5A]">Ventas diarias — comparación mensual</p>
+            <p className="text-sm font-semibold text-[var(--cs)]">Ventas diarias — comparación mensual</p>
             <p className="text-xs text-[#5F6B7A] mt-0.5 capitalize">{mesActualNombre} vs {mesAntNombre}</p>
           </div>
-          <Link to="/reportes/ingresos" className="text-xs text-[#0E78D8] hover:text-[#072B5A] font-semibold flex items-center gap-1 transition-colors">
+          <Link to="/reportes/ingresos" className="text-xs text-[var(--cp)] hover:text-[var(--cs)] font-semibold flex items-center gap-1 transition-colors">
             Ver reporte completo <ArrowRight size={12} />
           </Link>
         </div>
@@ -237,7 +237,7 @@ export default function DashboardPage() {
             <Line
               type="monotone"
               dataKey="este_mes"
-              stroke="#0E78D8"
+              stroke="var(--cp)"
               strokeWidth={2.5}
               dot={false}
               connectNulls={false}
@@ -252,10 +252,10 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-4 rounded-full bg-[#0E78D8] inline-block" />
-              <h2 className="text-sm font-semibold text-[#072B5A]">Últimas ventas</h2>
+              <span className="w-1 h-4 rounded-full bg-[var(--cp)] inline-block" />
+              <h2 className="text-sm font-semibold text-[var(--cs)]">Últimas ventas</h2>
             </div>
-            <Link to="/ventas/historial" className="text-xs text-[#0E78D8] hover:text-[#072B5A] flex items-center gap-1 font-semibold transition-colors">
+            <Link to="/ventas/historial" className="text-xs text-[var(--cp)] hover:text-[var(--cs)] flex items-center gap-1 font-semibold transition-colors">
               Ver todas <ArrowRight size={12} />
             </Link>
           </div>
@@ -272,7 +272,7 @@ export default function DashboardPage() {
                 : data?.ultimas_ventas.map(v => (
                     <div key={v.id} className="px-6 py-3 flex items-center justify-between hover:bg-[#F4F7FA] transition-colors">
                       <div>
-                        <p className="text-sm font-semibold text-[#072B5A]">{v.cliente}</p>
+                        <p className="text-sm font-semibold text-[var(--cs)]">{v.cliente}</p>
                         <p className="text-xs text-[#5F6B7A]">{formatDate(v.fecha_venta)}</p>
                       </div>
                       <span className="text-sm font-bold text-emerald-600">{formatCurrency(v.total)}</span>
@@ -287,9 +287,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-[#38D6D4] inline-block" />
-              <h2 className="text-sm font-semibold text-[#072B5A]">Productos más vendidos</h2>
+              <h2 className="text-sm font-semibold text-[var(--cs)]">Productos más vendidos</h2>
             </div>
-            <Link to="/reportes/productos" className="text-xs text-[#0E78D8] hover:text-[#072B5A] flex items-center gap-1 font-semibold transition-colors">
+            <Link to="/reportes/productos" className="text-xs text-[var(--cp)] hover:text-[var(--cs)] flex items-center gap-1 font-semibold transition-colors">
               Ver reporte <ArrowRight size={12} />
             </Link>
           </div>
@@ -308,11 +308,11 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-3">
                         <span
                           className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0"
-                          style={{ background: i === 0 ? 'linear-gradient(135deg, #0E78D8, #38D6D4)' : '#F4F7FA', color: i === 0 ? 'white' : '#5F6B7A' }}
+                          style={{ background: i === 0 ? 'linear-gradient(135deg, var(--cp), #38D6D4)' : '#F4F7FA', color: i === 0 ? 'white' : '#5F6B7A' }}
                         >
                           {i + 1}
                         </span>
-                        <p className="text-sm text-[#072B5A] font-medium">{p.nombre}</p>
+                        <p className="text-sm text-[var(--cs)] font-medium">{p.nombre}</p>
                       </div>
                       <span className="text-sm font-semibold text-[#5F6B7A]">{p.total_vendido} uds</span>
                     </div>

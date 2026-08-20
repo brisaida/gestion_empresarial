@@ -10,7 +10,7 @@ import Modal from '@/components/ui/Modal'
 import { formatCurrency, getAxiosError } from '@/lib/utils'
 import type { Receta, RecetaIngrediente } from '@/types'
 
-const inputCls = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all'
+const inputCls = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all'
 const labelCls = 'block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1'
 
 // ── Form de ingredientes ──────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ function RecetaFormModal({ open, onClose, empresaId, editando }: RecetaFormProps
           <div className="flex items-center justify-between mb-2">
             <p className={labelCls}>Ingredientes *</p>
             <button type="button" onClick={() => setIngs(p => [...p, emptyIng()])}
-              className="flex items-center gap-1 text-xs font-semibold text-[#0E78D8] hover:text-[#072B5A]">
+              className="flex items-center gap-1 text-xs font-semibold text-[var(--cp)] hover:text-[var(--cs)]">
               <Plus size={13} /> Agregar
             </button>
           </div>
@@ -188,18 +188,18 @@ function RecetaCard({ receta, onEdit, onDelete }: { receta: Receta; onEdit: () =
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#0E78D8]/10 flex items-center justify-center shrink-0 mt-0.5">
-              <ChefHat size={16} className="text-[#0E78D8]" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'var(--cp-10)' }}>
+              <ChefHat size={16} className="text-[var(--cp)]" />
             </div>
             <div>
-              <h3 className="font-bold text-[#072B5A] text-sm leading-tight">{receta.nombre}</h3>
+              <h3 className="font-bold text-[var(--cs)] text-sm leading-tight">{receta.nombre}</h3>
               {receta.descripcion && (
                 <p className="text-xs text-[#5F6B7A] mt-0.5 line-clamp-1">{receta.descripcion}</p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <button onClick={onEdit} className="p-1.5 rounded-lg text-[#5F6B7A] hover:text-[#0E78D8] hover:bg-[#0E78D8]/8 transition-colors">
+            <button onClick={onEdit} className="p-1.5 rounded-lg text-[#5F6B7A] hover:text-[var(--cp)] hover:bg-white/10 transition-colors">
               <Pencil size={14} />
             </button>
             <button onClick={onDelete} className="p-1.5 rounded-lg text-[#5F6B7A] hover:text-red-600 hover:bg-red-50 transition-colors">
@@ -211,11 +211,11 @@ function RecetaCard({ receta, onEdit, onDelete }: { receta: Receta; onEdit: () =
         <div className="flex items-center gap-3 mt-3">
           <div className="flex-1">
             <p className="text-[10px] text-[#5F6B7A] font-semibold uppercase">Precio venta</p>
-            <p className="text-base font-bold text-[#072B5A]">{formatCurrency(receta.precio_venta)}</p>
+            <p className="text-base font-bold text-[var(--cs)]">{formatCurrency(receta.precio_venta)}</p>
           </div>
           <div className="flex-1">
             <p className="text-[10px] text-[#5F6B7A] font-semibold uppercase">Costo</p>
-            <p className="text-sm font-semibold text-[#072B5A]">{formatCurrency(receta.costo_total ?? 0)}</p>
+            <p className="text-sm font-semibold text-[var(--cs)]">{formatCurrency(receta.costo_total ?? 0)}</p>
           </div>
           {margen !== null && (
             <div className="flex-1">
@@ -228,7 +228,7 @@ function RecetaCard({ receta, onEdit, onDelete }: { receta: Receta; onEdit: () =
         </div>
 
         <button type="button" onClick={() => setExpanded(e => !e)}
-          className="mt-3 text-xs text-[#0E78D8] font-semibold flex items-center gap-1 hover:underline">
+          className="mt-3 text-xs text-[var(--cp)] font-semibold flex items-center gap-1 hover:underline">
           <Package size={11} />
           {receta.ingredientes.length} ingrediente{receta.ingredientes.length !== 1 ? 's' : ''}
           {expanded ? ' (ocultar)' : ' (ver)'}
@@ -238,7 +238,7 @@ function RecetaCard({ receta, onEdit, onDelete }: { receta: Receta; onEdit: () =
           <div className="mt-2 space-y-1">
             {receta.ingredientes.map((ing: RecetaIngrediente) => (
               <div key={ing.id} className="flex items-center justify-between text-xs bg-[#F4F7FA] rounded px-2.5 py-1.5">
-                <span className="text-[#072B5A] font-medium">{ing.producto}</span>
+                <span className="text-[var(--cs)] font-medium">{ing.producto}</span>
                 <span className="text-[#5F6B7A]">{ing.cantidad} {ing.unidad ?? ''}</span>
                 <span className="text-[#5F6B7A] font-semibold">{formatCurrency(ing.cantidad * ing.costo_unit)}</span>
               </div>
@@ -288,8 +288,8 @@ export default function RecetasPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A] flex items-center gap-2">
-            <ChefHat size={20} className="text-[#0E78D8]" /> Recetas / Platos
+          <h1 className="text-xl font-bold text-[var(--cs)] flex items-center gap-2">
+            <ChefHat size={20} className="text-[var(--cp)]" /> Recetas / Platos
           </h1>
           <p className="text-sm text-[#5F6B7A]">Define los platos del menú con sus ingredientes y costos</p>
         </div>
@@ -300,7 +300,7 @@ export default function RecetasPage() {
       <div className="max-w-sm">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar receta…"
-          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
+          className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
       </div>
 
       {deleteMsg && (
@@ -321,7 +321,7 @@ export default function RecetasPage() {
             {search ? 'No hay recetas que coincidan con la búsqueda.' : 'Aún no has creado ninguna receta.'}
           </p>
           {!search && (
-            <button onClick={abrirNueva} className="mt-3 text-sm text-[#0E78D8] font-semibold hover:underline">
+            <button onClick={abrirNueva} className="mt-3 text-sm text-[var(--cp)] font-semibold hover:underline">
               Crear primera receta
             </button>
           )}

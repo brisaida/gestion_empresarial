@@ -88,7 +88,7 @@ export default function ExistenciasPage() {
       key: 'producto', header: 'Producto',
       cell: r => (
         <div>
-          <p className="font-semibold text-[#072B5A]">{r.producto?.nombre ?? '—'}</p>
+          <p className="font-semibold text-[var(--cs)]">{r.producto?.nombre ?? '—'}</p>
           {r.producto?.codigo && <p className="text-xs text-[#5F6B7A] font-mono">{r.producto.codigo}</p>}
         </div>
       ),
@@ -101,7 +101,7 @@ export default function ExistenciasPage() {
           {r.producto?.stock_bajo
             ? <AlertTriangle size={14} className="text-amber-500" />
             : <CheckCircle   size={14} className="text-emerald-400" />}
-          <span className={`font-bold ${r.producto?.stock_bajo ? 'text-amber-600' : 'text-[#072B5A]'}`}>
+          <span className={`font-bold ${r.producto?.stock_bajo ? 'text-amber-600' : 'text-[var(--cs)]'}`}>
             {formatNumber(r.cantidad_disponible)}
           </span>
         </div>
@@ -121,7 +121,7 @@ export default function ExistenciasPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Stock / Existencias</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Stock / Existencias</h1>
           <p className="text-sm text-[#5F6B7A]">Inventario disponible por bodega</p>
         </div>
         <button
@@ -179,14 +179,14 @@ export default function ExistenciasPage() {
                 type="checkbox"
                 checked={soloStockBajo}
                 onChange={e => { setSoloStockBajo(e.target.checked); reset() }}
-                className="rounded accent-[#0E78D8]"
+                className="rounded accent-[var(--cp)]"
               />
               Solo stock bajo
             </label>
             {activeFilters > 0 && (
               <button
                 onClick={() => { setSearch(''); setBodegaId(''); setCategoriaId(''); setProductoId(''); setSoloStockBajo(false); setPage(1) }}
-                className="text-xs text-[#0E78D8] hover:underline font-semibold"
+                className="text-xs text-[var(--cp)] hover:underline font-semibold"
               >
                 Limpiar filtros ({activeFilters})
               </button>

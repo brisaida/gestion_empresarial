@@ -36,6 +36,8 @@ export interface EmpresaConfig {
   logo_url?: string | null
   config_cotizacion?: ConfigCotizacion
   tipo_facturacion?: 'ticket' | 'factura_a4'
+  color_primario?: string
+  color_secundario?: string
 }
 
 export interface AuthState {

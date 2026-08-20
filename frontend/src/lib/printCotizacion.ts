@@ -12,11 +12,39 @@ const NAVY = '#072B5A'
 const BLUE = '#0E78D8'
 const CYAN = '#38D6D4'
 
-export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: string, configCot?: ConfigCotizacion): void {
+async function fetchBase64(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    return await new Promise<string>(resolve => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.readAsDataURL(blob)
+    })
+  } catch { return null }
+}
+
+export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: string, configCot?: ConfigCotizacion): Promise<void> {
   const detalles    = c.detalles ?? []
   const mostrarDesc = configCot?.mostrar_descripcion ?? false
   const mostrarFoto = configCot?.mostrar_foto ?? false
   const isvPct      = empresa.isv_rate ?? 15
+
+  /* ── Pre-cargar imágenes de productos como base64 ─────────── */
+  const imageMap = new Map<number, string>()
+  if (mostrarFoto) {
+    await Promise.all(
+      detalles
+        .filter(d => d.producto?.imagen_url && d.producto?.id != null)
+        .map(async d => {
+          const rawUrl = d.producto!.imagen_url!
+          const absUrl = rawUrl.startsWith('http') ? rawUrl : `${API_BASE}${rawUrl}`
+          const b64 = await fetchBase64(absUrl)
+          if (b64) imageMap.set(d.producto!.id, b64)
+        })
+    )
+  }
 
   const estados: Record<string, { label: string; color: string }> = {
     borrador:   { label: 'BORRADOR',   color: '#6B7280' },
@@ -30,11 +58,9 @@ export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: 
 
   /* ── Filas de productos ─────────────────────────────────── */
   const filas = detalles.map((d, i) => {
-    const imgUrl = d.producto?.imagen_url
-      ? (d.producto.imagen_url.startsWith('http') ? d.producto.imagen_url : `${API_BASE}${d.producto.imagen_url}`)
-      : null
-    const fotoHtml = mostrarFoto && imgUrl
-      ? `<img src="${imgUrl}" style="width:40px;height:40px;object-fit:contain;border-radius:5px;border:1px solid #E5E9EE;display:block;margin-bottom:3px" alt="">`
+    const imgSrc = mostrarFoto && d.producto?.id != null ? imageMap.get(d.producto.id) : null
+    const fotoHtml = imgSrc
+      ? `<img src="${imgSrc}" style="width:40px;height:40px;object-fit:contain;border-radius:5px;border:1px solid #E5E9EE;display:block;margin-bottom:3px" alt="">`
       : ''
     const descHtml = mostrarDesc && d.producto?.descripcion
       ? `<div style="color:#888;font-size:10.5px;margin-top:2px;line-height:1.4">${d.producto.descripcion}</div>`
@@ -154,7 +180,7 @@ export function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: 
         ${empresaFiscal}
       </td>
       <td style="vertical-align:top;text-align:right">
-        <div style="font-size:40px;font-weight:900;font-style:italic;color:${BLUE};letter-spacing:1px;line-height:1">Cotización</div>
+        <div style="font-size:40px;font-weight:900;color:${BLUE};letter-spacing:1px;line-height:1">Cotización</div>
         <div style="margin-top:10px;display:inline-block;text-align:left;min-width:200px">
           <table style="width:auto;margin-left:auto">
             <tr>

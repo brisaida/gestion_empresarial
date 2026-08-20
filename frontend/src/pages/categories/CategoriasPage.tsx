@@ -66,14 +66,14 @@ export default function CategoriasPage() {
   }
 
   const columns: Column<Categoria>[] = [
-    { key: 'nombre',      header: 'Nombre',      cell: (r) => <span className="font-medium text-[#072B5A]">{r.nombre}</span> },
+    { key: 'nombre',      header: 'Nombre',      cell: (r) => <span className="font-medium text-[var(--cs)]">{r.nombre}</span> },
     { key: 'descripcion', header: 'Descripción',  cell: (r) => <span className="text-gray-500">{r.descripcion ?? '—'}</span> },
     { key: 'activo',      header: 'Estado',       cell: (r) => <StatusBadge activo={r.activo} />, align: 'center', width: '100px' },
     {
       key: 'acciones', header: 'Acciones', align: 'right', width: '100px',
       cell: (r) => (
         <div className="flex items-center justify-end gap-1">
-          <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-[#0E78D8] hover:bg-[#0E78D8]/8 transition-colors"><Pencil size={15} /></button>
+          <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-[var(--cp)] hover:bg-white/10 transition-colors"><Pencil size={15} /></button>
           <button onClick={() => setDeleteId(r.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={15} /></button>
         </div>
       ),
@@ -84,7 +84,7 @@ export default function CategoriasPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Categorías</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Categorías</h1>
           <p className="text-sm text-[#5F6B7A]">Clasificación de productos</p>
         </div>
         <div className="flex gap-2">
@@ -135,11 +135,11 @@ export default function CategoriasPage() {
           {!importResult ? (
             <>
               <div className="bg-[#F4F7FA] rounded-lg p-4 space-y-2">
-                <p className="text-sm font-semibold text-[#072B5A]">Paso 1 — Descarga la plantilla</p>
+                <p className="text-sm font-semibold text-[var(--cs)]">Paso 1 — Descarga la plantilla</p>
                 <p className="text-xs text-[#5F6B7A]">Completa el Excel con tus categorías (nombre, descripción, activo) y luego súbelo.</p>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0E78D8] hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--cp)] hover:underline"
                   onClick={async () => {
                     const token = localStorage.getItem('token') ?? ''
                     const res = await fetch(categoriasApi.plantillaUrl(), { headers: { Authorization: `Bearer ${token}` } })
@@ -154,7 +154,7 @@ export default function CategoriasPage() {
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-[#072B5A] mb-2">Paso 2 — Sube tu archivo</p>
+                <p className="text-sm font-semibold text-[var(--cs)] mb-2">Paso 2 — Sube tu archivo</p>
                 <input ref={importRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => setImportFile(e.target.files?.[0] ?? null)} />
                 {importFile ? (
                   <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
@@ -165,7 +165,7 @@ export default function CategoriasPage() {
                   <button
                     type="button"
                     onClick={() => importRef.current?.click()}
-                    className="w-full border-2 border-dashed border-gray-200 rounded-lg px-4 py-6 text-center text-sm text-[#5F6B7A] hover:border-[#0E78D8]/50 hover:bg-[#0E78D8]/5 transition-all"
+                    className="w-full border-2 border-dashed border-gray-200 rounded-lg px-4 py-6 text-center text-sm text-[#5F6B7A] hover:border-gray-300 hover:bg-gray-50 transition-all"
                   >
                     <Upload size={20} className="mx-auto mb-1 text-gray-300" />
                     Haz clic para seleccionar un archivo .xlsx

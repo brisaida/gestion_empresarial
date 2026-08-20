@@ -41,11 +41,11 @@ function DetalleFila({ id }: { id: number }) {
         <tbody>
           {data.detalles.map(det => (
             <tr key={det.id} className="border-b border-gray-100 last:border-0">
-              <td className="px-3 py-2 text-[#072B5A] font-medium">
+              <td className="px-3 py-2 text-[var(--cs)] font-medium">
                 {det.producto?.nombre ?? `#${det.producto_id}`}
                 {det.producto?.codigo && <span className="ml-1 text-[#5F6B7A]">[{det.producto.codigo}]</span>}
               </td>
-              <td className="px-3 py-2 text-right font-bold text-[#072B5A]">{formatNumber(det.cantidad)}</td>
+              <td className="px-3 py-2 text-right font-bold text-[var(--cs)]">{formatNumber(det.cantidad)}</td>
               <td className="px-3 py-2 text-[#5F6B7A] hidden sm:table-cell">
                 {det.lote && <span>Lote: {det.lote}</span>}
                 {det.numero_serie && <span>{det.lote ? ' · ' : ''}Serie: {det.numero_serie}</span>}
@@ -78,15 +78,15 @@ export default function HistorialTrasladosPage() {
   const columns: Column<Transferencia>[] = [
     {
       key: 'id', header: 'ID',
-      cell: r => <span className="font-mono text-sm font-bold text-[#0E78D8]">#{r.id}</span>,
+      cell: r => <span className="font-mono text-sm font-bold text-[var(--cp)]">#{r.id}</span>,
       width: '70px',
     },
     {
       key: 'ruta', header: 'Ruta',
       cell: r => (
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-[#072B5A]">
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-[var(--cs)]">
           {r.bodega_origen}
-          <ArrowRight size={13} className="text-[#0E78D8] shrink-0" />
+          <ArrowRight size={13} className="text-[var(--cp)] shrink-0" />
           {r.bodega_destino}
         </span>
       ),
@@ -123,7 +123,7 @@ export default function HistorialTrasladosPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
 
       <div>
-        <h1 className="text-xl font-bold text-[#072B5A]">Historial de Traslados</h1>
+        <h1 className="text-xl font-bold text-[var(--cs)]">Historial de Traslados</h1>
         <p className="text-sm text-[#5F6B7A]">Movimientos entre bodegas registrados en el sistema</p>
       </div>
 

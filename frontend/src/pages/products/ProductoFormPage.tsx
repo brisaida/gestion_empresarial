@@ -253,12 +253,12 @@ export default function ProductoFormPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/productos')}
-            className="p-2 rounded-lg text-[#5F6B7A] hover:text-[#072B5A] hover:bg-white border border-transparent hover:border-gray-200 transition-all"
+            className="p-2 rounded-lg text-[#5F6B7A] hover:text-[var(--cs)] hover:bg-white border border-transparent hover:border-gray-200 transition-all"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-[#072B5A]">
+            <h1 className="text-xl font-bold text-[var(--cs)]">
               {isEdit ? 'Editar producto' : 'Nuevo producto'}
             </h1>
             <p className="text-sm text-[#5F6B7A]">
@@ -284,7 +284,7 @@ export default function ProductoFormPage() {
 
         {/* ── Imagen ── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide mb-4">Foto del producto</p>
+          <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide mb-4">Foto del producto</p>
           <div className="flex items-start gap-5">
             <div className="relative shrink-0">
               {imagePreview ? (
@@ -323,7 +323,7 @@ export default function ProductoFormPage() {
               />
               <label
                 htmlFor="imagen-input"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] cursor-pointer transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] cursor-pointer transition-all"
               >
                 <ImagePlus size={15} />
                 {imagePreview ? 'Cambiar foto' : 'Subir foto'}
@@ -335,7 +335,7 @@ export default function ProductoFormPage() {
 
         {/* ── Información básica ── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Información básica</p>
+          <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Información básica</p>
 
           <Input label="Nombre *" error={errors.nombre?.message} {...register('nombre')} />
 
@@ -347,7 +347,7 @@ export default function ProductoFormPage() {
               <div className="flex gap-1.5">
                 <input
                   {...register('codigo_barra')}
-                  className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#072B5A]/20 focus:border-[#072B5A]"
+                  className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--cs)]/20 focus:border-[var(--cs)]"
                   placeholder="Escribe o escanea"
                 />
                 <button
@@ -355,8 +355,8 @@ export default function ProductoFormPage() {
                   onClick={scannerOpen ? stopScanner : startScanner}
                   className={`p-2 rounded-lg border transition-colors ${
                     scannerOpen
-                      ? 'border-[#072B5A] bg-[#072B5A] text-white'
-                      : 'border-gray-200 text-gray-500 hover:text-[#072B5A] hover:border-[#072B5A] hover:bg-blue-50'
+                      ? 'border-[var(--cs)] bg-[var(--cs)] text-white'
+                      : 'border-gray-200 text-gray-500 hover:text-[var(--cs)] hover:border-[var(--cs)] hover:bg-blue-50'
                   }`}
                   title={scannerOpen ? 'Cerrar escáner' : 'Escanear con cámara'}
                 >
@@ -411,7 +411,7 @@ export default function ProductoFormPage() {
             <textarea
               {...register('descripcion')}
               rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#072B5A]/20 focus:border-[#072B5A] resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--cs)]/20 focus:border-[var(--cs)] resize-none"
               placeholder="Descripción opcional del producto"
             />
           </div>
@@ -419,7 +419,7 @@ export default function ProductoFormPage() {
 
         {/* ── Clasificación ── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Clasificación</p>
+          <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Clasificación</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
             {/* Multi-select de categorías */}
@@ -439,7 +439,7 @@ export default function ProductoFormPage() {
                         {selected.map(id => {
                           const cat = cats?.find(c => c.id === id)
                           return cat ? (
-                            <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#0E78D8]/10 text-[#0E78D8] border border-[#0E78D8]/20">
+                            <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--cp)]/10 text-[var(--cp)] border border-[var(--cp)]/20">
                               {cat.nombre}
                               <button type="button" onClick={() => toggle(id)} className="hover:text-red-500 transition-colors leading-none">&times;</button>
                             </span>
@@ -457,9 +457,9 @@ export default function ProductoFormPage() {
                                 type="checkbox"
                                 checked={selected.includes(c.id)}
                                 onChange={() => toggle(c.id)}
-                                className="accent-[#0E78D8] w-3.5 h-3.5 rounded"
+                                className="accent-[var(--cp)] w-3.5 h-3.5 rounded"
                               />
-                              <span className="text-sm text-[#072B5A]">{c.nombre}</span>
+                              <span className="text-sm text-[var(--cs)]">{c.nombre}</span>
                             </label>
                           ))
                       }
@@ -500,7 +500,7 @@ export default function ProductoFormPage() {
 
         {/* ── Precios ── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Precios y costos</p>
+          <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Precios y costos</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Input label="Costo *"          type="number" step="0.01" error={errors.costo?.message} {...register('costo')} />
             <Input label="Precio de venta *" type="number" step="0.01" error={errors.precio_venta?.message} {...register('precio_venta')} />
@@ -511,9 +511,9 @@ export default function ProductoFormPage() {
             <Input label="Stock mínimo" type="number" step="0.01" {...register('stock_minimo')} />
           </div>
           <label className="flex items-start gap-2.5 cursor-pointer select-none">
-            <input type="checkbox" {...register('precio_incluye_isv')} className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#0E78D8] cursor-pointer shrink-0" />
+            <input type="checkbox" {...register('precio_incluye_isv')} className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[var(--cp)] cursor-pointer shrink-0" />
             <div>
-              <span className="text-sm font-medium text-[#072B5A]">El precio de venta ya incluye ISV</span>
+              <span className="text-sm font-medium text-[var(--cs)]">El precio de venta ya incluye ISV</span>
               <p className="text-[11px] text-[#5F6B7A] mt-0.5">Al vender o cotizar, el ISV se extrae del precio en lugar de sumarse encima.</p>
             </div>
           </label>
@@ -521,7 +521,7 @@ export default function ProductoFormPage() {
 
         {/* ── Medidas físicas ── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Medidas físicas <span className="normal-case font-normal text-gray-400">(opcional)</span></p>
+          <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Medidas físicas <span className="normal-case font-normal text-gray-400">(opcional)</span></p>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Talla / Tamaño" placeholder="S, M, L, XL, 42…" {...register('tamaño')} />
             <Input label="Peso (kg)" type="number" step="0.001" placeholder="0.500" {...register('peso')} />
@@ -535,7 +535,7 @@ export default function ProductoFormPage() {
 
         {/* ── Opciones ── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Opciones de rastreo</p>
+          <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Opciones de rastreo</p>
 
           {/* Tipo — solo visible para restaurantes */}
           {esRestaurante && (
@@ -549,12 +549,12 @@ export default function ProductoFormPage() {
                   <label key={opt.value}
                     className={`flex-1 flex items-start gap-2.5 p-3 rounded-lg border-2 cursor-pointer transition-all ${
                       watch('tipo') === opt.value
-                        ? 'border-[#0E78D8] bg-[#0E78D8]/5'
+                        ? 'border-[var(--cp)] bg-[var(--cp)]/5'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}>
-                    <input type="radio" value={opt.value} {...register('tipo')} className="mt-0.5 accent-[#0E78D8]" />
+                    <input type="radio" value={opt.value} {...register('tipo')} className="mt-0.5 accent-[var(--cp)]" />
                     <div>
-                      <p className="text-sm font-semibold text-[#072B5A]">{opt.label}</p>
+                      <p className="text-sm font-semibold text-[var(--cs)]">{opt.label}</p>
                       <p className="text-xs text-[#5F6B7A]">{opt.desc}</p>
                     </div>
                   </label>
@@ -565,13 +565,13 @@ export default function ProductoFormPage() {
 
           <div className="flex flex-wrap gap-6">
             <label className="flex items-center gap-2 text-sm text-[#5F6B7A] cursor-pointer">
-              <input type="checkbox" {...register('maneja_vencimiento')} className="rounded accent-[#0E78D8]" />
+              <input type="checkbox" {...register('maneja_vencimiento')} className="rounded accent-[var(--cp)]" />
               Maneja vencimiento
             </label>
           </div>
           <div className="pt-1 border-t border-gray-50">
             <label className="flex items-center gap-2 text-sm text-[#5F6B7A] cursor-pointer">
-              <input type="checkbox" {...register('activo')} className="rounded accent-[#0E78D8]" />
+              <input type="checkbox" {...register('activo')} className="rounded accent-[var(--cp)]" />
               Producto activo
             </label>
           </div>
@@ -581,7 +581,7 @@ export default function ProductoFormPage() {
         {!isEdit && (
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
             <div>
-              <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Stock inicial</p>
+              <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Stock inicial</p>
               <p className="text-xs text-[#5F6B7A] mt-0.5">Opcional — puedes registrar las unidades disponibles al crear el producto.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">

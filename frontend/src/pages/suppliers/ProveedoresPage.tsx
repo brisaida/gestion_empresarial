@@ -58,7 +58,7 @@ export default function ProveedoresPage() {
   }
 
   const columns: Column<Proveedor>[] = [
-    { key: 'nombre',   header: 'Proveedor', cell: (r) => <span className="font-medium text-[#072B5A]">{r.nombre}</span> },
+    { key: 'nombre',   header: 'Proveedor', cell: (r) => <span className="font-medium text-[var(--cs)]">{r.nombre}</span> },
     { key: 'rtn',      header: 'RTN',       cell: (r) => <span className="text-gray-500">{r.rtn ?? '—'}</span> },
     { key: 'correo',   header: 'Correo',    cell: (r) => <span className="text-gray-500">{r.correo ?? '—'}</span> },
     { key: 'telefono', header: 'Teléfono',  cell: (r) => <span className="text-gray-500">{r.telefono ?? '—'}</span> },
@@ -67,7 +67,7 @@ export default function ProveedoresPage() {
       key: 'acciones', header: '', align: 'right', width: '80px',
       cell: (r) => (
         <div className="flex items-center justify-end gap-1">
-          <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-[#0E78D8] hover:bg-[#0E78D8]/8"><Pencil size={15} /></button>
+          <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-[var(--cp)] hover:bg-white/10"><Pencil size={15} /></button>
           <button onClick={() => setDeleteId(r.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"><Trash2 size={15} /></button>
         </div>
       ),
@@ -78,7 +78,7 @@ export default function ProveedoresPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Proveedores</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Proveedores</h1>
           <p className="text-sm text-gray-500">Gestión de proveedores</p>
         </div>
         <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevo proveedor</Button>
@@ -106,7 +106,7 @@ export default function ProveedoresPage() {
               <select
                 {...register('departamento')}
                 onChange={(e) => { setValue('departamento', e.target.value); setValue('municipio', '') }}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
               >
                 <option value="">— Seleccionar —</option>
                 {DEPARTAMENTOS.map(d => <option key={d} value={d}>{d}</option>)}
@@ -117,7 +117,7 @@ export default function ProveedoresPage() {
               <select
                 {...register('municipio')}
                 disabled={!deptoSeleccionado}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] disabled:bg-gray-50 disabled:text-gray-400"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] disabled:bg-gray-50 disabled:text-gray-400"
               >
                 <option value="">— Seleccionar —</option>
                 {municipios.map(m => <option key={m} value={m}>{m}</option>)}

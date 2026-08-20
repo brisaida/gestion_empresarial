@@ -87,7 +87,7 @@ export default function ComboBox({
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       {label && (
-        <label className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">
+        <label className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">
           {label}
         </label>
       )}
@@ -99,13 +99,13 @@ export default function ComboBox({
           onClick={() => !disabled && setOpen(v => !v)}
           className={cn(
             'w-full flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm bg-white text-left gap-2',
-            'focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all duration-150',
-            error ? 'border-red-400' : 'border-gray-200 hover:border-[#0E78D8]/50',
+            'focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all duration-150',
+            error ? 'border-red-400' : 'border-gray-200 hover:border-[var(--cp)]/50',
             disabled && 'opacity-50 cursor-not-allowed bg-gray-50',
             triggerClassName,
           )}
         >
-          <span className={cn('flex-1 truncate', selected ? 'text-[#072B5A]' : 'text-gray-400')}>
+          <span className={cn('flex-1 truncate', selected ? 'text-[var(--cs)]' : 'text-gray-400')}>
             {selected?.label ?? placeholder}
           </span>
           <span className="flex items-center gap-1 shrink-0">
@@ -142,7 +142,7 @@ export default function ComboBox({
                     if (e.key === 'Enter' && filtered.length === 1) select(filtered[0])
                   }}
                   placeholder="Buscar…"
-                  className="flex-1 bg-transparent text-sm text-[#072B5A] placeholder-gray-400 outline-none min-w-0"
+                  className="flex-1 bg-transparent text-sm text-[var(--cs)] placeholder-gray-400 outline-none min-w-0"
                 />
                 {search && (
                   <button type="button" onClick={() => setSearch('')} className="text-gray-400 hover:text-gray-600">
@@ -164,8 +164,8 @@ export default function ComboBox({
                     className={cn(
                       'w-full text-left px-3 py-2 text-sm transition-colors',
                       String(o.value) === String(value ?? '')
-                        ? 'bg-[#0E78D8] text-white font-medium'
-                        : 'text-[#072B5A] hover:bg-[#F4F7FA]',
+                        ? 'bg-[var(--cp)] text-white font-medium'
+                        : 'text-[var(--cs)] hover:bg-[#F4F7FA]',
                     )}
                   >
                     {o.label}

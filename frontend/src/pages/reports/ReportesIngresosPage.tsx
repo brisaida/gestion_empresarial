@@ -47,8 +47,8 @@ function CustomTooltip({ active, payload, label, agrupacion }: {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm">
-      <p className="font-semibold text-[#072B5A] mb-1">{label ? fmtEje(label, agrupacion) : ''}</p>
-      <p className="text-[#0E78D8] font-bold">{formatCurrency(payload[0].value)}</p>
+      <p className="font-semibold text-[var(--cs)] mb-1">{label ? fmtEje(label, agrupacion) : ''}</p>
+      <p className="text-[var(--cp)] font-bold">{formatCurrency(payload[0].value)}</p>
     </div>
   )
 }
@@ -92,7 +92,7 @@ export default function ReportesIngresosPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Ingresos por período</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Ingresos por período</h1>
           <p className="text-sm text-[#5F6B7A]">Ventas completadas en el rango seleccionado</p>
         </div>
 
@@ -102,7 +102,7 @@ export default function ReportesIngresosPage() {
             <button key={p.key} onClick={() => setPreset(p.key)}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                 preset === p.key
-                  ? 'bg-[#0E78D8] text-white shadow-sm'
+                  ? 'bg-[var(--cp)] text-white shadow-sm'
                   : 'text-[#5F6B7A] hover:bg-gray-100'
               }`}>
               {p.label}
@@ -115,12 +115,12 @@ export default function ReportesIngresosPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-lg bg-[#0E78D8]/10 flex items-center justify-center">
-              <TrendingUp size={18} className="text-[#0E78D8]" />
+            <div className="w-9 h-9 rounded-lg bg-[var(--cp)]/10 flex items-center justify-center">
+              <TrendingUp size={18} className="text-[var(--cp)]" />
             </div>
             <p className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide">Total ingresos</p>
           </div>
-          <p className="text-2xl font-bold text-[#072B5A]">
+          <p className="text-2xl font-bold text-[var(--cs)]">
             {isLoading ? '—' : formatCurrency(resumen.total)}
           </p>
         </div>
@@ -132,7 +132,7 @@ export default function ReportesIngresosPage() {
             </div>
             <p className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide">N° de ventas</p>
           </div>
-          <p className="text-2xl font-bold text-[#072B5A]">
+          <p className="text-2xl font-bold text-[var(--cs)]">
             {isLoading ? '—' : resumen.cantidad.toLocaleString('es')}
           </p>
         </div>
@@ -144,7 +144,7 @@ export default function ReportesIngresosPage() {
             </div>
             <p className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide">Promedio por venta</p>
           </div>
-          <p className="text-2xl font-bold text-[#072B5A]">
+          <p className="text-2xl font-bold text-[var(--cs)]">
             {isLoading ? '—' : formatCurrency(resumen.promedio)}
           </p>
         </div>
@@ -152,7 +152,7 @@ export default function ReportesIngresosPage() {
 
       {/* Gráfica */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <p className="text-sm font-semibold text-[#072B5A] mb-5">Ingresos por {agrupacion === 'dia' ? 'día' : agrupacion === 'semana' ? 'semana' : 'mes'}</p>
+        <p className="text-sm font-semibold text-[var(--cs)] mb-5">Ingresos por {agrupacion === 'dia' ? 'día' : agrupacion === 'semana' ? 'semana' : 'mes'}</p>
         {isLoading ? (
           <div className="h-64 flex items-center justify-center text-sm text-[#5F6B7A]">Cargando...</div>
         ) : chartData.length === 0 ? (
@@ -176,7 +176,7 @@ export default function ReportesIngresosPage() {
                 width={60}
               />
               <Tooltip content={<CustomTooltip agrupacion={agrupacion} />} cursor={{ fill: '#F4F7FA' }} />
-              <Bar dataKey="total" fill="#0E78D8" radius={[4, 4, 0, 0]} maxBarSize={48} />
+              <Bar dataKey="total" fill="var(--cp)" radius={[4, 4, 0, 0]} maxBarSize={48} />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -196,17 +196,17 @@ export default function ReportesIngresosPage() {
             <tbody className="divide-y divide-gray-50">
               {[...filas].reverse().map(f => (
                 <tr key={f.periodo} className="hover:bg-[#F4F7FA]">
-                  <td className="px-4 py-3 font-medium text-[#072B5A]">{fmtEje(f.periodo, agrupacion)}</td>
+                  <td className="px-4 py-3 font-medium text-[var(--cs)]">{fmtEje(f.periodo, agrupacion)}</td>
                   <td className="px-4 py-3 text-right text-[#5F6B7A]">{f.cantidad}</td>
-                  <td className="px-4 py-3 text-right font-bold text-[#072B5A]">{formatCurrency(f.total)}</td>
+                  <td className="px-4 py-3 text-right font-bold text-[var(--cs)]">{formatCurrency(f.total)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="border-t-2 border-gray-200">
               <tr>
-                <td className="px-4 py-3 font-bold text-[#072B5A]">Total</td>
-                <td className="px-4 py-3 text-right font-bold text-[#072B5A]">{resumen.cantidad}</td>
-                <td className="px-4 py-3 text-right font-bold text-[#072B5A]">{formatCurrency(resumen.total)}</td>
+                <td className="px-4 py-3 font-bold text-[var(--cs)]">Total</td>
+                <td className="px-4 py-3 text-right font-bold text-[var(--cs)]">{resumen.cantidad}</td>
+                <td className="px-4 py-3 text-right font-bold text-[var(--cs)]">{formatCurrency(resumen.total)}</td>
               </tr>
             </tfoot>
           </table>

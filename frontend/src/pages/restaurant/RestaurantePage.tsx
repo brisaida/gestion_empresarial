@@ -50,14 +50,14 @@ function MesaCard({
     <div
       onClick={onClick}
       className={`relative rounded-xl border-2 p-4 cursor-pointer transition-all select-none ${s.bg} ${
-        selected ? 'border-[#0E78D8] ring-2 ring-[#0E78D8]/20' : s.border
+        selected ? 'border-[var(--cp)] ring-2 ring-[var(--cp)]/20' : s.border
       } hover:shadow-md`}
     >
       {/* Actions */}
       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={e => e.stopPropagation()}>
         <button onClick={onEdit}
-          className="p-1 rounded text-[#5F6B7A] hover:text-[#0E78D8] hover:bg-[#0E78D8]/10 transition-all">
+          className="p-1 rounded text-[#5F6B7A] hover:text-[var(--cp)] hover:bg-[var(--cp)]/10 transition-all">
           <Pencil size={12} />
         </button>
         <button onClick={onDelete}
@@ -68,7 +68,7 @@ function MesaCard({
 
       {/* Dot status */}
       <div className="flex items-start justify-between mb-2">
-        <span className="font-bold text-[#072B5A] text-base leading-tight">{mesa.nombre}</span>
+        <span className="font-bold text-[var(--cs)] text-base leading-tight">{mesa.nombre}</span>
         <span className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${s.dot}`} />
       </div>
 
@@ -124,23 +124,23 @@ function MesaFormModal({
     <Modal open={open} onClose={onClose} title={mesa ? 'Editar mesa' : 'Nueva mesa'} size="sm">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-[#072B5A] mb-1">Nombre</label>
+          <label className="block text-sm font-semibold text-[var(--cs)] mb-1">Nombre</label>
           <input
             value={nombre}
             onChange={e => setNombre(e.target.value)}
             placeholder="Mesa 1, Barra, Terraza..."
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-[#072B5A] mb-1">Capacidad (personas)</label>
+          <label className="block text-sm font-semibold text-[var(--cs)] mb-1">Capacidad (personas)</label>
           <input
             type="number"
             min={1}
             value={capacidad}
             onChange={e => setCapacidad(e.target.value)}
             placeholder="Opcional"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
           />
         </div>
         {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
@@ -248,7 +248,7 @@ function NuevaRondaModal({
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar platillo o producto..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]"
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
             />
           </div>
           <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-2 content-start">
@@ -259,13 +259,13 @@ function NuevaRondaModal({
                   key={item.key}
                   onClick={() => addItem(item.key, item.nombre, item.precio, item.producto_id, item.receta_id)}
                   className={`text-left p-3 rounded-xl border-2 transition-all hover:shadow-sm active:scale-[0.97] ${
-                    inCart ? 'border-[#0E78D8] bg-[#0E78D8]/5' : 'border-gray-100 bg-white hover:border-gray-300'
+                    inCart ? 'border-[var(--cp)] bg-[var(--cp)]/5' : 'border-gray-100 bg-white hover:border-gray-300'
                   }`}
                 >
-                  <p className="text-sm font-semibold text-[#072B5A] leading-tight line-clamp-2">{item.nombre}</p>
-                  <p className="text-xs text-[#0E78D8] font-bold mt-1">{formatCurrency(item.precio)}</p>
+                  <p className="text-sm font-semibold text-[var(--cs)] leading-tight line-clamp-2">{item.nombre}</p>
+                  <p className="text-xs text-[var(--cp)] font-bold mt-1">{formatCurrency(item.precio)}</p>
                   {inCart && (
-                    <span className="inline-block mt-1 text-[10px] font-bold text-white bg-[#0E78D8] px-1.5 py-0.5 rounded-full">
+                    <span className="inline-block mt-1 text-[10px] font-bold text-white bg-[var(--cp)] px-1.5 py-0.5 rounded-full">
                       ×{inCart.qty} en carrito
                     </span>
                   )}
@@ -292,17 +292,17 @@ function NuevaRondaModal({
               {items.map(line => (
                 <div key={line.key} className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[#072B5A] leading-tight truncate">{line.nombre}</p>
+                    <p className="text-xs font-semibold text-[var(--cs)] leading-tight truncate">{line.nombre}</p>
                     <p className="text-xs text-[#5F6B7A]">{formatCurrency(line.precio)}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button onClick={() => changeQty(line.key, -1)}
-                      className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 text-[#072B5A] font-bold text-sm flex items-center justify-center">
+                      className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 text-[var(--cs)] font-bold text-sm flex items-center justify-center">
                       −
                     </button>
-                    <span className="w-5 text-center text-sm font-bold text-[#072B5A]">{line.qty}</span>
+                    <span className="w-5 text-center text-sm font-bold text-[var(--cs)]">{line.qty}</span>
                     <button onClick={() => changeQty(line.key, +1)}
-                      className="w-6 h-6 rounded-full bg-[#0E78D8]/10 hover:bg-[#0E78D8]/20 text-[#0E78D8] font-bold text-sm flex items-center justify-center">
+                      className="w-6 h-6 rounded-full bg-[var(--cp)]/10 hover:bg-[var(--cp)]/20 text-[var(--cp)] font-bold text-sm flex items-center justify-center">
                       +
                     </button>
                   </div>
@@ -314,7 +314,7 @@ function NuevaRondaModal({
           {!isEmpty && (
             <>
               <div className="border-t border-gray-100 pt-2 mb-2">
-                <div className="flex justify-between text-sm font-bold text-[#072B5A]">
+                <div className="flex justify-between text-sm font-bold text-[var(--cs)]">
                   <span>Total</span><span>{formatCurrency(total)}</span>
                 </div>
               </div>
@@ -322,7 +322,7 @@ function NuevaRondaModal({
                 value={obs}
                 onChange={e => setObs(e.target.value)}
                 placeholder="Observaciones..."
-                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs mb-3 focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30"
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30"
               />
             </>
           )}
@@ -393,12 +393,12 @@ function CobrarModal({
               {c.detalles.map(d => (
                 <div key={d.id} className="flex justify-between text-sm">
                   <span className="text-[#5F6B7A]">{d.nombre_item} ×{d.cantidad}</span>
-                  <span className="font-medium text-[#072B5A]">{formatCurrency(d.cantidad * d.precio_unitario)}</span>
+                  <span className="font-medium text-[var(--cs)]">{formatCurrency(d.cantidad * d.precio_unitario)}</span>
                 </div>
               ))}
             </div>
           ))}
-          <div className="border-t border-gray-200 pt-2 flex justify-between text-sm font-bold text-[#072B5A]">
+          <div className="border-t border-gray-200 pt-2 flex justify-between text-sm font-bold text-[var(--cs)]">
             <span>Total</span>
             <span>{formatCurrency(total)}</span>
           </div>
@@ -406,7 +406,7 @@ function CobrarModal({
 
         {/* Método de pago */}
         <div>
-          <p className="text-sm font-semibold text-[#072B5A] mb-2">Método de pago</p>
+          <p className="text-sm font-semibold text-[var(--cs)] mb-2">Método de pago</p>
           <div className="grid grid-cols-2 gap-2">
             {metodoPagoOpts.map(({ key, label, icon: Icon }) => (
               <button
@@ -414,7 +414,7 @@ function CobrarModal({
                 onClick={() => setMetodo(key)}
                 className={`flex items-center gap-2 p-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
                   metodo === key
-                    ? 'border-[#0E78D8] bg-[#0E78D8]/5 text-[#0E78D8]'
+                    ? 'border-[var(--cp)] bg-[var(--cp)]/5 text-[var(--cp)]'
                     : 'border-gray-200 text-[#5F6B7A] hover:border-gray-300'
                 }`}
               >
@@ -464,7 +464,7 @@ function MesaPanel({
       {/* Panel header */}
       <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b border-gray-100 shrink-0">
         <div>
-          <h2 className="font-bold text-[#072B5A] text-lg">{mesa.nombre}</h2>
+          <h2 className="font-bold text-[var(--cs)] text-lg">{mesa.nombre}</h2>
           <div className="flex items-center gap-2 mt-0.5">
             <span className={`w-2 h-2 rounded-full ${estadoStyle[mesa.estado].dot}`} />
             <span className={`text-sm font-medium ${estadoStyle[mesa.estado].text}`}>
@@ -500,7 +500,7 @@ function MesaPanel({
           activas.map(comanda => (
             <div key={comanda.id} className="rounded-xl border border-gray-100 overflow-hidden">
               <div className="flex items-center justify-between px-3 py-2 bg-[#F4F7FA]">
-                <span className="text-xs font-bold text-[#072B5A]">{comanda.numero_comanda}</span>
+                <span className="text-xs font-bold text-[var(--cs)]">{comanda.numero_comanda}</span>
                 {estadoComandaBadge(comanda.estado)}
               </div>
               <div className="px-3 py-2 space-y-1.5">
@@ -508,9 +508,9 @@ function MesaPanel({
                   <div key={d.id} className="flex justify-between text-sm">
                     <span className={`${d.listo ? 'line-through text-gray-400' : 'text-[#5F6B7A]'}`}>
                       {d.nombre_item}
-                      {d.cantidad !== 1 && <span className="text-[#0E78D8] ml-1">×{d.cantidad}</span>}
+                      {d.cantidad !== 1 && <span className="text-[var(--cp)] ml-1">×{d.cantidad}</span>}
                     </span>
-                    <span className="font-medium text-[#072B5A] shrink-0 ml-2">
+                    <span className="font-medium text-[var(--cs)] shrink-0 ml-2">
                       {formatCurrency(d.cantidad * d.precio_unitario)}
                     </span>
                   </div>
@@ -524,7 +524,7 @@ function MesaPanel({
       {/* Footer */}
       <div className="border-t border-gray-100 px-5 py-4 space-y-3 shrink-0">
         {activas.length > 0 && (
-          <div className="flex justify-between text-sm font-bold text-[#072B5A]">
+          <div className="flex justify-between text-sm font-bold text-[var(--cs)]">
             <span>Total mesa</span>
             <span>{formatCurrency(totalMesa)}</span>
           </div>
@@ -621,15 +621,15 @@ export default function RestaurantePage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 100%)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' }}>
                 <UtensilsCrossed size={16} className="text-white" />
               </div>
-              <h1 className="font-bold text-[#072B5A] text-base">Salón</h1>
+              <h1 className="font-bold text-[var(--cs)] text-base">Salón</h1>
             </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => refetchMesas()}
-                className="p-1.5 rounded-lg border border-gray-200 text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
+                className="p-1.5 rounded-lg border border-gray-200 text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                 <RefreshCw size={13} className={isFetching ? 'animate-spin' : ''} />
               </button>
               <Button
@@ -647,7 +647,7 @@ export default function RestaurantePage() {
             <select
               value={bodegaId}
               onChange={e => setBodegaId(Number(e.target.value))}
-              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30"
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30"
             >
               {bodegas.map((b: Bodega) => (
                 <option key={b.id} value={b.id}>{b.nombre}</option>

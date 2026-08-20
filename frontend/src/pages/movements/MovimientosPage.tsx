@@ -118,7 +118,7 @@ export default function MovimientosPage() {
 
   const columns: Column<Movimiento>[] = [
     { key: 'tipo',   header: 'Tipo',       cell: (r) => <TipoBadge tipo={r.tipo_movimiento} />, width: '130px' },
-    { key: 'bodega', header: 'Bodega',     cell: (r) => <span className="text-[#072B5A] font-medium">{r.bodega?.nombre ?? '—'}</span> },
+    { key: 'bodega', header: 'Bodega',     cell: (r) => <span className="text-[var(--cs)] font-medium">{r.bodega?.nombre ?? '—'}</span> },
     { key: 'doc',    header: 'Documento',  cell: (r) => <span className="text-[#5F6B7A] font-mono text-xs">{r.numero_documento ?? '—'}</span> },
     { key: 'fecha',  header: 'Fecha',      cell: (r) => <span className="text-[#5F6B7A]">{r.fecha}</span>, align: 'center' },
     { key: 'obs',    header: 'Observaciones', cell: (r) => <span className="text-[#5F6B7A] text-xs truncate max-w-xs block">{r.observaciones ?? '—'}</span> },
@@ -128,7 +128,7 @@ export default function MovimientosPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#072B5A]">Movimientos</h1>
+          <h1 className="text-xl font-bold text-[var(--cs)]">Movimientos</h1>
           <p className="text-sm text-[#5F6B7A]">Entradas, salidas y ajustes de inventario</p>
         </div>
         <Button icon={<Plus size={16} />} onClick={openModal}>Nuevo movimiento</Button>
@@ -168,15 +168,15 @@ export default function MovimientosPage() {
           {/* Líneas de detalle */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-[#072B5A] uppercase tracking-wide">Productos</p>
-              <button type="button" onClick={addLinea} className="text-xs text-[#0E78D8] hover:text-[#072B5A] font-semibold flex items-center gap-1 transition-colors">
+              <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Productos</p>
+              <button type="button" onClick={addLinea} className="text-xs text-[var(--cp)] hover:text-[var(--cs)] font-semibold flex items-center gap-1 transition-colors">
                 <Plus size={13} /> Agregar línea
               </button>
             </div>
             <div className="space-y-2 overflow-x-auto">
               {lineas.map((l, i) => {
                 const prod = productos?.find(p => String(p.id) === l.producto_id)
-                const inputCls = 'w-full rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all'
+                const inputCls = 'w-full rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all'
                 return (
                   <div key={i} className="bg-[#F4F7FA] rounded-lg min-w-[460px]">
                     <div className="grid grid-cols-12 gap-2 items-end p-3">

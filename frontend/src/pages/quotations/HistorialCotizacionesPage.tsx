@@ -48,7 +48,7 @@ interface LineaCotEdit {
 
 type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
 
-const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
+const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
 const labelCls  = "block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5"
 
 export default function HistorialCotizacionesPage() {
@@ -252,7 +252,7 @@ export default function HistorialCotizacionesPage() {
         empresaApi.logoBase64(empresaId),
         import('@/lib/printCotizacion'),
       ])
-      printCotizacion(cotRes.data.data, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined, empresaRes.data.data.config_cotizacion)
+      await printCotizacion(cotRes.data.data, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined, empresaRes.data.data.config_cotizacion)
     } catch { setPdfError('No se pudo generar el documento.') }
     finally { setLoadingPdf(null) }
   }
@@ -261,12 +261,12 @@ export default function HistorialCotizacionesPage() {
   const columns: Column<Cotizacion>[] = [
     {
       key: 'numero_cotizacion', header: 'N° Cotización',
-      cell: r => <span className="font-mono text-sm font-bold text-[#0E78D8]">{r.numero_cotizacion}</span>,
+      cell: r => <span className="font-mono text-sm font-bold text-[var(--cp)]">{r.numero_cotizacion}</span>,
       width: '130px',
     },
     {
       key: 'cliente', header: 'Cliente',
-      cell: r => <span className="font-semibold text-[#072B5A]">{r.cliente?.nombre ?? '— Sin cliente —'}</span>,
+      cell: r => <span className="font-semibold text-[var(--cs)]">{r.cliente?.nombre ?? '— Sin cliente —'}</span>,
     },
     {
       key: 'fecha_cotizacion', header: 'Fecha',
@@ -282,7 +282,7 @@ export default function HistorialCotizacionesPage() {
     },
     {
       key: 'total', header: 'Total',
-      cell: r => <span className="font-bold text-[#072B5A]">{formatCurrency(r.total)}</span>,
+      cell: r => <span className="font-bold text-[var(--cs)]">{formatCurrency(r.total)}</span>,
       align: 'right',
     },
     {
@@ -317,7 +317,7 @@ export default function HistorialCotizacionesPage() {
               className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                 acc.variant === 'danger'    ? 'text-red-600 hover:bg-red-50' :
                 acc.variant === 'secondary' ? 'text-[#5F6B7A] hover:bg-gray-100' :
-                'text-[#0E78D8] hover:bg-[#0E78D8]/8'
+                'text-[var(--cp)] hover:bg-[var(--cp)]/8'
               }`}>
               {acc.icon}{acc.label}
             </button>
@@ -343,7 +343,7 @@ export default function HistorialCotizacionesPage() {
     <div className="space-y-5 max-w-7xl mx-auto">
 
       <div>
-        <h1 className="text-xl font-bold text-[#072B5A]">Historial de Cotizaciones</h1>
+        <h1 className="text-xl font-bold text-[var(--cs)]">Historial de Cotizaciones</h1>
         <p className="text-sm text-[#5F6B7A]">Gestiona y da seguimiento a tus propuestas</p>
       </div>
 
@@ -422,7 +422,7 @@ export default function HistorialCotizacionesPage() {
       <Modal open={editCot !== null} onClose={() => setEditCot(null)} title={`Editar ${editCot?.numero_cotizacion ?? ''}`} size="2xl">
         {editLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 size={28} className="animate-spin text-[#0E78D8]" />
+            <Loader2 size={28} className="animate-spin text-[var(--cp)]" />
           </div>
         ) : (
           <div className="space-y-4">
@@ -457,13 +457,13 @@ export default function HistorialCotizacionesPage() {
                 {/* Buscador */}
                 <div className="p-3" ref={editSearchRef}>
                   <div className="relative">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg focus-within:border-[#0E78D8] focus-within:ring-2 focus-within:ring-[#0E78D8]/20 transition-all">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg focus-within:border-[var(--cp)] focus-within:ring-2 focus-within:ring-[var(--cp)]/20 transition-all">
                       <Search size={14} className="text-[#5F6B7A] shrink-0" />
                       <input type="text" placeholder="Buscar producto..."
                         value={editSearch}
                         onChange={e => { setEditSearch(e.target.value); setEditShowDrop(true) }}
                         onFocus={() => editSearch && setEditShowDrop(true)}
-                        className="flex-1 bg-transparent text-sm text-[#072B5A] placeholder-gray-400 focus:outline-none" />
+                        className="flex-1 bg-transparent text-sm text-[var(--cs)] placeholder-gray-400 focus:outline-none" />
                     </div>
                     {editShowDrop && editFilteredProds.length > 0 && (
                       <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
@@ -471,10 +471,10 @@ export default function HistorialCotizacionesPage() {
                           <button key={p.id} type="button" onClick={() => addEditProduct(p)}
                             className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
                             <div>
-                              <p className="text-sm font-semibold text-[#072B5A] group-hover:text-[#0E78D8]">{p.nombre}</p>
+                              <p className="text-sm font-semibold text-[var(--cs)] group-hover:text-[var(--cp)]">{p.nombre}</p>
                               {p.codigo && <p className="text-xs text-gray-400 font-mono">{p.codigo}</p>}
                             </div>
-                            <span className="text-sm font-bold text-[#0E78D8] shrink-0 ml-3">{formatCurrency(p.precio_venta)}</span>
+                            <span className="text-sm font-bold text-[var(--cp)] shrink-0 ml-3">{formatCurrency(p.precio_venta)}</span>
                           </button>
                         ))}
                       </div>
@@ -490,26 +490,26 @@ export default function HistorialCotizacionesPage() {
                   {editLineas.map((l, i) => (
                     <div key={l.producto_id} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-100">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[#072B5A] truncate">{l.nombre}</p>
+                        <p className="text-sm font-semibold text-[var(--cs)] truncate">{l.nombre}</p>
                         {l.codigo && <p className="text-xs text-gray-400 font-mono">{l.codigo}</p>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button type="button" onClick={() => updateEditCantidad(i, -1)}
-                          className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
+                          className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                           <Minus size={10} />
                         </button>
                         <input type="number" min="1" step="1" value={l.cantidad}
                           onChange={e => setEditLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: Math.max(1, Number(e.target.value) || 1) } : ln))}
-                          className="w-10 text-center rounded border border-gray-200 py-0.5 text-sm font-bold text-[#072B5A] focus:outline-none focus:border-[#0E78D8]" />
+                          className="w-10 text-center rounded border border-gray-200 py-0.5 text-sm font-bold text-[var(--cs)] focus:outline-none focus:border-[var(--cp)]" />
                         <button type="button" onClick={() => updateEditCantidad(i, +1)}
-                          className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
+                          className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                           <Plus size={10} />
                         </button>
                       </div>
                       <input type="number" min="0" step="0.01" value={l.precio_unitario}
                         onChange={e => updateEditPrecio(i, e.target.value)}
-                        className="w-24 text-right rounded border border-gray-200 px-2 py-0.5 text-sm text-[#072B5A] focus:outline-none focus:border-[#0E78D8]" />
-                      <span className="w-20 text-right text-sm font-bold text-[#072B5A] shrink-0">
+                        className="w-24 text-right rounded border border-gray-200 px-2 py-0.5 text-sm text-[var(--cs)] focus:outline-none focus:border-[var(--cp)]" />
+                      <span className="w-20 text-right text-sm font-bold text-[var(--cs)] shrink-0">
                         {formatCurrency(l.cantidad * l.precio_unitario)}
                       </span>
                       <button type="button" onClick={() => removeEditLinea(i)}
@@ -529,14 +529,14 @@ export default function HistorialCotizacionesPage() {
                   <input type="number" min="0" step="0.01"
                     value={editDescuento || ''} onChange={e => setEditDescuento(Number(e.target.value) || 0)}
                     placeholder="0.00"
-                    className="w-full text-right rounded-lg border border-gray-200 px-3 py-2 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
+                    className="w-full text-right rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-[#5F6B7A]">ISV ({empresaConfig?.isv_rate ?? 15}%)</span>
                   <button type="button" onClick={() => setEditAplicarISV(v => !v)}
                     style={{ height: '22px', width: '40px' }}
-                    className={`rounded-full transition-all flex items-center px-0.5 ${editAplicarISV ? 'bg-[#0E78D8]' : 'bg-gray-200'}`}>
+                    className={`rounded-full transition-all flex items-center px-0.5 ${editAplicarISV ? 'bg-[var(--cp)]' : 'bg-gray-200'}`}>
                     <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${editAplicarISV ? 'translate-x-[18px]' : 'translate-x-0'}`} />
                   </button>
                 </div>
@@ -558,7 +558,7 @@ export default function HistorialCotizacionesPage() {
                 </div>
 
                 <div className="flex justify-between items-center px-3 py-2.5 rounded-xl text-white font-bold text-sm"
-                  style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 100%)' }}>
+                  style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' }}>
                   <span>TOTAL</span>
                   <span>{formatCurrency(editTotal)}</span>
                 </div>
@@ -567,7 +567,7 @@ export default function HistorialCotizacionesPage() {
                   <label className={labelCls}>Observaciones</label>
                   <textarea rows={3} value={editObservaciones} onChange={e => setEditObservaciones(e.target.value)}
                     placeholder="Notas, condiciones..."
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[#072B5A] resize-none focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all placeholder-gray-400" />
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all placeholder-gray-400" />
                 </div>
               </div>
             </div>

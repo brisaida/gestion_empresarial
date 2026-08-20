@@ -65,7 +65,7 @@ export default function CotizacionesPage() {
           empresaApi.get(empresaId),
           empresaApi.logoBase64(empresaId),
         ])
-        printCotizacion(cotizacion, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined)
+        await printCotizacion(cotizacion, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined)
       } catch { /* PDF es opcional */ }
     },
     onError: (err) => setError(getAxiosError(err)),
@@ -141,14 +141,14 @@ export default function CotizacionesPage() {
     })
   }
 
-  const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all"
+  const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
   const labelCls  = "block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5"
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
 
       <div>
-        <h1 className="text-xl font-bold text-[#072B5A]">Nueva Cotización</h1>
+        <h1 className="text-xl font-bold text-[var(--cs)]">Nueva Cotización</h1>
         <p className="text-sm text-[#5F6B7A]">Crea una propuesta de precios sin afectar el inventario</p>
       </div>
 
@@ -169,7 +169,7 @@ export default function CotizacionesPage() {
               <label className={labelCls}><span className="flex items-center gap-1.5"><Hash size={11} /> N° Cotización</span></label>
               <div className="relative">
                 <input readOnly value={nCot}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-8 text-sm font-bold text-[#0E78D8] bg-[#F4F7FA] cursor-default select-none tracking-wide" />
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-8 text-sm font-bold text-[var(--cp)] bg-[#F4F7FA] cursor-default select-none tracking-wide" />
                 <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300" />
               </div>
             </div>
@@ -208,13 +208,13 @@ export default function CotizacionesPage() {
             {/* Buscador */}
             <div className="p-4 border-b border-gray-100" ref={searchRef}>
               <div className="relative">
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F4F7FA] border border-gray-200 rounded-xl focus-within:border-[#0E78D8] focus-within:ring-2 focus-within:ring-[#0E78D8]/20 transition-all">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F4F7FA] border border-gray-200 rounded-xl focus-within:border-[var(--cp)] focus-within:ring-2 focus-within:ring-[var(--cp)]/20 transition-all">
                   <Search size={16} className="text-[#5F6B7A] shrink-0" />
                   <input type="text" placeholder="Buscar producto por nombre o código..."
                     value={search}
                     onChange={e => { setSearch(e.target.value); setShowDrop(true) }}
                     onFocus={() => search && setShowDrop(true)}
-                    className="flex-1 bg-transparent text-sm text-[#072B5A] placeholder-gray-400 focus:outline-none" />
+                    className="flex-1 bg-transparent text-sm text-[var(--cs)] placeholder-gray-400 focus:outline-none" />
                   {search && (
                     <button type="button" onClick={() => { setSearch(''); setShowDrop(false) }} className="text-gray-400 hover:text-gray-600">
                       <XCircle size={15} />
@@ -233,13 +233,13 @@ export default function CotizacionesPage() {
                             : <div className="w-8 h-8 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />
                           }
                           <div>
-                            <p className="text-sm font-semibold text-[#072B5A] group-hover:text-[#0E78D8] transition-colors">{p.nombre}</p>
+                            <p className="text-sm font-semibold text-[var(--cs)] group-hover:text-[var(--cp)] transition-colors">{p.nombre}</p>
                             {p.codigo && <p className="text-xs text-gray-400 font-mono">{p.codigo}</p>}
                           </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-sm font-bold text-[#0E78D8]">{formatCurrency(p.precio_venta)}</span>
-                          <span className="w-6 h-6 bg-[#0E78D8] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-sm font-bold text-[var(--cp)]">{formatCurrency(p.precio_venta)}</span>
+                          <span className="w-6 h-6 bg-[var(--cp)] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <Plus size={13} />
                           </span>
                         </div>
@@ -288,21 +288,21 @@ export default function CotizacionesPage() {
                     : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />
                   }
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#072B5A] leading-tight truncate">{l.producto.nombre}</p>
+                    <p className="text-sm font-semibold text-[var(--cs)] leading-tight truncate">{l.producto.nombre}</p>
                     {l.producto.codigo && <p className="text-xs text-gray-400 font-mono">{l.producto.codigo}</p>}
                   </div>
                 </div>
 
                 <div className="col-span-3 flex items-center justify-center gap-1.5">
                   <button type="button" onClick={() => updateCantidad(i, -1)}
-                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
+                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                     <Minus size={12} />
                   </button>
                   <input type="number" min="1" step="1" value={l.cantidad}
                     onChange={e => setLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: Math.max(1, Number(e.target.value) || 1) } : ln))}
-                    className="w-14 text-center rounded-lg border border-gray-200 py-1.5 text-sm font-bold text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
+                    className="w-14 text-center rounded-lg border border-gray-200 py-1.5 text-sm font-bold text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
                   <button type="button" onClick={() => updateCantidad(i, +1)}
-                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[#0E78D8] hover:text-[#0E78D8] transition-all">
+                    className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                     <Plus size={12} />
                   </button>
                 </div>
@@ -310,11 +310,11 @@ export default function CotizacionesPage() {
                 <div className="col-span-2">
                   <input type="number" min="0" step="0.01" value={l.precio_unitario}
                     onChange={e => updatePrecio(i, e.target.value)}
-                    className="w-full text-right rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]" />
+                    className="w-full text-right rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
                 </div>
 
                 <div className="col-span-2 text-right">
-                  <span className="text-sm font-bold text-[#072B5A]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
+                  <span className="text-sm font-bold text-[var(--cs)]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
                 </div>
 
                 <div className="col-span-1 flex justify-center">
@@ -333,7 +333,7 @@ export default function CotizacionesPage() {
 
             {/* Totales */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-              <p className="text-xs font-bold text-[#072B5A] uppercase tracking-wider">Resumen</p>
+              <p className="text-xs font-bold text-[var(--cs)] uppercase tracking-wider">Resumen</p>
 
               <div>
                 <label className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5 block">Descuento</label>
@@ -342,7 +342,7 @@ export default function CotizacionesPage() {
                   <input type="number" min="0" step="0.01"
                     value={descuento || ''} onChange={e => setDescuento(Number(e.target.value) || 0)}
                     placeholder="0.00"
-                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-gray-200 text-sm text-right text-[#072B5A] focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all" />
+                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-gray-200 text-sm text-right text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all" />
                 </div>
               </div>
 
@@ -350,7 +350,7 @@ export default function CotizacionesPage() {
                 <span className="text-sm font-medium text-[#5F6B7A]">ISV ({empresaConfig?.isv_rate ?? 15}%)</span>
                 <button type="button" onClick={() => setAplicarISV(v => !v)}
                   style={{ height: '22px', width: '40px' }}
-                  className={`rounded-full transition-all flex items-center px-0.5 ${aplicarISV ? 'bg-[#0E78D8]' : 'bg-gray-200'}`}>
+                  className={`rounded-full transition-all flex items-center px-0.5 ${aplicarISV ? 'bg-[var(--cp)]' : 'bg-gray-200'}`}>
                   <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${aplicarISV ? 'translate-x-[18px]' : 'translate-x-0'}`} />
                 </button>
               </div>
@@ -372,7 +372,7 @@ export default function CotizacionesPage() {
               </div>
 
               <div className="flex justify-between items-center px-4 py-3.5 rounded-xl text-white font-bold"
-                style={{ background: 'linear-gradient(135deg, #072B5A 0%, #0E78D8 60%, #38D6D4 100%)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 60%, #38D6D4 100%)' }}>
                 <span className="text-sm">TOTAL</span>
                 <span className="text-lg tracking-tight">{formatCurrency(total)}</span>
               </div>
@@ -388,7 +388,7 @@ export default function CotizacionesPage() {
                 value={observaciones}
                 onChange={e => setObservaciones(e.target.value)}
                 placeholder="Condiciones de pago, tiempo de entrega, notas..."
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[#072B5A] resize-none focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-all placeholder-gray-400"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all placeholder-gray-400"
               />
             </div>
 

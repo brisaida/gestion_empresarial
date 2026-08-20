@@ -36,10 +36,10 @@ function StockBodegaInfo({ productoId, empresaId, bodegaOrigenId, cantidad }: {
           return (
             <span key={e.id} className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
               esOrigen
-                ? 'bg-[#0E78D8]/10 text-[#0E78D8] border-[#0E78D8]/30'
+                ? 'bg-blue-50 text-[var(--cp)] border-[var(--cp)]/30'
                 : 'bg-gray-100 text-[#5F6B7A] border-gray-200'
             }`}>
-              {esOrigen && <span className="w-1.5 h-1.5 rounded-full bg-[#0E78D8] shrink-0" />}
+              {esOrigen && <span className="w-1.5 h-1.5 rounded-full bg-[var(--cp)] shrink-0" />}
               {nombre}: {formatNumber(e.cantidad_disponible, 0)} uds
             </span>
           )
@@ -67,7 +67,7 @@ const emptyLinea = (id: string): Linea => ({
   _id: id, producto_id: '', cantidad: '', lote: '', fecha_vencimiento: '', numero_serie: '',
 })
 
-const inputCls = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8]'
+const inputCls = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]'
 const labelCls = 'block text-xs font-semibold text-[#5F6B7A] mb-1'
 
 export default function TrasladosPage() {
@@ -158,7 +158,7 @@ export default function TrasladosPage() {
     <div className="max-w-7xl mx-auto space-y-6">
 
       <div>
-        <h1 className="text-xl font-bold text-[#072B5A]">Nuevo Traslado</h1>
+        <h1 className="text-xl font-bold text-[var(--cs)]">Nuevo Traslado</h1>
         <p className="text-sm text-[#5F6B7A]">Mueve stock entre bodegas. El movimiento se registra de inmediato.</p>
       </div>
 
@@ -169,7 +169,7 @@ export default function TrasladosPage() {
 
           {/* Bodegas + fecha */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h2 className="text-sm font-bold text-[#072B5A] mb-4">Origen y destino</h2>
+            <h2 className="text-sm font-bold text-[var(--cs)] mb-4">Origen y destino</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
               <ComboBox
                 label="Bodega origen *"
@@ -180,7 +180,7 @@ export default function TrasladosPage() {
               />
 
               <div className="hidden sm:flex items-center justify-center pt-5">
-                <div className="flex items-center gap-1 text-[#0E78D8]">
+                <div className="flex items-center gap-1 text-[var(--cp)]">
                   <ArrowRight size={20} />
                 </div>
               </div>
@@ -210,9 +210,9 @@ export default function TrasladosPage() {
           {/* Productos */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-[#072B5A]">Productos a trasladar</h2>
+              <h2 className="text-sm font-bold text-[var(--cs)]">Productos a trasladar</h2>
               <button onClick={addLinea}
-                className="flex items-center gap-1.5 text-xs font-semibold text-[#0E78D8] hover:bg-[#0E78D8]/8 px-2.5 py-1.5 rounded-lg transition-colors">
+                className="flex items-center gap-1.5 text-xs font-semibold text-[var(--cp)] hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors">
                 <Plus size={14} /> Agregar línea
               </button>
             </div>
@@ -293,13 +293,13 @@ export default function TrasladosPage() {
         {/* ── Panel lateral ── */}
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 sticky top-6">
-            <h2 className="text-sm font-bold text-[#072B5A] mb-4">Resumen</h2>
+            <h2 className="text-sm font-bold text-[var(--cs)] mb-4">Resumen</h2>
 
             {/* Ruta */}
             {(bodegaOrigenId || bodegaDestinoId) && (
               <div className="mb-4 p-3 bg-[#F4F7FA] rounded-lg text-xs text-[#5F6B7A] space-y-1">
                 <div><span className="font-semibold">Origen:</span> {bodegas?.find(b => String(b.id) === bodegaOrigenId)?.nombre ?? '—'}</div>
-                <div className="text-[#0E78D8]"><ArrowRight size={12} className="inline" /></div>
+                <div className="text-[var(--cp)]"><ArrowRight size={12} className="inline" /></div>
                 <div><span className="font-semibold">Destino:</span> {bodegas?.find(b => String(b.id) === bodegaDestinoId)?.nombre ?? '—'}</div>
               </div>
             )}
@@ -307,11 +307,11 @@ export default function TrasladosPage() {
             <div className="space-y-2 text-sm mb-5">
               <div className="flex justify-between text-[#5F6B7A]">
                 <span>Líneas con producto</span>
-                <span className="font-semibold text-[#072B5A]">{totalItems}</span>
+                <span className="font-semibold text-[var(--cs)]">{totalItems}</span>
               </div>
               <div className="flex justify-between text-[#5F6B7A]">
                 <span>Total unidades</span>
-                <span className="font-semibold text-[#072B5A]">{formatNumber(totalUnidades)}</span>
+                <span className="font-semibold text-[var(--cs)]">{formatNumber(totalUnidades)}</span>
               </div>
             </div>
 

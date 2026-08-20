@@ -26,7 +26,7 @@ export default function Navbar({ collapsed, onToggle }: Props) {
       <div className="flex items-center gap-3">
         <button
           onClick={onToggle}
-          className="p-1.5 rounded-lg text-[#5F6B7A] hover:text-[#0E78D8] hover:bg-[#0E78D8]/8 transition-colors"
+          className="p-1.5 rounded-lg text-[#5F6B7A] hover:text-[var(--cp)] hover:bg-white/10 transition-colors"
           title={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
         >
           {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
@@ -35,7 +35,7 @@ export default function Navbar({ collapsed, onToggle }: Props) {
         {state.empresaActiva && (
           <div className="hidden sm:flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#38D6D4]" />
-            <span className="text-sm font-semibold text-[#072B5A]">
+            <span className="text-sm font-semibold text-[var(--cs)]">
               {state.empresaActiva.nombre}
             </span>
           </div>
@@ -44,7 +44,7 @@ export default function Navbar({ collapsed, onToggle }: Props) {
 
       {/* Right */}
       <div className="flex items-center gap-1.5">
-        <button className="relative p-1.5 rounded-lg text-[#5F6B7A] hover:text-[#0E78D8] hover:bg-[#0E78D8]/8 transition-colors">
+        <button className="relative p-1.5 rounded-lg text-[#5F6B7A] hover:text-[var(--cp)] hover:bg-white/10 transition-colors">
           <Bell size={18} />
         </button>
 
@@ -52,15 +52,15 @@ export default function Navbar({ collapsed, onToggle }: Props) {
         <div className="relative">
           <button
             onClick={() => setUserMenu((v) => !v)}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-[#0E78D8]/8 transition-colors"
+            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
           >
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-              style={{ background: 'linear-gradient(135deg, #0E78D8 0%, #38D6D4 100%)' }}
+              style={{ background: 'linear-gradient(135deg, var(--cp) 0%, #38D6D4 100%)' }}
             >
               {(state.usuario?.nombre?.[0] ?? 'U').toUpperCase()}
             </div>
-            <span className="hidden sm:block text-sm font-medium text-[#072B5A] max-w-32 truncate">
+            <span className="hidden sm:block text-sm font-medium text-[var(--cs)] max-w-32 truncate">
               {state.usuario?.nombre ?? 'Usuario'}
             </span>
             <ChevronDown size={13} className="text-[#5F6B7A]" />
@@ -71,7 +71,7 @@ export default function Navbar({ collapsed, onToggle }: Props) {
               <div className="fixed inset-0 z-10" onClick={() => setUserMenu(false)} />
               <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-100 rounded-xl shadow-xl shadow-black/10 z-20 py-1 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-[#072B5A] truncate">{state.usuario?.nombre}</p>
+                  <p className="text-sm font-semibold text-[var(--cs)] truncate">{state.usuario?.nombre}</p>
                   <p className="text-xs text-[#5F6B7A] truncate">{state.usuario?.correo}</p>
                 </div>
                 {esSuperAdmin && (
