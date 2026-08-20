@@ -36,6 +36,7 @@ class UpdateProductoRequest extends FormRequest
             'costo'              => ['sometimes', 'numeric', 'min:0'],
             'precio_venta'       => ['sometimes', 'numeric', 'min:0'],
             'tasa_isv'           => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'precio_incluye_isv' => ['boolean'],
             'stock_minimo'       => ['nullable', 'numeric', 'min:0'],
             'maneja_lote'        => ['boolean'],
             'maneja_vencimiento' => ['boolean'],

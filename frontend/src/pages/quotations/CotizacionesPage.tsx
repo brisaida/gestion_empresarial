@@ -106,7 +106,9 @@ export default function CotizacionesPage() {
     setLineas(prev => {
       const idx = prev.findIndex(l => l.producto.id === p.id)
       if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, cantidad: l.cantidad + 1 } : l)
-      return [...prev, { producto: p, cantidad: 1, precio_unitario: Number(p.precio_venta) }]
+      const rate = (p.tasa_isv ?? (empresaConfig?.isv_rate ?? 15)) / 100
+      const precioBase = p.precio_incluye_isv ? Number(p.precio_venta) / (1 + rate) : Number(p.precio_venta)
+      return [...prev, { producto: p, cantidad: 1, precio_unitario: precioBase }]
     })
     setSearch(''); setShowDrop(false)
   }

@@ -26,6 +26,7 @@ const schema = z.object({
   costo:              z.coerce.number().min(0),
   precio_venta:       z.coerce.number().min(0),
   tasa_isv:           z.union([z.coerce.number(), z.literal('')]).optional(),
+  precio_incluye_isv: z.boolean().default(false),
   stock_minimo:       z.coerce.number().min(0).default(0),
   tamaño:             z.string().optional(),
   peso:               z.union([z.coerce.number(), z.literal('')]).optional(),
@@ -103,6 +104,7 @@ export default function ProductoFormPage() {
         largo:              producto.largo ?? '',
         ancho:              producto.ancho ?? '',
         alto:               producto.alto ?? '',
+        precio_incluye_isv: producto.precio_incluye_isv ?? false,
         maneja_lote:        producto.maneja_lote,
         maneja_vencimiento: producto.maneja_vencimiento,
         maneja_serie:       producto.maneja_serie,
@@ -508,6 +510,13 @@ export default function ProductoFormPage() {
             </div>
             <Input label="Stock mínimo" type="number" step="0.01" {...register('stock_minimo')} />
           </div>
+          <label className="flex items-start gap-2.5 cursor-pointer select-none">
+            <input type="checkbox" {...register('precio_incluye_isv')} className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#0E78D8] cursor-pointer shrink-0" />
+            <div>
+              <span className="text-sm font-medium text-[#072B5A]">El precio de venta ya incluye ISV</span>
+              <p className="text-[11px] text-[#5F6B7A] mt-0.5">Al vender o cotizar, el ISV se extrae del precio en lugar de sumarse encima.</p>
+            </div>
+          </label>
         </div>
 
         {/* ── Medidas físicas ── */}

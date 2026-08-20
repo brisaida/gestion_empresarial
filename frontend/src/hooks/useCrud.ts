@@ -12,17 +12,18 @@ interface CrudApi<T> {
 interface Options {
   queryKey: string
   empresaId: number
+  extraParams?: Record<string, unknown>
 }
 
-export function useCrud<T>(api: CrudApi<T>, { queryKey, empresaId }: Options) {
+export function useCrud<T>(api: CrudApi<T>, { queryKey, empresaId, extraParams }: Options) {
   const qc = useQueryClient()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
 
   const query = useQuery({
-    queryKey:    [queryKey, empresaId, page, search],
-    queryFn:     () => api.list({ empresa_id: empresaId, page, search: search || undefined, per_page: 15 }).then((r) => r.data),
+    queryKey:    [queryKey, empresaId, page, search, extraParams],
+    queryFn:     () => api.list({ empresa_id: empresaId, page, search: search || undefined, per_page: 15, ...extraParams }).then((r) => r.data),
     enabled:     empresaId > 0,
     placeholderData: (prev) => prev,
   })

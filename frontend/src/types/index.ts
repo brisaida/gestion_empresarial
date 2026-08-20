@@ -137,6 +137,7 @@ export interface Producto {
   costo: number
   precio_venta: number
   tasa_isv: number | null
+  precio_incluye_isv: boolean
   stock_minimo: number
   maneja_lote: boolean
   maneja_vencimiento: boolean

@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, AlertTriangle, ImagePlus, X, Upload, Download, CheckCircle2, AlertCircle } from 'lucide-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Plus, Pencil, Trash2, AlertTriangle, ImagePlus, X, Upload, Download, CheckCircle2, AlertCircle, Tag } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { productosApi } from '@/api/recursos'
+import { productosApi, categoriasApi } from '@/api/recursos'
 import { getAxiosError } from '@/lib/utils'
 import { useCrud } from '@/hooks/useCrud'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
@@ -20,7 +20,20 @@ export default function ProductosPage() {
   const qc = useQueryClient()
   const empresaId: number = state.empresaActiva?.id ?? 0
 
-  const crud = useCrud<Producto>(productosApi, { queryKey: 'productos', empresaId })
+  const [categoriaId, setCategoriaId] = useState<number | null>(null)
+
+  const { data: categorias = [] } = useQuery({
+    queryKey: ['categorias', empresaId],
+    queryFn:  () => categoriasApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
+
+  const crud = useCrud<Producto>(productosApi, {
+    queryKey: 'productos',
+    empresaId,
+    extraParams: categoriaId ? { categoria_id: categoriaId } : undefined,
+  })
 
   const [deleteId, setDeleteId]             = useState<number | null>(null)
   const [selectedIds, setSelectedIds]       = useState<Set<number>>(new Set())
@@ -171,8 +184,32 @@ export default function ProductosPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
           <SearchBar value={crud.search} onChange={(v) => { crud.setSearch(v); crud.setPage(1) }} placeholder="Buscar por nombre, código..." className="max-w-sm" />
+          {categorias.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Tag size={14} className="text-gray-400 shrink-0" />
+              <select
+                value={categoriaId ?? ''}
+                onChange={e => { setCategoriaId(e.target.value ? Number(e.target.value) : null); crud.setPage(1) }}
+                className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-[#072B5A] bg-white focus:outline-none focus:ring-2 focus:ring-[#0E78D8]/30 focus:border-[#0E78D8] transition-colors"
+              >
+                <option value="">Todas las categorías</option>
+                {categorias.map(c => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+              {categoriaId && (
+                <button
+                  onClick={() => { setCategoriaId(null); crud.setPage(1) }}
+                  className="p-1 rounded text-gray-400 hover:text-red-500 transition-colors"
+                  title="Quitar filtro"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Barra de selección masiva */}

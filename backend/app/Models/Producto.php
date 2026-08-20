@@ -13,7 +13,7 @@ class Producto extends Model
         'empresa_id', 'marca_id', 'unidad_medida_id',
         'codigo', 'codigo_barra', 'nombre', 'descripcion',
         'tamaño', 'peso', 'largo', 'ancho', 'alto',
-        'costo', 'precio_venta', 'tasa_isv', 'stock_minimo',
+        'costo', 'precio_venta', 'tasa_isv', 'precio_incluye_isv', 'stock_minimo',
         'maneja_lote', 'maneja_vencimiento', 'maneja_serie', 'activo', 'tipo', 'imagen',
     ];
 
@@ -28,6 +28,7 @@ class Producto extends Model
             'largo'              => 'decimal:2',
             'ancho'              => 'decimal:2',
             'alto'               => 'decimal:2',
+            'precio_incluye_isv' => 'boolean',
             'maneja_lote'        => 'boolean',
             'maneja_vencimiento' => 'boolean',
             'maneja_serie'       => 'boolean',

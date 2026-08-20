@@ -25,6 +25,7 @@ class ProductoResource extends JsonResource
             'costo'              => (float) $this->costo,
             'precio_venta'       => (float) $this->precio_venta,
             'tasa_isv'           => $this->tasa_isv !== null ? (float) $this->tasa_isv : null,
+            'precio_incluye_isv' => (bool) $this->precio_incluye_isv,
             'stock_minimo'       => (float) $this->stock_minimo,
             'maneja_lote'        => $this->maneja_lote,
             'maneja_vencimiento' => $this->maneja_vencimiento,
