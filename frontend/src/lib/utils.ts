@@ -31,17 +31,21 @@ const SERVER_MESSAGES: Record<string, string> = {
 }
 
 const FIELD_LABELS: Record<string, string> = {
-  nombre:       'Nombre',
-  nombre_legal: 'Razón social',
-  correo:       'Correo',
-  telefono:     'Teléfono',
-  direccion:    'Dirección',
-  rtn:          'RTN',
-  password:     'Contraseña',
-  empresa_id:   'Empresa',
-  bodega_id:    'Bodega',
-  cantidad:     'Cantidad',
+  nombre:          'Nombre',
+  nombre_legal:    'Razón social',
+  correo:          'Correo',
+  telefono:        'Teléfono',
+  direccion:       'Dirección',
+  rtn:             'RTN',
+  password:        'Contraseña',
+  empresa_id:      'Empresa',
+  bodega_id:       'Bodega',
+  cantidad:        'Cantidad',
   precio_unitario: 'Precio',
+  codigo:          'Código interno',
+  codigo_barra:    'Código de barras',
+  precio_venta:    'Precio de venta',
+  costo:           'Costo',
 }
 
 export function getAxiosError(error: unknown): string {

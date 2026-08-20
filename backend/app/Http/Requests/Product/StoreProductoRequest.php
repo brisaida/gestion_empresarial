@@ -9,6 +9,19 @@ class StoreProductoRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 
+    public function messages(): array
+    {
+        return [
+            'codigo.unique'       => 'Este código interno ya está registrado para otro producto.',
+            'codigo_barra.unique' => 'Este código de barras ya está registrado para otro producto.',
+            'nombre.required'     => 'El nombre del producto es obligatorio.',
+            'costo.required'      => 'El costo es obligatorio.',
+            'costo.min'           => 'El costo no puede ser negativo.',
+            'precio_venta.required' => 'El precio de venta es obligatorio.',
+            'precio_venta.min'    => 'El precio de venta no puede ser negativo.',
+        ];
+    }
+
     public function rules(): array
     {
         return [

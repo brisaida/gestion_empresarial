@@ -9,6 +9,15 @@ class UpdateProductoRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 
+    public function messages(): array
+    {
+        return [
+            'codigo.unique'       => 'Este código interno ya está registrado para otro producto.',
+            'codigo_barra.unique' => 'Este código de barras ya está registrado para otro producto.',
+            'nombre.required'     => 'El nombre del producto es obligatorio.',
+        ];
+    }
+
     public function rules(): array
     {
         return [
