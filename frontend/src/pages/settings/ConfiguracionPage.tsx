@@ -32,8 +32,8 @@ export default function ConfiguracionPage() {
   const [form, setForm] = useState({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', isv_rate: '15', rubro: '' })
   const [configCot, setConfigCot] = useState({ mostrar_descripcion: false, mostrar_foto: false })
   const [tipoFacturacion, setTipoFacturacion] = useState<'factura_a4' | 'ticket'>('factura_a4')
-  const [colorPrimario,   setColorPrimario]   = useState('var(--cp)')
-  const [colorSecundario, setColorSecundario] = useState('var(--cs)')
+  const [colorPrimario,   setColorPrimario]   = useState('#0E78D8')
+  const [colorSecundario, setColorSecundario] = useState('#072B5A')
 
   // Inicializar form cuando llegan los datos
   const initialized = useRef(false)
@@ -54,8 +54,8 @@ export default function ConfiguracionPage() {
       mostrar_foto:        empresa.config_cotizacion?.mostrar_foto        ?? false,
     })
     setTipoFacturacion((empresa.tipo_facturacion ?? 'factura_a4') as 'factura_a4' | 'ticket')
-    setColorPrimario(empresa.color_primario   ?? 'var(--cp)')
-    setColorSecundario(empresa.color_secundario ?? 'var(--cs)')
+    setColorPrimario(empresa.color_primario   ?? '#0E78D8')
+    setColorSecundario(empresa.color_secundario ?? '#072B5A')
   }
 
   /* ── Guardar datos generales + cotizaciones ─────────────────── */
@@ -437,7 +437,7 @@ export default function ConfiguracionPage() {
           <button
             type="button"
             className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            onClick={() => { setColorPrimario('var(--cp)'); setColorSecundario('var(--cs)'); applyTheme('var(--cp)', 'var(--cs)') }}
+            onClick={() => { setColorPrimario('#0E78D8'); setColorSecundario('#072B5A'); applyTheme('#0E78D8', '#072B5A') }}
           >
             Restaurar colores por defecto
           </button>
