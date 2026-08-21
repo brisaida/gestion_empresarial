@@ -15,7 +15,7 @@ class MovimientoController extends ApiController
 
     public function index(Request $request): JsonResponse
     {
-        $query = MovimientoInventario::with(['bodega', 'usuario'])
+        $query = MovimientoInventario::with(['bodega', 'usuario', 'detalles.producto'])
             ->where('empresa_id', $request->integer('empresa_id'));
 
         if ($request->filled('bodega_id')) {

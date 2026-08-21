@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Empresa;
+use App\Models\UnidadMedida;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EmpresaAdminController extends ApiController
 {
@@ -60,6 +62,8 @@ class EmpresaAdminController extends ApiController
 
         $empresa = Empresa::create(array_merge($validated, ['activo' => true]));
 
+        $this->crearUnidadesDefault($empresa->id);
+
         return $this->created([
             'id'           => $empresa->id,
             'nombre'       => $empresa->nombre,
@@ -93,5 +97,33 @@ class EmpresaAdminController extends ApiController
             'success' => true,
             'message' => $empresa->activo ? 'Empresa activada.' : 'Empresa desactivada.',
         ]);
+    }
+
+    private function crearUnidadesDefault(int $empresaId): void
+    {
+        $unidades = [
+            ['nombre' => 'Unidad',     'abreviatura' => 'UND'],
+            ['nombre' => 'Caja',       'abreviatura' => 'CJA'],
+            ['nombre' => 'Paquete',    'abreviatura' => 'PKT'],
+            ['nombre' => 'Docena',     'abreviatura' => 'DOC'],
+            ['nombre' => 'Kilogramo',  'abreviatura' => 'KG'],
+            ['nombre' => 'Gramo',      'abreviatura' => 'GR'],
+            ['nombre' => 'Libra',      'abreviatura' => 'LB'],
+            ['nombre' => 'Litro',      'abreviatura' => 'LT'],
+            ['nombre' => 'Mililitro',  'abreviatura' => 'ML'],
+            ['nombre' => 'Metro',      'abreviatura' => 'MT'],
+            ['nombre' => 'Centímetro', 'abreviatura' => 'CM'],
+            ['nombre' => 'Par',        'abreviatura' => 'PAR'],
+        ];
+
+        $now = now();
+        DB::table('unidades_medida')->insert(
+            array_map(fn($u) => array_merge($u, [
+                'empresa_id' => $empresaId,
+                'activo'     => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]), $unidades)
+        );
     }
 }

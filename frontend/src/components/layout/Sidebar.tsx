@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
-  LayoutDashboard, Package, Tags, Truck, Warehouse,
+  LayoutDashboard, Package, Tags, Truck, Warehouse, Bookmark,
   Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -31,7 +31,7 @@ const nav = [
   { group: 'Inventario', items: [
     { to: '/existencias',            label: 'Stock',               icon: BarChart3,       end: true,  permiso: 'inventario'    },
     { to: '/existencias/stock-bajo', label: 'Alertas de stock',    icon: AlertTriangle,   end: true,  permiso: 'inventario'    },
-    { to: '/movimientos',            label: 'Movimientos',         icon: ArrowLeftRight,  end: false, permiso: 'inventario'    },
+    { to: '/movimientos',            label: 'Movimientos',          icon: ArrowLeftRight,  end: false, permiso: 'inventario'    },
     { to: '/traslados',              label: 'Nuevo traslado',      icon: MoveRight,       end: true,  permiso: 'traslados'     },
     { to: '/traslados/historial',    label: 'Historial traslados', icon: ClipboardList,   end: true,  permiso: 'traslados'     },
   ]},
@@ -42,6 +42,7 @@ const nav = [
   { group: 'Catálogos', items: [
     { to: '/productos',              label: 'Productos',           icon: Package,         end: false, permiso: 'catalogos'     },
     { to: '/categorias',             label: 'Categorías',          icon: Tags,            end: false, permiso: 'catalogos'     },
+    { to: '/marcas',                 label: 'Marcas',              icon: Bookmark,        end: false, permiso: 'catalogos'     },
     { to: '/proveedores',            label: 'Proveedores',         icon: Truck,           end: false, permiso: 'catalogos'     },
     { to: '/clientes',               label: 'Clientes',            icon: Users,           end: false, permiso: 'catalogos'     },
     { to: '/bodegas',                label: 'Bodegas',             icon: Warehouse,       end: false, permiso: 'catalogos'     },

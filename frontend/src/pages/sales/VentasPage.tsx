@@ -73,7 +73,7 @@ export default function VentasPage() {
   })
   const { data: clientes }  = useQuery({ queryKey: ['clientes-all', empresaId],  queryFn: () => clientesApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: bodegas } = useQuery({
-    queryKey: ['bodegas-all', empresaId],
+    queryKey: ['bodegas', empresaId],
     queryFn:  () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
     enabled:  empresaId > 0,
   })

@@ -85,7 +85,7 @@ export default function TrasladosPage() {
   const [success,         setSuccess]         = useState('')
 
   const { data: bodegas } = useQuery({
-    queryKey: ['bodegas-all', empresaId],
+    queryKey: ['bodegas', empresaId],
     queryFn:  () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
     enabled:  empresaId > 0,
   })

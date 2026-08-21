@@ -26,7 +26,7 @@ export default function ExistenciasPage() {
   const reset = () => { setPage(1) }
 
   const { data: bodegas } = useQuery({
-    queryKey: ['bodegas-all', empresaId],
+    queryKey: ['bodegas', empresaId],
     queryFn:  () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
     enabled:  empresaId > 0,
   })

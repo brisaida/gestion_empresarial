@@ -11,6 +11,7 @@ import DashboardPage  from '@/pages/dashboard/DashboardPage'
 import ProductosPage    from '@/pages/products/ProductosPage'
 import ProductoFormPage from '@/pages/products/ProductoFormPage'
 import CategoriasPage from '@/pages/categories/CategoriasPage'
+import MarcasPage    from '@/pages/brands/MarcasPage'
 import ProveedoresPage from '@/pages/suppliers/ProveedoresPage'
 import ClientesPage   from '@/pages/clients/ClientesPage'
 import BodegasPage    from '@/pages/warehouses/BodegasPage'
@@ -74,6 +75,7 @@ export default function App() {
               <Route path="productos/nuevo"   element={<Guard perm="catalogos"><ProductoFormPage /></Guard>} />
               <Route path="productos/:id/editar" element={<Guard perm="catalogos"><ProductoFormPage /></Guard>} />
               <Route path="categorias"  element={<Guard perm="catalogos"><CategoriasPage /></Guard>} />
+              <Route path="marcas"      element={<Guard perm="catalogos"><MarcasPage /></Guard>} />
               <Route path="proveedores" element={<Guard perm="catalogos"><ProveedoresPage /></Guard>} />
               <Route path="clientes"    element={<Guard perm="catalogos"><ClientesPage /></Guard>} />
               <Route path="bodegas"     element={<Guard perm="catalogos"><BodegasPage /></Guard>} />

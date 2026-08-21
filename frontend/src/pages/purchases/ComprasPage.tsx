@@ -332,7 +332,7 @@ export default function ComprasPage() {
 
   const { data: proveedores = [] } = useQuery({ queryKey: ['proveedores-all', empresaId], queryFn: () => proveedoresApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: bodegas = [] } = useQuery({
-    queryKey: ['bodegas-all', empresaId],
+    queryKey: ['bodegas', empresaId],
     queryFn: () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
     enabled: empresaId > 0,
   })
