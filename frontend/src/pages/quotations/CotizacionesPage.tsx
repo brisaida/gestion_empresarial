@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { cotizacionesApi, clientesApi, productosApi, empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
-import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
+import { formatCurrency, getAxiosError, todayISO, imgUrl } from '@/lib/utils'
 import type { Cotizacion, Producto } from '@/types'
 import { printCotizacion } from '@/lib/printCotizacion'
 
@@ -65,7 +65,7 @@ export default function CotizacionesPage() {
           empresaApi.get(empresaId),
           empresaApi.logoBase64(empresaId),
         ])
-        await printCotizacion(cotizacion, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined)
+        await printCotizacion(cotizacion, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined, empresaRes.data.data.config_cotizacion)
       } catch { /* PDF es opcional */ }
     },
     onError: (err) => setError(getAxiosError(err)),
@@ -228,8 +228,8 @@ export default function CotizacionesPage() {
                       <button key={p.id} type="button" onClick={() => addProduct(p)}
                         className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
                         <div className="flex items-center gap-3">
-                          {p.imagen_url
-                            ? <img src={p.imagen_url} className="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" />
+                          {imgUrl(p.imagen_url)
+                            ? <img src={imgUrl(p.imagen_url)!} className="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" />
                             : <div className="w-8 h-8 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />
                           }
                           <div>
@@ -283,8 +283,8 @@ export default function CotizacionesPage() {
                 className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 min-w-[420px] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
 
                 <div className="col-span-4 flex items-center gap-2.5">
-                  {l.producto.imagen_url
-                    ? <img src={l.producto.imagen_url} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
+                  {imgUrl(l.producto.imagen_url)
+                    ? <img src={imgUrl(l.producto.imagen_url)!} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
                     : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />
                   }
                   <div className="min-w-0">

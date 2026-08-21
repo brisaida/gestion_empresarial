@@ -10,7 +10,7 @@ import type { Venta, Receta } from '@/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
-import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
+import { formatCurrency, getAxiosError, todayISO, imgUrl } from '@/lib/utils'
 import type { Producto } from '@/types'
 import { useNavigate } from 'react-router-dom'
 
@@ -621,7 +621,7 @@ export default function VentasPage() {
                                 : 'border-gray-100 bg-white hover:border-[var(--cp)]/40 hover:bg-[#F4F7FA]'
                             }`}>
                             {p.imagen_url
-                              ? <img src={p.imagen_url} className="w-9 h-9 rounded-lg object-cover border border-gray-100 mb-2" alt="" />
+                              ? <img src={imgUrl(p.imagen_url)!} className="w-9 h-9 rounded-lg object-cover border border-gray-100 mb-2" alt="" />
                               : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-2">
                                   <Package size={16} className="text-gray-300" />
                                 </div>
@@ -679,7 +679,7 @@ export default function VentasPage() {
                                 </div>
                               : <div className="w-7 h-7 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center overflow-hidden">
                                   {l.producto?.imagen_url
-                                    ? <img src={l.producto.imagen_url} className="w-full h-full object-cover" alt="" />
+                                    ? <img src={imgUrl(l.producto.imagen_url)!} className="w-full h-full object-cover" alt="" />
                                     : <Package size={12} className="text-gray-300" />
                                   }
                                 </div>
@@ -758,7 +758,7 @@ export default function VentasPage() {
                             qty > 0 ? 'border-[var(--cp)] bg-[var(--cp)]/5 shadow-sm' : 'border-gray-100 bg-white hover:border-[var(--cp)]/40 hover:bg-[#F4F7FA]'
                           }`}>
                           {p.imagen_url
-                            ? <img src={p.imagen_url} className="w-full aspect-square rounded-lg object-cover border border-gray-100 mb-2" alt="" />
+                            ? <img src={imgUrl(p.imagen_url)!} className="w-full aspect-square rounded-lg object-cover border border-gray-100 mb-2" alt="" />
                             : <div className="w-full aspect-square rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-2">
                                 <Package size={20} className="text-gray-300" />
                               </div>
@@ -811,7 +811,7 @@ export default function VentasPage() {
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="w-7 h-7 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center overflow-hidden">
                               {l.producto?.imagen_url
-                                ? <img src={l.producto.imagen_url} className="w-full h-full object-cover" alt="" />
+                                ? <img src={imgUrl(l.producto.imagen_url)!} className="w-full h-full object-cover" alt="" />
                                 : <Package size={12} className="text-gray-300" />
                               }
                             </div>
@@ -907,7 +907,7 @@ export default function VentasPage() {
                             className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
                             <div className="flex items-center gap-3">
                               {p.imagen_url
-                                ? <img src={p.imagen_url} className="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" alt="" />
+                                ? <img src={imgUrl(p.imagen_url)!} className="w-8 h-8 rounded-lg object-cover border border-gray-100 shrink-0" alt="" />
                                 : <div className="w-8 h-8 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center text-[9px] font-bold text-gray-300">IMG</div>
                               }
                               <div>
@@ -967,7 +967,7 @@ export default function VentasPage() {
                         <ChefHat size={16} className="text-[var(--cp)]" />
                       </div>
                     : (l.producto?.imagen_url
-                        ? <img src={l.producto.imagen_url} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" alt="" />
+                        ? <img src={imgUrl(l.producto.imagen_url)!} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" alt="" />
                         : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />)
                   }
                   <div className="min-w-0">

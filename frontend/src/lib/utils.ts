@@ -1,3 +1,11 @@
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+
+/** Convierte una imagen_url relativa del backend en una URL absoluta. */
+export function imgUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  return url.startsWith('http') ? url : `${API_BASE}${url}`
+}
+
 /** Fecha local del dispositivo en formato YYYY-MM-DD (sin conversión a UTC). */
 export function todayISO(): string {
   const d = new Date()

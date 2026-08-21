@@ -112,7 +112,7 @@ class EmpresaController extends ApiController
     /* ── Helper: estructura de respuesta ────────────────────────── */
     private function resource(Empresa $e): array
     {
-        $defaultConfig = ['mostrar_descripcion' => false, 'mostrar_foto' => false];
+        $defaultConfig = ['mostrar_descripcion' => false, 'mostrar_foto' => true];
 
         return [
             'id'                 => $e->id,

@@ -32,7 +32,7 @@ export default function ExistenciasPage() {
   })
 
   const { data: categorias } = useQuery({
-    queryKey: ['categorias-all', empresaId],
+    queryKey: ['categorias', empresaId],
     queryFn:  () => categoriasApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data),
     enabled:  empresaId > 0,
   })

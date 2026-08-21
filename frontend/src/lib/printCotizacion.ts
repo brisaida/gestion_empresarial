@@ -59,19 +59,24 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
   /* ── Filas de productos ─────────────────────────────────── */
   const filas = detalles.map((d, i) => {
     const imgSrc = mostrarFoto && d.producto?.id != null ? imageMap.get(d.producto.id) : null
-    const fotoHtml = imgSrc
-      ? `<img src="${imgSrc}" style="width:40px;height:40px;object-fit:contain;border-radius:5px;border:1px solid #E5E9EE;display:block;margin-bottom:3px" alt="">`
-      : ''
     const descHtml = mostrarDesc && d.producto?.descripcion
       ? `<div style="color:#888;font-size:10.5px;margin-top:2px;line-height:1.4">${d.producto.descripcion}</div>`
       : ''
 
     const bg = i % 2 === 0 ? '#ffffff' : '#F4F7FA'
+    const fotoCelda = mostrarFoto
+      ? `<td style="padding:6px 8px;text-align:center;border-bottom:1px solid #EEF0F4;width:80px">
+          ${imgSrc
+            ? `<img src="${imgSrc}" style="width:60px;height:60px;object-fit:contain;border-radius:6px;border:1px solid #E5E9EE;display:inline-block" alt="">`
+            : `<div style="width:60px;height:60px;border-radius:6px;border:1px solid #E5E9EE;background:#F4F7FA;display:inline-block"></div>`
+          }
+        </td>`
+      : ''
     return `
     <tr style="background:${bg}">
+      ${fotoCelda}
       <td style="padding:9px 10px;text-align:center;color:#555;font-size:12px;border-bottom:1px solid #EEF0F4">${Number(d.cantidad).toFixed(2)}</td>
       <td style="padding:9px 10px;border-bottom:1px solid #EEF0F4">
-        ${fotoHtml}
         <span style="color:${NAVY};font-size:12.5px;font-weight:600">${d.producto?.nombre ?? 'Producto'}</span>
         ${d.producto?.codigo ? `<span style="color:#aaa;font-size:10px;font-family:monospace;margin-left:5px">[${d.producto.codigo}]</span>` : ''}
         ${descHtml}
@@ -241,6 +246,7 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
     <table class="tabla-productos">
       <thead>
         <tr style="background:${NAVY}">
+          ${mostrarFoto ? `<th style="padding:10px;text-align:center;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:80px">Foto</th>` : ''}
           <th style="padding:10px;text-align:center;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:65px">Cantidad</th>
           <th style="padding:10px;text-align:left;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Descripción</th>
           <th style="padding:10px;text-align:right;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:110px">Precio unit.</th>
@@ -252,6 +258,7 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
         ${filas}
         <!-- Fila vacía que estira la tabla hasta llenar la página -->
         <tr class="filler-row">
+          ${mostrarFoto ? `<td style="border-bottom:1px solid #E5E9EE"></td>` : ''}
           <td style="border-bottom:1px solid #E5E9EE"></td>
           <td style="border-bottom:1px solid #E5E9EE"></td>
           <td style="border-bottom:1px solid #E5E9EE"></td>

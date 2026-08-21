@@ -11,7 +11,7 @@ import { StatusBadge } from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import SearchBar from '@/components/ui/SearchBar'
-import { formatCurrency, formatNumber } from '@/lib/utils'
+import { formatCurrency, formatNumber, imgUrl } from '@/lib/utils'
 import type { Producto } from '@/types'
 
 export default function ProductosPage() {
@@ -103,8 +103,8 @@ export default function ProductosPage() {
     },
     {
       key: 'imagen', header: '', width: '48px',
-      cell: (r) => r.imagen_url ? (
-        <img src={r.imagen_url} alt={r.nombre} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shadow-sm" />
+      cell: (r) => imgUrl(r.imagen_url) ? (
+        <img src={imgUrl(r.imagen_url)!} alt={r.nombre} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shadow-sm" />
       ) : (
         <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center">
           <ImagePlus size={14} className="text-gray-300" />
