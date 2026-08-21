@@ -12,23 +12,23 @@ import { cn, getAxiosError, todayISO } from '@/lib/utils'
 import type { Movimiento, TipoMovimiento } from '@/types'
 
 const TIPOS: { value: TipoMovimiento; label: string }[] = [
-  { value: 'entrada',          label: 'Entrada' },
-  { value: 'salida',           label: 'Salida' },
-  { value: 'ajuste_positivo',  label: 'Ajuste positivo' },
-  { value: 'ajuste_negativo',  label: 'Ajuste negativo' },
+  { value: 'entrada', label: 'Entrada' },
+  { value: 'salida',  label: 'Salida'  },
 ]
 
-const TIPO_CONFIG: Record<TipoMovimiento, {
+const TIPO_CONFIG: Record<string, {
   label: string
   dot: string
   badge: string
   icon: typeof ArrowDownCircle
 }> = {
-  entrada:         { label: 'Entrada',     dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',  icon: ArrowDownCircle  },
-  salida:          { label: 'Salida',      dot: 'bg-red-400',     badge: 'bg-red-50 text-red-700 border-red-200',              icon: ArrowUpCircle    },
-  ajuste_positivo: { label: 'Ajuste +',    dot: 'bg-blue-400',    badge: 'bg-blue-50 text-blue-700 border-blue-200',           icon: SlidersHorizontal },
-  ajuste_negativo: { label: 'Ajuste −',    dot: 'bg-amber-400',   badge: 'bg-amber-50 text-amber-700 border-amber-200',        icon: SlidersHorizontal },
+  entrada:         { label: 'Entrada',     dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: ArrowDownCircle  },
+  salida:          { label: 'Salida',      dot: 'bg-red-400',     badge: 'bg-red-50 text-red-700 border-red-200',             icon: ArrowUpCircle    },
+  ajuste_positivo: { label: 'Ajuste +',   dot: 'bg-blue-400',    badge: 'bg-blue-50 text-blue-700 border-blue-200',          icon: SlidersHorizontal },
+  ajuste_negativo: { label: 'Ajuste −',   dot: 'bg-amber-400',   badge: 'bg-amber-50 text-amber-700 border-amber-200',       icon: SlidersHorizontal },
 }
+
+const TIPO_CONFIG_FALLBACK = { label: 'Movimiento', dot: 'bg-gray-400', badge: 'bg-gray-50 text-gray-700 border-gray-200', icon: SlidersHorizontal }
 
 interface LineaItem {
   producto_id: string
@@ -42,7 +42,7 @@ const emptyLinea = (): LineaItem => ({ producto_id: '', cantidad: '', costo_unit
 
 function MovimientoRow({ mov, isLast }: { mov: Movimiento; isLast: boolean }) {
   const [open, setOpen] = useState(false)
-  const cfg = TIPO_CONFIG[mov.tipo_movimiento]
+  const cfg = TIPO_CONFIG[mov.tipo_movimiento] ?? TIPO_CONFIG_FALLBACK
   const Icon = cfg.icon
 
   return (
@@ -171,7 +171,7 @@ export default function MovimientosPage() {
     enabled: empresaId > 0,
   })
 
-  const requiereStock = form.tipo_movimiento === 'salida' || form.tipo_movimiento === 'ajuste_negativo'
+  const requiereStock = form.tipo_movimiento === 'salida'
 
   // Cuando se requiere stock y hay bodega, cargar existencias de esa bodega
   const { data: existenciasBodega } = useQuery({
@@ -247,7 +247,7 @@ export default function MovimientosPage() {
     if (lineas.some(l => !l.producto_id || !l.cantidad)) { setError('Cada línea necesita producto y cantidad.'); return }
     await crear.mutateAsync({
       empresa_id:      empresaId,
-      tipo_movimiento: form.tipo_movimiento,
+      tipo_movimiento: form.tipo_movimiento === 'entrada' ? 'ajuste_positivo' : 'ajuste_negativo',
       bodega_id:       form.bodega_id ? Number(form.bodega_id) : null,
       fecha:           form.fecha,
       observaciones:   form.observaciones || null,
@@ -467,9 +467,9 @@ export default function MovimientosPage() {
             <Button
               type="submit"
               loading={crear.isPending}
-              icon={form.tipo_movimiento === 'entrada' || form.tipo_movimiento === 'ajuste_positivo'
+              icon={form.tipo_movimiento === 'entrada'
                 ? <ArrowDownCircle size={15} />
-                : form.tipo_movimiento ? <ArrowUpCircle size={15} /> : <SlidersHorizontal size={15} />}
+                : form.tipo_movimiento === 'salida' ? <ArrowUpCircle size={15} /> : <SlidersHorizontal size={15} />}
             >
               Registrar ajuste
             </Button>

@@ -174,7 +174,7 @@ export interface Existencia {
   bodega?: { id: number; nombre: string }
 }
 
-export type TipoMovimiento = 'entrada' | 'salida' | 'ajuste_positivo' | 'ajuste_negativo'
+export type TipoMovimiento = 'entrada' | 'salida'
 
 export interface DetalleMovimiento {
   id: number
