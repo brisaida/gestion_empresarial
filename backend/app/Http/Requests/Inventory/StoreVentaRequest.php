@@ -17,6 +17,7 @@ class StoreVentaRequest extends FormRequest
             'numero_factura' => ['nullable', 'string', 'max:60'],
             'fecha_venta'    => ['required', 'date'],
             'descuento'      => ['nullable', 'numeric', 'min:0'],
+            'costo_envio'    => ['nullable', 'numeric', 'min:0'],
             'impuesto'       => ['nullable', 'numeric', 'min:0'],
             'metodo_pago'    => ['nullable', 'string', 'in:efectivo,tarjeta,transferencia,mixto'],
             'detalles'       => ['required', 'array', 'min:1'],

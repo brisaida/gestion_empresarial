@@ -12,7 +12,7 @@ class Venta extends Model
     protected $fillable = [
         'empresa_id', 'cliente_id', 'bodega_id', 'usuario_id',
         'numero_factura', 'fecha_venta',
-        'subtotal', 'impuesto', 'descuento', 'total', 'estado', 'metodo_pago',
+        'subtotal', 'impuesto', 'descuento', 'costo_envio', 'total', 'estado', 'metodo_pago',
     ];
 
     protected function casts(): array
@@ -21,8 +21,9 @@ class Venta extends Model
             'fecha_venta' => 'date',
             'subtotal'    => 'decimal:4',
             'impuesto'    => 'decimal:4',
-            'descuento'   => 'decimal:4',
-            'total'       => 'decimal:4',
+            'descuento'    => 'decimal:4',
+            'costo_envio'  => 'decimal:4',
+            'total'        => 'decimal:4',
         ];
     }
 

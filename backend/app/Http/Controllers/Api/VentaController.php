@@ -81,9 +81,10 @@ class VentaController extends ApiController
 
         try {
             $venta = DB::transaction(function () use ($validated, $request) {
-                $subtotal  = collect($validated['detalles'])->sum(fn($d) => $d['cantidad'] * $d['precio_unitario']);
-                $descuento = $validated['descuento'] ?? 0;
-                $impuesto  = $validated['impuesto'] ?? 0;
+                $subtotal    = collect($validated['detalles'])->sum(fn($d) => $d['cantidad'] * $d['precio_unitario']);
+                $descuento   = $validated['descuento']   ?? 0;
+                $costoEnvio  = $validated['costo_envio'] ?? 0;
+                $impuesto    = $validated['impuesto']    ?? 0;
 
                 // Auto-generar número correlativo si no viene en el payload
                 $numeroFactura = $validated['numero_factura'] ?? null;
@@ -109,8 +110,9 @@ class VentaController extends ApiController
                     'fecha_venta'    => $validated['fecha_venta'],
                     'subtotal'       => $subtotal,
                     'descuento'      => $descuento,
+                    'costo_envio'    => $costoEnvio,
                     'impuesto'       => $impuesto,
-                    'total'          => $subtotal - $descuento + $impuesto,
+                    'total'          => $subtotal - $descuento + $costoEnvio + $impuesto,
                     'metodo_pago'    => $validated['metodo_pago'] ?? 'efectivo',
                     'estado'         => 'completada',
                 ]);

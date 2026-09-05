@@ -41,8 +41,10 @@ export default function VentasPage() {
   const [bodegaId, setBodegaId]     = useState('')
   const [fecha, setFecha]           = useState(todayISO())
   const [nFactura, setNFactura]     = useState('')
-  const [descuento, setDescuento]   = useState(0)
-  const [aplicarISV, setAplicarISV] = useState(true)
+  const [descuento, setDescuento]     = useState(0)
+  const [cobraEnvio, setCobraEnvio]   = useState(false)
+  const [costoEnvio, setCostoEnvio]   = useState(0)
+  const [aplicarISV, setAplicarISV]   = useState(true)
   const [lineas, setLineas]         = useState<LineaVenta[]>([])
 
   const [metodoPago, setMetodoPago] = useState<'efectivo'|'tarjeta'|'transferencia'|'mixto'>('efectivo')
@@ -177,7 +179,8 @@ export default function VentasPage() {
         return sum + lineaDescontada * rate
       }, 0)
     : 0
-  const total = subtotal - descuento + isv
+  const envio = cobraEnvio ? costoEnvio : 0
+  const total = subtotal - descuento + envio + isv
 
   const enviarCocina = useMutation({
     mutationFn: async () => {
@@ -209,7 +212,7 @@ export default function VentasPage() {
 
   const resetForm = () => {
     setClienteId(''); setBodegaId(''); setFecha(todayISO())
-    setDescuento(0); setAplicarISV(true); setLineas([])
+    setDescuento(0); setCobraEnvio(false); setCostoEnvio(0); setAplicarISV(true); setLineas([])
     setMetodoPago('efectivo'); setSearch('')
   }
 
@@ -248,6 +251,7 @@ export default function VentasPage() {
     fecha_venta:    fecha,
     numero_factura: nFactura || null,
     descuento,
+    costo_envio:    cobraEnvio ? costoEnvio : 0,
     impuesto:       Math.round(isv * 10000) / 10000,
     metodo_pago:    metodoPago,
     detalles: lineas.map(l => ({
@@ -288,6 +292,28 @@ export default function VentasPage() {
         </div>
       </div>
 
+      {/* Envío */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-1">
+          <button type="button" onClick={() => setCobraEnvio(v => !v)}
+            style={{ height: '22px', width: '40px', flexShrink: 0 }}
+            className={`rounded-full transition-all flex items-center px-0.5 ${cobraEnvio ? 'bg-[var(--cp)]' : 'bg-gray-200'}`}>
+            <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${cobraEnvio ? 'translate-x-[18px]' : 'translate-x-0'}`} />
+          </button>
+          <span className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide">Envío</span>
+        </div>
+        {cobraEnvio && (
+          <div className="relative w-24">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#5F6B7A] font-bold pointer-events-none">L</span>
+            <input type="number" min="0" step="0.01"
+              value={costoEnvio || ''} onChange={e => setCostoEnvio(Number(e.target.value) || 0)}
+              placeholder="0.00" autoFocus
+              className="w-full pl-5 pr-2 py-1.5 rounded-lg border border-gray-200 text-xs text-right text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
+            />
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-[#5F6B7A]">ISV ({empresaConfig?.isv_rate ?? 15}%)</span>
         <button type="button" onClick={() => setAplicarISV(v => !v)}
@@ -304,6 +330,11 @@ export default function VentasPage() {
         {descuento > 0 && (
           <div className="flex justify-between text-sm text-[#5F6B7A]">
             <span>Descuento</span><span className="font-medium text-red-500">− {formatCurrency(descuento)}</span>
+          </div>
+        )}
+        {cobraEnvio && envio > 0 && (
+          <div className="flex justify-between text-sm text-[#5F6B7A]">
+            <span>Envío</span><span className="font-medium">+ {formatCurrency(envio)}</span>
           </div>
         )}
         {aplicarISV && (
