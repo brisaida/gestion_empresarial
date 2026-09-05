@@ -307,7 +307,7 @@ export default function VentasPage() {
             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#5F6B7A] font-bold pointer-events-none">L</span>
             <input type="number" min="0" step="0.01"
               value={costoEnvio || ''} onChange={e => setCostoEnvio(Number(e.target.value) || 0)}
-              placeholder="0.00" autoFocus
+              placeholder="0.00"
               className="w-full pl-5 pr-2 py-1.5 rounded-lg border border-gray-200 text-xs text-right text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
             />
           </div>
