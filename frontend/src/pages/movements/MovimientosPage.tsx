@@ -244,6 +244,7 @@ export default function MovimientosPage() {
     e.preventDefault()
     setError('')
     if (!form.tipo_movimiento || !form.fecha) { setError('Completa los campos requeridos.'); return }
+    if (requiereStock && !form.bodega_id) { setError('Debes seleccionar una bodega para registrar una salida.'); return }
     if (lineas.some(l => !l.producto_id || !l.cantidad)) { setError('Cada línea necesita producto y cantidad.'); return }
     await crear.mutateAsync({
       empresa_id:      empresaId,
@@ -371,7 +372,7 @@ export default function MovimientosPage() {
           {/* Bodega + Fecha */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <ComboBox
-              label="Bodega"
+              label={requiereStock ? 'Bodega *' : 'Bodega'}
               placeholder="— Sin asignar —"
               value={form.bodega_id}
               onChange={v => setForm(f => ({ ...f, bodega_id: v }))}
@@ -414,6 +415,8 @@ export default function MovimientosPage() {
                             return {
                               value: p.id,
                               label: stock !== null ? `${p.nombre} (${stock})` : p.nombre,
+                              sublabel: p.codigo ?? undefined,
+                              searchText: p.codigo ?? undefined,
                             }
                           })}
                           placeholder="— Seleccionar producto —"

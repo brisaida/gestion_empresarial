@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils'
 export interface ComboOption {
   value: string | number
   label: string
+  sublabel?: string   // texto secundario mostrado en el dropdown
+  searchText?: string // texto extra incluido en la búsqueda (no mostrado)
 }
 
 interface Props {
@@ -38,7 +40,12 @@ export default function ComboBox({
 
   const selected = options.find(o => String(o.value) === String(value ?? ''))
   const filtered = search
-    ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+    ? options.filter(o => {
+        const q = search.toLowerCase()
+        return o.label.toLowerCase().includes(q) ||
+          (o.sublabel ?? '').toLowerCase().includes(q) ||
+          (o.searchText ?? '').toLowerCase().includes(q)
+      })
     : options
 
   // close on outside click
@@ -169,6 +176,14 @@ export default function ComboBox({
                     )}
                   >
                     {o.label}
+                    {o.sublabel && (
+                      <span className={cn(
+                        'ml-2 text-xs font-mono',
+                        String(o.value) === String(value ?? '') ? 'text-white/70' : 'text-gray-400',
+                      )}>
+                        {o.sublabel}
+                      </span>
+                    )}
                   </button>
                 ))
               )}
