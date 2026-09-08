@@ -111,36 +111,50 @@ function MovimientoRow({ mov, isLast }: { mov: Movimiento; isLast: boolean }) {
 
         {/* Detalle expandido */}
         {open && mov.detalles && mov.detalles.length > 0 && (
-          <div className="mt-1 bg-[#F8FAFC] rounded-xl border border-gray-100 px-4 py-3">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide border-b border-gray-200 pb-1">
-                  <th className="text-left pb-2">Producto</th>
-                  <th className="text-right pb-2 w-20">Cantidad</th>
-                  <th className="text-right pb-2 w-28">Costo unit.</th>
-                  <th className="text-left pb-2 w-24 pl-4">Lote</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {mov.detalles.map((d, i) => (
-                  <tr key={i}>
-                    <td className="py-1.5">
-                      <p className="font-medium text-[var(--cs)]">
-                        {d.producto?.nombre ?? `Producto #${d.producto_id}`}
-                      </p>
-                      {d.producto?.codigo && (
-                        <p className="text-[10px] font-mono text-[#5F6B7A]">{d.producto.codigo}</p>
-                      )}
-                    </td>
-                    <td className="py-1.5 text-right font-mono text-gray-700">{d.cantidad}</td>
-                    <td className="py-1.5 text-right font-mono text-gray-500">
-                      {d.costo_unitario ? `L ${Number(d.costo_unitario).toFixed(2)}` : '—'}
-                    </td>
-                    <td className="py-1.5 pl-4 text-gray-400 text-xs">{d.lote ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-1 rounded-xl border border-gray-100 overflow-hidden">
+            {/* Encabezado */}
+            <div className="grid grid-cols-[1fr_80px_110px_90px] gap-2 px-4 py-2 bg-[#F1F5F9] border-b border-gray-100">
+              <span className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider">Producto</span>
+              <span className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider text-right">Cantidad</span>
+              <span className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider text-right">Costo unit.</span>
+              <span className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider">Lote</span>
+            </div>
+            {mov.detalles.map((d, i) => (
+              <div
+                key={i}
+                className={`grid grid-cols-[1fr_80px_110px_90px] gap-2 items-center px-4 py-2.5 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}
+              >
+                {/* Producto */}
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[var(--cs)] truncate capitalize-first">
+                    {d.producto?.nombre
+                      ? d.producto.nombre.charAt(0).toUpperCase() + d.producto.nombre.slice(1).toLowerCase()
+                      : `Producto #${d.producto_id}`}
+                  </p>
+                  {d.producto?.codigo && (
+                    <span className="inline-block text-[10px] font-mono text-[var(--cp)] bg-[var(--cp)]/8 rounded px-1.5 py-0.5 mt-0.5">
+                      {d.producto.codigo}
+                    </span>
+                  )}
+                </div>
+                {/* Cantidad */}
+                <div className="text-right">
+                  <span className="inline-flex items-center justify-center min-w-[36px] px-2 py-0.5 rounded-full bg-[var(--cp)]/10 text-[var(--cp)] text-xs font-bold font-mono">
+                    {d.cantidad}
+                  </span>
+                </div>
+                {/* Costo */}
+                <p className="text-right text-sm font-mono text-gray-600">
+                  {d.costo_unitario ? `L ${Number(d.costo_unitario).toFixed(2)}` : <span className="text-gray-300">—</span>}
+                </p>
+                {/* Lote */}
+                <p className="text-xs font-mono">
+                  {d.lote
+                    ? <span className="text-[#5F6B7A] bg-gray-100 rounded px-1.5 py-0.5">{d.lote}</span>
+                    : <span className="text-gray-300">—</span>}
+                </p>
+              </div>
+            ))}
           </div>
         )}
       </div>
