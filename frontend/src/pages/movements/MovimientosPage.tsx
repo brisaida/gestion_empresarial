@@ -53,15 +53,16 @@ function MovimientoRow({ mov, isLast }: { mov: Movimiento; isLast: boolean }) {
         {!isLast && <div className="w-px flex-1 bg-gray-200 mt-1" />}
       </div>
 
-      {/* Card */}
-      <div className="flex-1 mb-4">
+      {/* Card — todo en un solo objeto */}
+      <div className="flex-1 mb-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all overflow-hidden">
+
+        {/* Cabecera clickable */}
         <button
           type="button"
           onClick={() => setOpen(o => !o)}
-          className="w-full text-left bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all group"
+          className="w-full text-left group"
         >
           <div className="flex items-start gap-4 px-4 py-4">
-
             {/* Ícono tipo */}
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${cfg.badge} border mt-0.5`}>
               <Icon size={15} />
@@ -109,30 +110,34 @@ function MovimientoRow({ mov, isLast }: { mov: Movimiento; isLast: boolean }) {
           </div>
         </button>
 
-        {/* Detalle expandido */}
+        {/* Detalle — dentro del mismo card */}
         {open && mov.detalles && mov.detalles.length > 0 && (
-          <div className="mt-1 rounded-xl border border-gray-100 overflow-hidden">
-            {/* Encabezado */}
-            <div className="grid grid-cols-[1fr_80px_110px_90px] gap-2 px-4 py-2 bg-[#F1F5F9] border-b border-gray-100">
+          <>
+            {/* Divisor punteado */}
+            <div className="mx-4" style={{ height: 1, background: 'repeating-linear-gradient(to right, #CBD5E1 0, #CBD5E1 5px, transparent 5px, transparent 10px)' }} />
+
+            {/* Encabezado columnas */}
+            <div className="grid grid-cols-[1fr_80px_110px_90px] gap-2 px-4 py-2 bg-[#F8FAFD] border-b border-gray-100">
               <span className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider">Producto</span>
               <span className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider text-right">Cantidad</span>
               <span className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider text-right">Costo unit.</span>
               <span className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider">Lote</span>
             </div>
+
             {mov.detalles.map((d, i) => (
               <div
                 key={i}
-                className={`grid grid-cols-[1fr_80px_110px_90px] gap-2 items-center px-4 py-2.5 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}
+                className={`grid grid-cols-[1fr_80px_110px_90px] gap-2 items-center px-4 py-2.5 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFD]'} ${i < mov.detalles!.length - 1 ? 'border-b border-gray-50' : ''}`}
               >
                 {/* Producto */}
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[var(--cs)] truncate capitalize-first">
+                  <p className="text-sm font-semibold text-[var(--cs)] truncate">
                     {d.producto?.nombre
                       ? d.producto.nombre.charAt(0).toUpperCase() + d.producto.nombre.slice(1).toLowerCase()
                       : `Producto #${d.producto_id}`}
                   </p>
                   {d.producto?.codigo && (
-                    <span className="inline-block text-[10px] font-mono text-[var(--cp)] bg-[var(--cp)]/8 rounded px-1.5 py-0.5 mt-0.5">
+                    <span className="inline-block text-[10px] font-mono text-[var(--cp)] bg-[var(--cp)]/10 rounded px-1.5 py-0.5 mt-0.5">
                       {d.producto.codigo}
                     </span>
                   )}
@@ -155,7 +160,7 @@ function MovimientoRow({ mov, isLast }: { mov: Movimiento; isLast: boolean }) {
                 </p>
               </div>
             ))}
-          </div>
+          </>
         )}
       </div>
     </div>
