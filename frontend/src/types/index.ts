@@ -38,6 +38,7 @@ export interface EmpresaConfig {
   tipo_facturacion?: 'ticket' | 'factura_a4'
   color_primario?: string
   color_secundario?: string
+  timeout_inactividad?: number
 }
 
 export interface AuthState {

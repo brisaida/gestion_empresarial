@@ -35,8 +35,9 @@ class EmpresaController extends ApiController
             'config_cotizacion.mostrar_descripcion'      => ['boolean'],
             'config_cotizacion.mostrar_foto'             => ['boolean'],
             'tipo_facturacion'                           => ['nullable', 'string', 'in:ticket,factura_a4'],
-            'color_primario'   => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'color_secundario' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'color_primario'        => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'color_secundario'      => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'timeout_inactividad'   => ['nullable', 'integer', 'min:5', 'max:480'],
         ]);
 
         $empresa->update($validated);
@@ -127,8 +128,9 @@ class EmpresaController extends ApiController
             'logo_url'           => $e->logo ? '/' . ltrim($e->logo, '/') : null,
             'config_cotizacion'  => array_merge($defaultConfig, $e->config_cotizacion ?? []),
             'tipo_facturacion'   => $e->tipo_facturacion ?? 'factura_a4',
-            'color_primario'     => $e->color_primario   ?? '#0E78D8',
-            'color_secundario'   => $e->color_secundario ?? '#072B5A',
+            'color_primario'       => $e->color_primario      ?? '#0E78D8',
+            'color_secundario'     => $e->color_secundario    ?? '#072B5A',
+            'timeout_inactividad'  => (int) ($e->timeout_inactividad ?? 30),
         ];
     }
 }

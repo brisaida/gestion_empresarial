@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Building2, Upload, Trash2, Save, ImageOff, FileText, Printer, Palette } from 'lucide-react'
+import { Building2, Upload, Trash2, Save, ImageOff, FileText, Printer, Palette, Shield } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
@@ -32,8 +32,9 @@ export default function ConfiguracionPage() {
   const [form, setForm] = useState({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', isv_rate: '15', rubro: '' })
   const [configCot, setConfigCot] = useState({ mostrar_descripcion: false, mostrar_foto: false })
   const [tipoFacturacion, setTipoFacturacion] = useState<'factura_a4' | 'ticket'>('factura_a4')
-  const [colorPrimario,   setColorPrimario]   = useState('#0E78D8')
-  const [colorSecundario, setColorSecundario] = useState('#072B5A')
+  const [colorPrimario,      setColorPrimario]      = useState('#0E78D8')
+  const [colorSecundario,    setColorSecundario]    = useState('#072B5A')
+  const [timeoutInactividad, setTimeoutInactividad] = useState(30)
 
   // Inicializar form cuando llegan los datos
   const initialized = useRef(false)
@@ -56,6 +57,7 @@ export default function ConfiguracionPage() {
     setTipoFacturacion((empresa.tipo_facturacion ?? 'factura_a4') as 'factura_a4' | 'ticket')
     setColorPrimario(empresa.color_primario   ?? '#0E78D8')
     setColorSecundario(empresa.color_secundario ?? '#072B5A')
+    setTimeoutInactividad(empresa.timeout_inactividad ?? 30)
   }
 
   /* ── Guardar datos generales + cotizaciones ─────────────────── */
@@ -115,6 +117,26 @@ export default function ConfiguracionPage() {
       qc.invalidateQueries({ queryKey: ['empresa', empresaId] })
     },
     onError: (err) => { setColoresError(getAxiosError(err)); setColoresOk(false) },
+  })
+
+  /* ── Guardar seguridad ──────────────────────────────────────── */
+  const [seguridadOk,    setSeguridadOk]    = useState(false)
+  const [seguridadError, setSeguridadError] = useState('')
+  const guardarSeguridad = useMutation({
+    mutationFn: () => empresaApi.update(empresaId, {
+      ...form,
+      isv_rate: parseFloat(form.isv_rate) || 0,
+      rubro: (form.rubro as Rubro) || null,
+      config_cotizacion: configCot,
+      tipo_facturacion: tipoFacturacion,
+      timeout_inactividad: timeoutInactividad,
+    }),
+    onSuccess: () => {
+      setSeguridadOk(true); setSeguridadError('')
+      setTimeout(() => setSeguridadOk(false), 3000)
+      qc.invalidateQueries({ queryKey: ['empresa', empresaId] })
+    },
+    onError: (err) => { setSeguridadError(getAxiosError(err)); setSeguridadOk(false) },
   })
 
   /* ── Subir logo ─────────────────────────────────────────────── */
@@ -448,6 +470,51 @@ export default function ConfiguracionPage() {
           >
             Guardar colores
           </Button>
+        </div>
+      </div>
+
+      {/* ── Seguridad / Sesión ── */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <h2 className="text-base font-bold text-[var(--cs)] flex items-center gap-2 mb-5">
+          <Shield size={16} style={{ color: 'var(--cp)' }} /> Seguridad
+        </h2>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-[var(--cs)] mb-1">
+              Cierre de sesión por inactividad
+            </label>
+            <p className="text-xs text-[#5F6B7A] mb-3">
+              Si el usuario no tiene actividad durante este tiempo, se cierra la sesión automáticamente.
+              Se muestra un aviso 1 minuto antes.
+            </p>
+            <div className="flex items-center gap-3">
+              <select
+                value={timeoutInactividad}
+                onChange={e => setTimeoutInactividad(Number(e.target.value))}
+                className="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
+              >
+                <option value={5}>5 minutos</option>
+                <option value={10}>10 minutos</option>
+                <option value={15}>15 minutos</option>
+                <option value={20}>20 minutos</option>
+                <option value={30}>30 minutos (recomendado)</option>
+                <option value={60}>1 hora</option>
+                <option value={120}>2 horas</option>
+                <option value={240}>4 horas</option>
+                <option value={480}>8 horas</option>
+              </select>
+            </div>
+          </div>
+
+          {seguridadError && <p className="text-sm text-red-600">{seguridadError}</p>}
+          {seguridadOk    && <p className="text-sm text-emerald-600">Configuración guardada correctamente.</p>}
+
+          <div className="flex justify-end pt-2">
+            <Button icon={<Save size={15} />} loading={guardarSeguridad.isPending} onClick={() => guardarSeguridad.mutate()}>
+              Guardar seguridad
+            </Button>
+          </div>
         </div>
       </div>
     </div>

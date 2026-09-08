@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 import { useAuth } from '@/stores/authStore'
 import { useIdleLogout } from '@/hooks/useIdleLogout'
+import { empresaApi } from '@/api/recursos'
 import { Clock } from 'lucide-react'
 
 function useIsMobile() {
@@ -31,6 +33,16 @@ function useCountdown(active: boolean) {
 
 export default function AppLayout() {
   const { state, logout } = useAuth()
+  const empresaId = state.empresaActiva?.id ?? 0
+
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn: () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled: empresaId > 0,
+    staleTime: 5 * 60 * 1000,
+  })
+  const timeoutMinutes = empresaConfig?.timeout_inactividad ?? 30
+
   const [collapsed, setCollapsed]     = useState(false)
   const [mobileOpen, setMobileOpen]   = useState(false)
   const [showWarn, setShowWarn]       = useState(false)
@@ -54,7 +66,7 @@ export default function AppLayout() {
   // Cualquier actividad del usuario descarta el aviso
   const handleContinue = () => setShowWarn(false)
 
-  useIdleLogout({ onLogout: handleLogout, onWarn: handleWarn, minutes: 30, warnMinutesBefore: 1 })
+  useIdleLogout({ onLogout: handleLogout, onWarn: handleWarn, minutes: timeoutMinutes, warnMinutesBefore: 1 })
 
   if (!state.token) return <Navigate to="/login" replace />
 

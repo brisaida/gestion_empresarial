@@ -15,6 +15,7 @@ class Empresa extends Model
         'config_cotizacion',
         'tipo_facturacion',
         'color_primario', 'color_secundario',
+        'timeout_inactividad',
     ];
 
     protected function casts(): array
