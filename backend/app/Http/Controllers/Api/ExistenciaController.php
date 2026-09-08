@@ -15,7 +15,9 @@ class ExistenciaController extends ApiController
         $query = Existencia::with(['producto', 'bodega'])
             ->where('empresa_id', $request->integer('empresa_id'));
 
-        if ($request->filled('bodega_id')) {
+        if ($request->boolean('sin_bodega', false)) {
+            $query->whereNull('bodega_id');
+        } elseif ($request->filled('bodega_id')) {
             $query->where('bodega_id', $request->integer('bodega_id'));
         }
 

@@ -156,7 +156,7 @@ export interface Producto {
 // ── Inventario ────────────────────────────────────────────────────────────
 export interface Existencia {
   id: number
-  bodega_id: number
+  bodega_id: number | null
   producto_id: number
   lote?: string
   fecha_vencimiento?: string

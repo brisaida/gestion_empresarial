@@ -420,6 +420,20 @@ export default function MovimientosPage() {
                 const inputCls = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all'
                 return (
                   <div key={i} className="bg-[#F4F7FA] rounded-xl p-3 space-y-3">
+                    {/* Stock hint: info sobre otras bodegas */}
+                    {(() => {
+                      if (!requiereStock || !l.producto_id || !stockPorProducto || !prod) return null
+                      const bodegaStock = stockPorProducto[prod.id] ?? 0
+                      const totalStock = prod.stock_total ?? 0
+                      const enOtras = Math.round((totalStock - bodegaStock) * 10000) / 10000
+                      if (enOtras <= 0) return null
+                      return (
+                        <div className="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                          <span>⚠</span>
+                          <span>Solo <strong>{bodegaStock}</strong> disponible en esta bodega. Hay <strong>{enOtras}</strong> más en otra(s) bodega(s) — creá un movimiento separado para esas.</span>
+                        </div>
+                      )
+                    })()}
                     <div className="flex items-end gap-2">
                       {/* Producto */}
                       <div className="flex-1 min-w-0">
@@ -448,7 +462,29 @@ export default function MovimientosPage() {
                       {/* Cantidad */}
                       <div className="w-28 shrink-0">
                         {i === 0 && <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1">Cantidad *</p>}
-                        <input type="number" step="any" min="0.0001" value={l.cantidad} onChange={e => setLinea(i, 'cantidad', e.target.value)} placeholder="0" required className={inputCls} />
+                        {(() => {
+                          const bodegaStock = (requiereStock && l.producto_id && stockPorProducto)
+                            ? (stockPorProducto[Number(l.producto_id)] ?? 0)
+                            : null
+                          const cantNum = parseFloat(l.cantidad) || 0
+                          const excede = bodegaStock !== null && cantNum > bodegaStock
+                          return (
+                            <>
+                              <input
+                                type="number" step="any" min="0.0001"
+                                value={l.cantidad}
+                                onChange={e => setLinea(i, 'cantidad', e.target.value)}
+                                placeholder="0" required
+                                className={`${inputCls} ${excede ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : ''}`}
+                              />
+                              {bodegaStock !== null && (
+                                <p className={`text-[10px] mt-0.5 text-center ${excede ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                                  Disp.: {bodegaStock}
+                                </p>
+                              )}
+                            </>
+                          )
+                        })()}
                       </div>
                       {/* Costo */}
                       <div className="w-32 shrink-0">

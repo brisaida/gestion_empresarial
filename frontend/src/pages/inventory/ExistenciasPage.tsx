@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
-import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle, Download, Loader2 } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { AlertTriangle, ArrowRightLeft, CheckCircle, Download, Loader2 } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
-import { existenciasApi, bodegasApi, categoriasApi, productosApi } from '@/api/recursos'
+import { existenciasApi, bodegasApi, categoriasApi, productosApi, movimientosApi } from '@/api/recursos'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
 import SearchBar from '@/components/ui/SearchBar'
 import ComboBox from '@/components/ui/ComboBox'
+import Modal from '@/components/ui/Modal'
+import Button from '@/components/ui/Button'
 import { formatNumber } from '@/lib/utils'
 import type { Existencia } from '@/types'
 
 export default function ExistenciasPage() {
   const { state } = useAuth()
   const empresaId = state.empresaActiva?.id ?? 0
+  const queryClient = useQueryClient()
 
   const [page, setPage]             = useState(1)
   const [search, setSearch]         = useState('')
@@ -22,6 +25,13 @@ export default function ExistenciasPage() {
   const [productoId, setProductoId] = useState('')
   const [soloStockBajo, setSoloStockBajo] = useState(false)
   const [exporting, setExporting]   = useState(false)
+
+  // Traslado de bodega
+  const [trasladoItem, setTrasladoItem]       = useState<Existencia | null>(null)
+  const [trasladoBodegaId, setTrasladoBodegaId] = useState('')
+  const [trasladoCantidad, setTrasladoCantidad] = useState('')
+  const [trasladoLoading, setTrasladoLoading]   = useState(false)
+  const [trasladoError, setTrasladoError]       = useState<string | null>(null)
 
   const reset = () => { setPage(1) }
 
@@ -83,6 +93,71 @@ export default function ExistenciasPage() {
     }
   }
 
+  const openTraslado = (item: Existencia) => {
+    setTrasladoItem(item)
+    setTrasladoBodegaId('')
+    setTrasladoCantidad(String(item.cantidad_disponible))
+    setTrasladoError(null)
+  }
+
+  const closeTraslado = () => {
+    setTrasladoItem(null)
+    setTrasladoBodegaId('')
+    setTrasladoCantidad('')
+    setTrasladoError(null)
+  }
+
+  const handleConfirmarTraslado = async () => {
+    if (!trasladoItem || !trasladoBodegaId) return
+    const cantNum = parseFloat(trasladoCantidad)
+    if (!cantNum || cantNum <= 0) { setTrasladoError('Ingresá una cantidad válida.'); return }
+    if (cantNum > trasladoItem.cantidad_disponible) {
+      setTrasladoError(`Máximo disponible: ${trasladoItem.cantidad_disponible}`)
+      return
+    }
+    setTrasladoLoading(true)
+    setTrasladoError(null)
+    const hoy = new Date().toISOString().slice(0, 10)
+    try {
+      // 1. Salida de bodega sin asignar (bodega_id = null)
+      await movimientosApi.create({
+        empresa_id:      empresaId,
+        bodega_id:       null,
+        tipo_movimiento: 'ajuste_negativo',
+        fecha:           hoy,
+        observaciones:   `Traslado a bodega ${bodegas?.find(b => String(b.id) === trasladoBodegaId)?.nombre ?? trasladoBodegaId}`,
+        detalles: [{
+          producto_id:    trasladoItem.producto_id,
+          cantidad:       cantNum,
+          costo_unitario: null,
+        }],
+      })
+      // 2. Entrada a la bodega destino
+      await movimientosApi.create({
+        empresa_id:      empresaId,
+        bodega_id:       Number(trasladoBodegaId),
+        tipo_movimiento: 'ajuste_positivo',
+        fecha:           hoy,
+        observaciones:   'Traslado desde sin asignar',
+        detalles: [{
+          producto_id:    trasladoItem.producto_id,
+          cantidad:       cantNum,
+          costo_unitario: null,
+        }],
+      })
+      // Invalidar existencias y productos para refrescar stock
+      queryClient.invalidateQueries({ queryKey: ['existencias'] })
+      queryClient.invalidateQueries({ queryKey: ['productos'] })
+      queryClient.invalidateQueries({ queryKey: ['movimientos'] })
+      closeTraslado()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setTrasladoError(msg ?? 'Error al trasladar. Intentá de nuevo.')
+    } finally {
+      setTrasladoLoading(false)
+    }
+  }
+
   const columns: Column<Existencia>[] = [
     {
       key: 'producto', header: 'Producto',
@@ -93,7 +168,12 @@ export default function ExistenciasPage() {
         </div>
       ),
     },
-    { key: 'bodega',  header: 'Bodega',     cell: r => <span className="text-[#5F6B7A]">{r.bodega?.nombre ?? '—'}</span> },
+    {
+      key: 'bodega', header: 'Bodega',
+      cell: r => r.bodega_id === null
+        ? <span className="text-[#5F6B7A] italic text-xs">Sin asignar</span>
+        : <span className="text-[#5F6B7A]">{r.bodega?.nombre ?? '—'}</span>,
+    },
     {
       key: 'cantidad', header: 'Disponible', align: 'right',
       cell: r => (
@@ -112,6 +192,20 @@ export default function ExistenciasPage() {
       cell: r => r.producto?.stock_bajo
         ? <Badge variant="yellow">Stock bajo</Badge>
         : <Badge variant="green">Normal</Badge>,
+    },
+    {
+      key: 'acciones' as keyof Existencia, header: '', align: 'center', width: '60px',
+      cell: r => r.bodega_id === null && (r.cantidad_disponible ?? 0) > 0
+        ? (
+          <button
+            title="Trasladar a bodega"
+            onClick={() => openTraslado(r)}
+            className="p-1.5 rounded-lg text-[var(--cp)] hover:bg-[var(--cp)]/10 transition-colors"
+          >
+            <ArrowRightLeft size={15} />
+          </button>
+        )
+        : null,
     },
   ]
 
@@ -210,6 +304,72 @@ export default function ExistenciasPage() {
           />
         )}
       </div>
+
+      {/* Modal traslado */}
+      <Modal
+        open={!!trasladoItem}
+        onClose={closeTraslado}
+        title="Asignar a bodega"
+        size="sm"
+      >
+        {trasladoItem && (
+          <div className="space-y-4">
+            <div className="bg-[#F4F7FA] rounded-lg px-4 py-3">
+              <p className="text-sm font-semibold text-[var(--cs)]">{trasladoItem.producto?.nombre}</p>
+              {trasladoItem.producto?.codigo && (
+                <p className="text-xs text-[#5F6B7A] font-mono">{trasladoItem.producto.codigo}</p>
+              )}
+              <p className="text-xs text-[#5F6B7A] mt-1">
+                Disponible sin asignar: <strong className="text-[var(--cs)]">{formatNumber(trasladoItem.cantidad_disponible)}</strong>
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5">Bodega destino *</p>
+              <ComboBox
+                value={trasladoBodegaId}
+                onChange={setTrasladoBodegaId}
+                options={bodegas?.map(b => ({ value: b.id, label: b.nombre })) ?? []}
+                placeholder="— Seleccioná una bodega —"
+              />
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5">Cantidad *</p>
+              <input
+                type="number"
+                step="any"
+                min="0.0001"
+                max={trasladoItem.cantidad_disponible}
+                value={trasladoCantidad}
+                onChange={e => setTrasladoCantidad(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
+              />
+              <p className="text-[10px] text-gray-400 mt-0.5">Máx. {formatNumber(trasladoItem.cantidad_disponible)}</p>
+            </div>
+
+            {trasladoError && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {trasladoError}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1 border-t border-gray-100">
+              <Button variant="secondary" onClick={closeTraslado} disabled={trasladoLoading}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConfirmarTraslado}
+                disabled={trasladoLoading || !trasladoBodegaId}
+                className="flex items-center gap-2"
+              >
+                {trasladoLoading && <Loader2 size={14} className="animate-spin" />}
+                Confirmar traslado
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
