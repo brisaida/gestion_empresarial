@@ -26,6 +26,10 @@ class MovimientoController extends ApiController
             $query->where('tipo_movimiento', $request->tipo_movimiento);
         }
 
+        if ($request->filled('producto_id')) {
+            $query->whereHas('detalles', fn($q) => $q->where('producto_id', $request->integer('producto_id')));
+        }
+
         if ($request->filled('fecha_desde')) {
             $query->whereDate('fecha', '>=', $request->fecha_desde);
         }

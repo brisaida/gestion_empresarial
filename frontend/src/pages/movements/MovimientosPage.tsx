@@ -150,6 +150,7 @@ export default function MovimientosPage() {
 
   const [page, setPage] = useState(1)
   const [filtroTipo, setFiltroTipo] = useState<TipoMovimiento | ''>('')
+  const [filtroProducto, setFiltroProducto] = useState('')
   const [modal, setModal] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ tipo_movimiento: '' as TipoMovimiento | '', bodega_id: '', fecha: todayISO(), observaciones: '' })
@@ -210,8 +211,14 @@ export default function MovimientosPage() {
   }
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['movimientos', empresaId, page, filtroTipo],
-    queryFn: () => movimientosApi.list({ empresa_id: empresaId, page, per_page: 15, ...(filtroTipo ? { tipo_movimiento: filtroTipo } : {}) }).then(r => r.data),
+    queryKey: ['movimientos', empresaId, page, filtroTipo, filtroProducto],
+    queryFn: () => movimientosApi.list({
+      empresa_id: empresaId,
+      page,
+      per_page: 15,
+      ...(filtroTipo    ? { tipo_movimiento: filtroTipo } : {}),
+      ...(filtroProducto ? { producto_id: filtroProducto } : {}),
+    }).then(r => r.data),
     enabled: empresaId > 0,
     placeholderData: p => p,
   })
@@ -275,8 +282,9 @@ export default function MovimientosPage() {
         <Button icon={<Plus size={16} />} onClick={openModal}>Ajuste de inventario</Button>
       </div>
 
-      {/* Filtros por tipo */}
-      <div className="flex flex-wrap gap-2">
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Filtros por tipo */}
         <button
           onClick={() => { setFiltroTipo(''); setPage(1) }}
           className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all ${
@@ -301,6 +309,21 @@ export default function MovimientosPage() {
             {cfg.label}
           </button>
         ))}
+
+        {/* Filtro por producto */}
+        <div className="w-64 ml-auto">
+          <ComboBox
+            placeholder="Filtrar por producto…"
+            value={filtroProducto}
+            onChange={v => { setFiltroProducto(v); setPage(1) }}
+            options={(productos ?? []).map(p => ({
+              value: p.id,
+              label: p.nombre,
+              sublabel: p.codigo ?? undefined,
+              searchText: p.codigo ?? undefined,
+            }))}
+          />
+        </div>
       </div>
 
       {/* Timeline */}
