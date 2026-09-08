@@ -232,7 +232,12 @@ export default function TrasladosPage() {
                             placeholder="Seleccionar producto…"
                             value={l.producto_id}
                             onChange={v => updateLinea(l._id, 'producto_id', v)}
-                            options={productos?.map(p => ({ value: p.id, label: p.codigo ? `[${p.codigo}] ${p.nombre}` : p.nombre })) ?? []}
+                            options={productos?.map(p => ({
+                              value: p.id,
+                              label: p.nombre,
+                              sublabel: p.codigo ?? undefined,
+                              searchText: p.codigo ?? undefined,
+                            })) ?? []}
                           />
                           {l.producto_id && (
                             <StockBodegaInfo

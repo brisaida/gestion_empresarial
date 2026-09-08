@@ -537,7 +537,12 @@ export default function ComprasPage() {
                         value={l.producto_id}
                         onChange={v => setLinea(i, 'producto_id', v)}
                         placeholder={l.hint ? `— ${l.hint}` : 'Seleccionar'}
-                        options={productos.map(p => ({ value: p.id, label: p.nombre }))}
+                        options={productos.map(p => ({
+                          value: p.id,
+                          label: p.nombre,
+                          sublabel: p.codigo ?? undefined,
+                          searchText: p.codigo ?? undefined,
+                        }))}
                       />
                       <div className="flex items-center justify-between mt-0.5">
                         {l.hint && !l.producto_id && (

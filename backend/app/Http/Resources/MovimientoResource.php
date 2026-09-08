@@ -25,7 +25,11 @@ class MovimientoResource extends JsonResource
             'usuario'          => $this->whenLoaded('usuario', fn() => ['id' => $this->usuario->id, 'nombre' => $this->usuario->nombre]),
             'detalles'         => $this->whenLoaded('detalles', fn() => $this->detalles->map(fn($d) => [
                 'producto_id'    => $d->producto_id,
-                'producto'       => $d->producto?->nombre,
+                'producto'       => $d->producto ? [
+                    'id'     => $d->producto->id,
+                    'nombre' => $d->producto->nombre,
+                    'codigo' => $d->producto->codigo,
+                ] : null,
                 'cantidad'       => (float) $d->cantidad,
                 'costo_unitario' => (float) $d->costo_unitario,
                 'costo_total'    => (float) $d->costo_total,

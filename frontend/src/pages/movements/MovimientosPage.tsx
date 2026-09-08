@@ -124,8 +124,13 @@ function MovimientoRow({ mov, isLast }: { mov: Movimiento; isLast: boolean }) {
               <tbody className="divide-y divide-gray-100">
                 {mov.detalles.map((d, i) => (
                   <tr key={i}>
-                    <td className="py-1.5 font-medium text-[var(--cs)]">
-                      {d.producto?.nombre ?? `Producto #${d.producto_id}`}
+                    <td className="py-1.5">
+                      <p className="font-medium text-[var(--cs)]">
+                        {d.producto?.nombre ?? `Producto #${d.producto_id}`}
+                      </p>
+                      {d.producto?.codigo && (
+                        <p className="text-[10px] font-mono text-[#5F6B7A]">{d.producto.codigo}</p>
+                      )}
                     </td>
                     <td className="py-1.5 text-right font-mono text-gray-700">{d.cantidad}</td>
                     <td className="py-1.5 text-right font-mono text-gray-500">

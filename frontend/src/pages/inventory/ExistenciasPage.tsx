@@ -263,7 +263,12 @@ export default function ExistenciasPage() {
               onChange={v => { setProductoId(v); reset() }}
               options={[
                 { value: '', label: 'Todos los productos' },
-                ...(productos?.map(p => ({ value: p.id, label: p.nombre })) ?? []),
+                ...(productos?.map(p => ({
+                  value: p.id,
+                  label: p.nombre,
+                  sublabel: p.codigo ?? undefined,
+                  searchText: p.codigo ?? undefined,
+                })) ?? []),
               ]}
               placeholder="Todos los productos"
               triggerClassName="text-sm py-2 min-w-[180px]"
