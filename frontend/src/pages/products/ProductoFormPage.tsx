@@ -40,6 +40,14 @@ const schema = z.object({
   tipo:               z.enum(['venta', 'ingrediente']).default('venta'),
   stock_inicial:      z.coerce.number().min(0).default(0),
   bodega_id:          z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.stock_inicial > 0 && !data.bodega_id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Seleccioná una bodega para el stock inicial.',
+      path: ['bodega_id'],
+    })
+  }
 })
 
 type FormValues = z.infer<typeof schema>
@@ -344,24 +352,26 @@ export default function ProductoFormPage() {
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
                 <div>
                   <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Stock inicial</p>
-                  <p className="text-xs text-[#5F6B7A] mt-0.5">Opcional — puedes registrar las unidades disponibles al crear el producto.</p>
+                  <p className="text-xs text-[#5F6B7A] mt-0.5">Opcional — si ingresás cantidad, la bodega es obligatoria.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Input label="Cantidad inicial" type="number" step="0.01" min="0" placeholder="0" {...register('stock_inicial')} />
                   <Controller
                     name="bodega_id"
                     control={control}
-                    render={({ field }) => (
-                      <ComboBox
-                        label="Bodega"
-                        options={[
-                          { value: '', label: 'Sin asignar' },
-                          ...(bodegas?.map(b => ({ value: b.id, label: b.predeterminada ? `${b.nombre} (predeterminada)` : b.nombre })) ?? []),
-                        ]}
-                        placeholder="Sin asignar"
-                        value={field.value ?? ''}
-                        onChange={v => field.onChange(v)}
-                      />
+                    render={({ field, fieldState }) => (
+                      <div>
+                        <ComboBox
+                          label="Bodega *"
+                          options={bodegas?.map(b => ({ value: b.id, label: b.predeterminada ? `${b.nombre} (predeterminada)` : b.nombre })) ?? []}
+                          placeholder="— Seleccioná una bodega —"
+                          value={field.value ?? ''}
+                          onChange={v => field.onChange(v)}
+                        />
+                        {fieldState.error && (
+                          <p className="text-xs text-red-500 mt-1">{fieldState.error.message}</p>
+                        )}
+                      </div>
                     )}
                   />
                 </div>

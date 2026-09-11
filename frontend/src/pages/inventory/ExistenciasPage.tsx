@@ -26,12 +26,19 @@ export default function ExistenciasPage() {
   const [soloStockBajo, setSoloStockBajo] = useState(false)
   const [exporting, setExporting]   = useState(false)
 
-  // Traslado de bodega
+  // Traslado individual (sin bodega → bodega)
   const [trasladoItem, setTrasladoItem]       = useState<Existencia | null>(null)
   const [trasladoBodegaId, setTrasladoBodegaId] = useState('')
   const [trasladoCantidad, setTrasladoCantidad] = useState('')
   const [trasladoLoading, setTrasladoLoading]   = useState(false)
   const [trasladoError, setTrasladoError]       = useState<string | null>(null)
+
+  // Traslado masivo (todos sin bodega → bodega)
+  const [masivoBodegaId, setMasivoBodegaId]     = useState('')
+  const [masivoOpen, setMasivoOpen]             = useState(false)
+  const [masivoLoading, setMasivoLoading]       = useState(false)
+  const [masivoError, setMasivoError]           = useState<string | null>(null)
+  const [masivoProgress, setMasivoProgress]     = useState<{ done: number; total: number } | null>(null)
 
   const reset = () => { setPage(1) }
 
@@ -47,9 +54,10 @@ export default function ExistenciasPage() {
     enabled:  empresaId > 0,
   })
 
+  // Sin filtro solo_activos: productos inactivos pueden seguir teniendo stock sin asignar
   const { data: productos } = useQuery({
-    queryKey: ['productos-all', empresaId],
-    queryFn:  () => productosApi.list({ empresa_id: empresaId, per_page: 500, solo_activos: true }).then(r => r.data.data),
+    queryKey: ['productos-all-incl-inactivos', empresaId],
+    queryFn:  () => productosApi.list({ empresa_id: empresaId, per_page: 500 }).then(r => r.data.data),
     enabled:  empresaId > 0,
   })
 
@@ -118,6 +126,8 @@ export default function ExistenciasPage() {
     setTrasladoLoading(true)
     setTrasladoError(null)
     const hoy = new Date().toISOString().slice(0, 10)
+    const costoUnitario = productos?.find(p => p.id === trasladoItem.producto_id)?.costo ?? null
+    const bodegaNombre  = bodegas?.find(b => String(b.id) === trasladoBodegaId)?.nombre ?? trasladoBodegaId
     try {
       // 1. Salida de bodega sin asignar (bodega_id = null)
       await movimientosApi.create({
@@ -125,11 +135,11 @@ export default function ExistenciasPage() {
         bodega_id:       null,
         tipo_movimiento: 'ajuste_negativo',
         fecha:           hoy,
-        observaciones:   `Traslado a bodega ${bodegas?.find(b => String(b.id) === trasladoBodegaId)?.nombre ?? trasladoBodegaId}`,
+        observaciones:   `Traslado a bodega ${bodegaNombre}`,
         detalles: [{
           producto_id:    trasladoItem.producto_id,
           cantidad:       cantNum,
-          costo_unitario: null,
+          costo_unitario: costoUnitario,
         }],
       })
       // 2. Entrada a la bodega destino
@@ -138,11 +148,11 @@ export default function ExistenciasPage() {
         bodega_id:       Number(trasladoBodegaId),
         tipo_movimiento: 'ajuste_positivo',
         fecha:           hoy,
-        observaciones:   'Traslado desde sin asignar',
+        observaciones:   `Traslado desde sin asignar`,
         detalles: [{
           producto_id:    trasladoItem.producto_id,
           cantidad:       cantNum,
-          costo_unitario: null,
+          costo_unitario: costoUnitario,
         }],
       })
       // Invalidar existencias y productos para refrescar stock
@@ -209,6 +219,54 @@ export default function ExistenciasPage() {
     },
   ]
 
+  const openMasivo = () => { setMasivoBodegaId(''); setMasivoError(null); setMasivoProgress(null); setMasivoOpen(true) }
+  const closeMasivo = () => { if (masivoLoading) return; setMasivoOpen(false); setMasivoProgress(null); setMasivoError(null) }
+
+  const handleConfirmarMasivo = async () => {
+    if (!masivoBodegaId) return
+    setMasivoLoading(true)
+    setMasivoError(null)
+    setMasivoProgress(null)
+    try {
+      // Traer todos los sin asignar con stock > 0
+      const res  = await existenciasApi.list({ empresa_id: empresaId, sin_bodega: 1, per_page: 999 })
+      const items = (res.data.data as Existencia[]).filter(r => (r.cantidad_disponible ?? 0) > 0)
+      if (items.length === 0) { setMasivoError('No hay productos sin asignar con stock disponible.'); setMasivoLoading(false); return }
+
+      const hoy         = new Date().toISOString().slice(0, 10)
+      const bodegaNombre = bodegas?.find(b => String(b.id) === masivoBodegaId)?.nombre ?? masivoBodegaId
+      setMasivoProgress({ done: 0, total: items.length })
+
+      for (let i = 0; i < items.length; i++) {
+        const item  = items[i]
+        const costo = productos?.find(p => p.id === item.producto_id)?.costo ?? null
+        await movimientosApi.create({
+          empresa_id: empresaId, bodega_id: null,
+          tipo_movimiento: 'ajuste_negativo', fecha: hoy,
+          observaciones: `Traslado masivo a bodega ${bodegaNombre}`,
+          detalles: [{ producto_id: item.producto_id, cantidad: item.cantidad_disponible, costo_unitario: costo }],
+        })
+        await movimientosApi.create({
+          empresa_id: empresaId, bodega_id: Number(masivoBodegaId),
+          tipo_movimiento: 'ajuste_positivo', fecha: hoy,
+          observaciones: `Traslado masivo desde sin asignar`,
+          detalles: [{ producto_id: item.producto_id, cantidad: item.cantidad_disponible, costo_unitario: costo }],
+        })
+        setMasivoProgress({ done: i + 1, total: items.length })
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['existencias'] })
+      queryClient.invalidateQueries({ queryKey: ['productos'] })
+      queryClient.invalidateQueries({ queryKey: ['movimientos'] })
+      closeMasivo()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setMasivoError(msg ?? 'Error al trasladar. Intentá de nuevo.')
+    } finally {
+      setMasivoLoading(false)
+    }
+  }
+
   const activeFilters = [search, bodegaId, categoriaId, productoId, soloStockBajo].filter(Boolean).length
 
   return (
@@ -218,14 +276,24 @@ export default function ExistenciasPage() {
           <h1 className="text-xl font-bold text-[var(--cs)]">Stock / Existencias</h1>
           <p className="text-sm text-[#5F6B7A]">Inventario disponible por bodega</p>
         </div>
-        <button
-          onClick={handleExport}
-          disabled={exporting}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60"
-        >
-          {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
-          Exportar Excel
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={openMasivo}
+            title="Trasladar todos los productos sin bodega asignada"
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            <ArrowRightLeft size={15} />
+            Trasladar sin asignar
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60"
+          >
+            {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+            Exportar Excel
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -374,6 +442,58 @@ export default function ExistenciasPage() {
             </div>
           </div>
         )}
+      </Modal>
+      {/* Modal traslado masivo */}
+      <Modal open={masivoOpen} onClose={closeMasivo} title="Trasladar todo sin asignar" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-[#5F6B7A]">
+            Todos los productos con stock disponible en <strong>Sin asignar</strong> se moverán a la bodega que elijas.
+            Se creará un ajuste negativo y uno positivo por cada producto.
+          </p>
+
+          <div>
+            <p className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5">Bodega destino *</p>
+            <ComboBox
+              value={masivoBodegaId}
+              onChange={setMasivoBodegaId}
+              options={bodegas?.map(b => ({ value: b.id, label: b.nombre })) ?? []}
+              placeholder="— Seleccioná una bodega —"
+            />
+          </div>
+
+          {masivoProgress && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-[#5F6B7A]">
+                <span>Trasladando productos…</span>
+                <span className="font-semibold">{masivoProgress.done} / {masivoProgress.total}</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2">
+                <div
+                  className="bg-amber-500 h-2 rounded-full transition-all"
+                  style={{ width: `${(masivoProgress.done / masivoProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {masivoError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {masivoError}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2 pt-1 border-t border-gray-100">
+            <Button variant="secondary" onClick={closeMasivo} disabled={masivoLoading}>Cancelar</Button>
+            <Button
+              onClick={handleConfirmarMasivo}
+              disabled={masivoLoading || !masivoBodegaId}
+              className="flex items-center gap-2"
+            >
+              {masivoLoading && <Loader2 size={14} className="animate-spin" />}
+              {masivoLoading ? 'Trasladando…' : 'Confirmar traslado masivo'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

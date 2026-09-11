@@ -114,7 +114,7 @@ class ProductoController extends ApiController
     public function uploadImagen(Request $request, Producto $producto): JsonResponse
     {
         $request->validate([
-            'imagen' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+            'imagen' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
         ]);
 
         // Eliminar imagen anterior si existe

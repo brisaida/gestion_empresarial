@@ -19,6 +19,14 @@ RUN { \
     echo 'opcache.validate_timestamps=0'; \
 } > /usr/local/etc/php/conf.d/opcache.ini
 
+# Aumentar límites de subida de archivos (fotos de productos, facturas, etc.)
+RUN { \
+    echo 'upload_max_filesize=10M'; \
+    echo 'post_max_size=12M'; \
+    echo 'memory_limit=256M'; \
+    echo 'max_execution_time=60'; \
+} > /usr/local/etc/php/conf.d/uploads.ini
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html

@@ -53,6 +53,19 @@ sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-avail
 find /etc/apache2/mods-enabled -name 'mpm_*.load' ! -name 'mpm_prefork.load' -delete 2>/dev/null || true
 find /etc/apache2/mods-enabled -name 'mpm_*.conf' ! -name 'mpm_prefork.conf' -delete 2>/dev/null || true
 
+# ── Asegurar subdirectorios del storage (necesario si hay Volume montado en storage/app) ──
+echo "[backend] Preparando directorios de storage..."
+mkdir -p storage/app/public/productos \
+         storage/app/public/logos \
+         storage/app/private \
+         storage/framework/cache/data \
+         storage/framework/sessions \
+         storage/framework/testing \
+         storage/framework/views \
+         storage/logs
+chown -R www-data:www-data storage
+chmod -R 775 storage
+
 # ── Storage symlink ───────────────────────────────────────────────────────────
 echo "[backend] Creando storage:link..."
 php artisan storage:link --force

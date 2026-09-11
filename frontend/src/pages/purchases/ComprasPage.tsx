@@ -140,7 +140,7 @@ function CrearProductoModal({ open, onClose, empresaId, nombreInicial, costoInic
       nombre,
       costo:             Number(costo),
       precio_venta:      Number(precioVenta),
-      tasa_isv:          Number(tasaIsv),
+      tasa_isv:          tasaIsv.trim() === '' ? null : Number(tasaIsv),
       stock_minimo:      0,
       maneja_lote:       false,
       maneja_vencimiento: false,

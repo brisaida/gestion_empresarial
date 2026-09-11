@@ -715,9 +715,14 @@ export default function VentasPage() {
                                   }
                                 </div>
                             }
-                            <p className="text-xs font-semibold text-[var(--cs)] leading-tight truncate">
-                              {l.tipo === 'receta' ? l.receta!.nombre : l.producto!.nombre}
-                            </p>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-[var(--cs)] leading-tight truncate">
+                                {l.tipo === 'receta' ? l.receta!.nombre : l.producto!.nombre}
+                              </p>
+                              {l.tipo === 'producto' && l.producto?.tasa_isv === 0 && (
+                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">ISV exento</span>
+                              )}
+                            </div>
                           </div>
                           <button type="button" onClick={() => removeLinea(i)}
                             className="text-gray-300 hover:text-red-500 transition-colors shrink-0 p-0.5">
