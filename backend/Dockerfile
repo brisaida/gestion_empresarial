@@ -46,6 +46,11 @@ RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' \
         >> /etc/apache2/sites-available/000-default.conf \
     && echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
+# CORS para archivos estáticos del storage (fotos de productos, logos)
+# fetch() cross-origin desde el frontend necesita estas cabeceras
+RUN echo '<Location "/storage/">\n    Header set Access-Control-Allow-Origin "*"\n    Header set Access-Control-Allow-Methods "GET, OPTIONS"\n    Header set Access-Control-Allow-Headers "Authorization, Content-Type"\n</Location>' \
+        >> /etc/apache2/sites-available/000-default.conf
+
 RUN chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache public
 
