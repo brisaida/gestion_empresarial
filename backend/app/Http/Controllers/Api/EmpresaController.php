@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Empresa;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class EmpresaController extends ApiController
@@ -54,25 +55,21 @@ class EmpresaController extends ApiController
             'logo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp,svg', 'max:2048'],
         ]);
 
-        // Eliminar logo anterior
+        // Eliminar logo anterior del storage persistente
         if ($empresa->logo) {
-            $oldPath = public_path($empresa->logo);
-            if (file_exists($oldPath)) {
-                @unlink($oldPath);
-            }
+            Storage::disk('public')->delete($empresa->logo);
         }
 
-        $file      = $request->file('logo');
-        $filename  = Str::random(40) . '.' . $file->getClientOriginalExtension();
-        $file->move(public_path('logos'), $filename);
+        $file     = $request->file('logo');
+        $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
+        $path     = Storage::disk('public')->putFileAs('logos', $file, $filename);
 
-        $relPath = 'logos/' . $filename;
-        $empresa->update(['logo' => $relPath]);
+        $empresa->update(['logo' => $path]);
 
         return response()->json([
             'success' => true,
             'message' => 'Logo actualizado.',
-            'data'    => ['logo_url' => '/' . $relPath],
+            'data'    => ['logo_url' => Storage::disk('public')->url($path)],
         ]);
     }
 
@@ -82,10 +79,7 @@ class EmpresaController extends ApiController
         $empresa = Empresa::findOrFail($request->integer('empresa_id'));
 
         if ($empresa->logo) {
-            $fullPath = public_path($empresa->logo);
-            if (file_exists($fullPath)) {
-                @unlink($fullPath);
-            }
+            Storage::disk('public')->delete($empresa->logo);
             $empresa->update(['logo' => null]);
         }
 
@@ -97,14 +91,13 @@ class EmpresaController extends ApiController
     {
         $empresa = Empresa::findOrFail($request->integer('empresa_id'));
 
-        $fullPath = $empresa->logo ? public_path($empresa->logo) : null;
-
-        if (! $fullPath || ! file_exists($fullPath)) {
+        if (! $empresa->logo || ! Storage::disk('public')->exists($empresa->logo)) {
             return response()->json(['success' => true, 'data' => ['logo_base64' => null]]);
         }
 
-        $content = file_get_contents($fullPath);
-        $mime    = mime_content_type($fullPath) ?: 'image/png';
+        $fullPath = Storage::disk('public')->path($empresa->logo);
+        $content  = file_get_contents($fullPath);
+        $mime     = mime_content_type($fullPath) ?: 'image/png';
         $base64  = 'data:' . $mime . ';base64,' . base64_encode($content);
 
         return response()->json(['success' => true, 'data' => ['logo_base64' => $base64]]);
@@ -125,7 +118,7 @@ class EmpresaController extends ApiController
             'direccion'          => $e->direccion,
             'isv_rate'           => (float) ($e->isv_rate ?? 15),
             'rubro'              => $e->rubro,
-            'logo_url'           => $e->logo ? '/' . ltrim($e->logo, '/') : null,
+            'logo_url'           => $e->logo ? Storage::disk('public')->url($e->logo) : null,
             'config_cotizacion'  => array_merge($defaultConfig, $e->config_cotizacion ?? []),
             'tipo_facturacion'   => $e->tipo_facturacion ?? 'factura_a4',
             'color_primario'       => $e->color_primario      ?? '#0E78D8',
