@@ -66,6 +66,21 @@ mkdir -p storage/app/public/productos \
 chown -R www-data:www-data storage
 chmod -R 775 storage
 
+# ── Migrar logos de public/logos/ (efímero) al storage persistente (volume) ──
+# Copia una sola vez los logos que venían en la imagen Docker (git) al volume
+if [ -d "public/logos" ]; then
+    for f in public/logos/*; do
+        [ -f "$f" ] || continue
+        fname=$(basename "$f")
+        dest="storage/app/public/logos/$fname"
+        if [ ! -f "$dest" ]; then
+            cp "$f" "$dest"
+            echo "[backend] Migrado logo: $fname"
+        fi
+    done
+fi
+chown -R www-data:www-data storage/app/public/logos
+
 # ── Storage symlink ───────────────────────────────────────────────────────────
 echo "[backend] Creando storage:link..."
 php artisan storage:link --force
