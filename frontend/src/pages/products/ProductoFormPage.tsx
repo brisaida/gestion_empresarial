@@ -88,7 +88,7 @@ export default function ProductoFormPage() {
 
   const { register, handleSubmit, reset, control, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
-    defaultValues: { costo: 0, precio_venta: 0, stock_minimo: 0, activo: true },
+    defaultValues: { costo: 0, precio_venta: 0, stock_minimo: 0, activo: true, precio_incluye_isv: true },
   })
 
   useEffect(() => {
