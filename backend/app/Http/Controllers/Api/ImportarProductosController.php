@@ -177,9 +177,12 @@ class ImportarProductosController extends ApiController
             ->flip()
             ->all();
 
-        // Bodega predeterminada para stock inicial
+        // Bodega para stock inicial: la predeterminada, o la primera activa.
+        // Si la empresa no tiene bodegas, el stock NO se registra (nunca "sin asignar").
         $bodegaPredeterminada = Bodega::where('empresa_id', $empresaId)
-            ->where('predeterminada', true)
+            ->where('activo', true)
+            ->orderByDesc('predeterminada')
+            ->orderBy('id')
             ->first();
 
         $get = fn($row, $campo) => isset($cols[$campo]) ? ($row[$cols[$campo]] ?? null) : null;
@@ -203,7 +206,7 @@ class ImportarProductosController extends ApiController
             // Si el producto ya existe, solo sumar stock si viene stock_inicial
             if (isset($nombresExistentes[strtolower($nombre)])) {
                 $stockInicial = self::parseNumero($get($row, 'stock_inicial')) ?? 0.0;
-                if ($stockInicial > 0) {
+                if ($stockInicial > 0 && $bodegaPredeterminada) {
                     $productoExistente = Producto::where('empresa_id', $empresaId)
                         ->whereRaw('LOWER(nombre) = ?', [strtolower($nombre)])
                         ->first();
@@ -211,7 +214,7 @@ class ImportarProductosController extends ApiController
                         $existencia = Existencia::firstOrCreate(
                             [
                                 'empresa_id'  => $empresaId,
-                                'bodega_id'   => $bodegaPredeterminada?->id,
+                                'bodega_id'   => $bodegaPredeterminada->id,
                                 'producto_id' => $productoExistente->id,
                                 'lote'        => null,
                                 'numero_serie' => null,
@@ -315,10 +318,10 @@ class ImportarProductosController extends ApiController
                         $producto->categorias()->sync([$categoriaId]);
                     }
 
-                    if ($stockInicial > 0) {
+                    if ($stockInicial > 0 && $bodegaPredeterminada) {
                         Existencia::create([
                             'empresa_id'  => $empresaId,
-                            'bodega_id'   => $bodegaPredeterminada?->id,
+                            'bodega_id'   => $bodegaPredeterminada->id,
                             'producto_id' => $producto->id,
                             'cantidad'    => $stockInicial,
                             'cantidad_reservada' => 0,

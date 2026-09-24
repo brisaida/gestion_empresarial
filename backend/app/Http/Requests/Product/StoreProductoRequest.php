@@ -14,6 +14,8 @@ class StoreProductoRequest extends FormRequest
         return [
             'codigo.unique'       => 'Ya existe otro producto con este código interno.',
             'codigo_barra.unique' => 'Ya existe otro producto con este código de barras.',
+            'bodega_id.required'  => 'Seleccioná una bodega para el stock inicial.',
+            'bodega_id.exists'    => 'La bodega seleccionada no pertenece a esta empresa.',
         ];
     }
 
@@ -45,7 +47,12 @@ class StoreProductoRequest extends FormRequest
             'activo'             => ['boolean'],
             'tipo'               => ['nullable', 'in:venta,ingrediente'],
             'stock_inicial'      => ['nullable', 'numeric', 'min:0'],
-            'bodega_id'          => ['nullable', 'integer', 'exists:bodegas,id'],
+            // Stock inicial nunca queda "sin asignar": exige bodega de la misma empresa
+            'bodega_id'          => [
+                Rule::requiredIf(fn() => (float) $this->input('stock_inicial', 0) > 0),
+                'nullable', 'integer',
+                Rule::exists('bodegas', 'id')->where('empresa_id', $this->empresa_id),
+            ],
         ];
     }
 }

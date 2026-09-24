@@ -327,7 +327,7 @@ export default function ProductosPage() {
                     <p className="text-emerald-700">{importResult.omitidos} omitido(s) por nombre duplicado.</p>
                   )}
                   {importResult.sin_bodega && (
-                    <p className="text-amber-700 mt-1">No hay bodega predeterminada: el stock inicial no se registró. Configúrala en Catálogos → Bodegas.</p>
+                    <p className="text-amber-700 mt-1">No hay bodegas activas: el stock inicial no se registró. Creá una en Catálogos → Bodegas.</p>
                   )}
                 </div>
               </div>

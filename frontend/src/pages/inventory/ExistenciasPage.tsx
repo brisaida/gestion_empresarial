@@ -180,7 +180,9 @@ export default function ExistenciasPage() {
     },
     {
       key: 'bodega', header: 'Bodega',
-      cell: r => r.bodega_id === null
+      cell: r => r.agregado
+        ? <span className="text-[#5F6B7A] text-xs">Total · {r.bodega?.nombre ?? '—'}</span>
+        : r.bodega_id === null
         ? <span className="text-[#5F6B7A] italic text-xs">Sin asignar</span>
         : <span className="text-[#5F6B7A]">{r.bodega?.nombre ?? '—'}</span>,
     },
@@ -205,7 +207,7 @@ export default function ExistenciasPage() {
     },
     {
       key: 'acciones' as keyof Existencia, header: '', align: 'center', width: '60px',
-      cell: r => r.bodega_id === null && (r.cantidad_disponible ?? 0) > 0
+      cell: r => !r.agregado && r.bodega_id === null && (r.cantidad_disponible ?? 0) > 0
         ? (
           <button
             title="Trasladar a bodega"

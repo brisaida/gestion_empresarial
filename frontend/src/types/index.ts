@@ -165,6 +165,8 @@ export interface Existencia {
   cantidad: number
   cantidad_reservada: number
   cantidad_disponible: number
+  /** Fila resumen de stock bajo (suma de todas las bodegas), no una existencia real */
+  agregado?: boolean
   producto?: {
     id: number
     codigo?: string
@@ -172,7 +174,7 @@ export interface Existencia {
     stock_minimo: number
     stock_bajo: boolean
   }
-  bodega?: { id: number; nombre: string }
+  bodega?: { id: number | null; nombre: string }
 }
 
 export type TipoMovimiento = 'entrada' | 'salida'

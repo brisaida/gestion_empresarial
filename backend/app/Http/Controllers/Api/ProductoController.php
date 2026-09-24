@@ -72,7 +72,7 @@ class ProductoController extends ApiController
             $producto = Producto::create($data);
             $producto->categorias()->sync($categoriaIds);
 
-            if ($stockInicial > 0) {
+            if ($stockInicial > 0 && $bodegaId) {
                 Existencia::create([
                     'empresa_id'         => $producto->empresa_id,
                     'producto_id'        => $producto->id,

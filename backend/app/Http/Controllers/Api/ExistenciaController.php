@@ -89,19 +89,34 @@ class ExistenciaController extends ApiController
         $total    = $todos->count();
         $items    = $todos->forPage($page, $perPage);
 
-        $data = $items->map(fn($p) => [
-            'id'          => $p->id,
-            'producto_id' => $p->id,
-            'bodega_id'   => null,
-            'cantidad'    => (float) ($p->existencias_sum_cantidad ?? 0),
-            'producto'    => [
-                'id'          => $p->id,
-                'nombre'      => $p->nombre,
-                'codigo'      => $p->codigo,
-                'stock_minimo'=> (float) $p->stock_minimo,
-            ],
-            'bodega' => null,
-        ])->values();
+        // Fila agregada por producto (suma de todas las bodegas). bodega_id = null aquí
+        // NO significa "sin asignar": se marca con 'agregado' para que el frontend lo distinga.
+        $data = $items->map(function ($p) {
+            $cantidad = (float) ($p->existencias_sum_cantidad ?? 0);
+            $bodegas  = $p->existencias
+                ->where('cantidad', '>', 0)
+                ->map(fn($e) => $e->bodega?->nombre ?? 'Sin asignar')
+                ->unique()
+                ->implode(', ');
+
+            return [
+                'id'                  => $p->id,
+                'producto_id'         => $p->id,
+                'bodega_id'           => null,
+                'agregado'            => true,
+                'cantidad'            => $cantidad,
+                'cantidad_reservada'  => 0,
+                'cantidad_disponible' => $cantidad,
+                'producto'            => [
+                    'id'           => $p->id,
+                    'nombre'       => $p->nombre,
+                    'codigo'       => $p->codigo,
+                    'stock_minimo' => (float) $p->stock_minimo,
+                    'stock_bajo'   => true,
+                ],
+                'bodega' => ['id' => null, 'nombre' => $bodegas ?: '—'],
+            ];
+        })->values();
 
         return response()->json([
             'success' => true,
