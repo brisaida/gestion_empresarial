@@ -27,7 +27,8 @@ class VentaResource extends JsonResource
             'detalles'       => $this->whenLoaded('detalles', fn() => $this->detalles->map(fn($d) => [
                 'id'              => $d->id,
                 'producto_id'     => $d->producto_id,
-                'producto'        => $d->producto?->nombre,
+                'producto'        => $d->producto?->nombre ?? $d->descripcion,
+                'descripcion'     => $d->descripcion,
                 'receta_id'       => $d->receta_id,
                 'receta'          => $d->receta?->nombre,
                 'cantidad'        => (float) $d->cantidad,

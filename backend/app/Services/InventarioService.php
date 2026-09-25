@@ -162,7 +162,7 @@ class InventarioService
                     ];
                     $requeridos[$ing->producto_id] = ($requeridos[$ing->producto_id] ?? 0.0) + $qty;
                 }
-            } else {
+            } elseif ($d->producto_id) {
                 $qty = (float) $d->cantidad;
                 $detalles[] = [
                     'producto_id'    => $d->producto_id,
@@ -172,6 +172,9 @@ class InventarioService
                 $requeridos[$d->producto_id] = ($requeridos[$d->producto_id] ?? 0.0) + $qty;
             }
         }
+
+        // Artículos libres (sin producto ni receta) no mueven inventario
+        if (empty($detalles)) return;
 
         $this->validarStockDisponible($venta->empresa_id, $venta->bodega_id, $requeridos);
 

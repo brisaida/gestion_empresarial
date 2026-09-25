@@ -241,7 +241,9 @@ export type EstadoCotizacion = 'borrador' | 'enviada' | 'aprobada' | 'rechazada'
 
 export interface DetalleCotizacion {
   id: number
-  producto_id: number
+  /** null = artículo libre (usa `descripcion`) */
+  producto_id: number | null
+  descripcion?: string | null
   cantidad: number
   precio_unitario: number
   subtotal: number

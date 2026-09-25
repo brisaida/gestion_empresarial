@@ -1,6 +1,10 @@
 import type { Cotizacion, ConfigCotizacion } from '@/types'
 import type { PrintEmpresa } from './printVenta'
 
+// Los artículos libres llevan texto escrito a mano: escaparlo antes de meterlo en el HTML
+const escapeHtml = (t: string) =>
+  t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
 export type { PrintEmpresa }
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
@@ -77,7 +81,7 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
       ${fotoCelda}
       <td style="padding:9px 10px;text-align:center;color:#555;font-size:12px;border-bottom:1px solid #EEF0F4">${Number(d.cantidad).toFixed(2)}</td>
       <td style="padding:9px 10px;border-bottom:1px solid #EEF0F4">
-        <span style="color:${NAVY};font-size:12.5px;font-weight:600">${d.producto?.nombre ?? 'Producto'}</span>
+        <span style="color:${NAVY};font-size:12.5px;font-weight:600">${d.producto?.nombre ?? escapeHtml(d.descripcion ?? 'Producto')}</span>
         ${d.producto?.codigo ? `<span style="color:#aaa;font-size:10px;font-family:monospace;margin-left:5px">[${d.producto.codigo}]</span>` : ''}
         ${descHtml}
       </td>

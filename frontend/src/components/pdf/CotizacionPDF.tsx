@@ -143,7 +143,7 @@ export default function CotizacionPDF({ cotizacion: c, empresaNombre }: Props) {
         {detalles.map((d, i) => (
           <View key={d.id} style={[s.row, i % 2 !== 0 ? s.rowAlt : {}]}>
             <View style={s.cellProd}>
-              <Text style={s.tdProd}>{d.producto?.nombre ?? `Producto #${d.producto_id}`}</Text>
+              <Text style={s.tdProd}>{d.producto?.nombre ?? d.descripcion ?? `Producto #${d.producto_id}`}</Text>
               {d.producto?.codigo && <Text style={s.tdCode}>{d.producto.codigo}</Text>}
             </View>
             <Text style={[s.tdNum, s.cellQty]}>{Number(d.cantidad).toFixed(2)}</Text>

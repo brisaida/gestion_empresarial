@@ -71,7 +71,9 @@ class CotizacionController extends ApiController
             'descuento'          => ['nullable', 'numeric', 'min:0'],
             'impuesto'           => ['nullable', 'numeric', 'min:0'],
             'detalles'           => ['required', 'array', 'min:1'],
-            'detalles.*.producto_id'     => ['required', 'integer', 'exists:productos,id'],
+            // Línea de catálogo (producto_id) o artículo libre (descripcion)
+            'detalles.*.producto_id'     => ['nullable', 'required_without:detalles.*.descripcion', 'integer', 'exists:productos,id'],
+            'detalles.*.descripcion'     => ['nullable', 'required_without:detalles.*.producto_id', 'string', 'max:255'],
             'detalles.*.cantidad'        => ['required', 'numeric', 'min:0.0001'],
             'detalles.*.precio_unitario' => ['required', 'numeric', 'min:0'],
         ]);
@@ -107,7 +109,8 @@ class CotizacionController extends ApiController
             foreach ($validated['detalles'] as $det) {
                 DetalleCotizacion::create([
                     'cotizacion_id'   => $cotizacion->id,
-                    'producto_id'     => $det['producto_id'],
+                    'producto_id'     => $det['producto_id'] ?? null,
+                    'descripcion'     => empty($det['producto_id']) ? trim($det['descripcion']) : null,
                     'cantidad'        => $det['cantidad'],
                     'precio_unitario' => $det['precio_unitario'],
                     'subtotal'        => $det['cantidad'] * $det['precio_unitario'],
@@ -142,7 +145,9 @@ class CotizacionController extends ApiController
             'descuento'          => ['nullable', 'numeric', 'min:0'],
             'impuesto'           => ['nullable', 'numeric', 'min:0'],
             'detalles'           => ['required', 'array', 'min:1'],
-            'detalles.*.producto_id'     => ['required', 'integer', 'exists:productos,id'],
+            // Línea de catálogo (producto_id) o artículo libre (descripcion)
+            'detalles.*.producto_id'     => ['nullable', 'required_without:detalles.*.descripcion', 'integer', 'exists:productos,id'],
+            'detalles.*.descripcion'     => ['nullable', 'required_without:detalles.*.producto_id', 'string', 'max:255'],
             'detalles.*.cantidad'        => ['required', 'numeric', 'min:0.0001'],
             'detalles.*.precio_unitario' => ['required', 'numeric', 'min:0'],
         ]);
@@ -167,7 +172,8 @@ class CotizacionController extends ApiController
             foreach ($validated['detalles'] as $det) {
                 DetalleCotizacion::create([
                     'cotizacion_id'   => $cotizacion->id,
-                    'producto_id'     => $det['producto_id'],
+                    'producto_id'     => $det['producto_id'] ?? null,
+                    'descripcion'     => empty($det['producto_id']) ? trim($det['descripcion']) : null,
                     'cantidad'        => $det['cantidad'],
                     'precio_unitario' => $det['precio_unitario'],
                     'subtotal'        => $det['cantidad'] * $det['precio_unitario'],
@@ -227,7 +233,7 @@ class CotizacionController extends ApiController
                 $numero    = 'FAC-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT);
 
                 // Costos actuales
-                $productoIds = $cotizacion->detalles->pluck('producto_id')->unique();
+                $productoIds = $cotizacion->detalles->pluck('producto_id')->filter()->unique();
                 $costos      = Producto::whereIn('id', $productoIds)->pluck('costo', 'id');
 
                 $venta = Venta::create([
@@ -249,9 +255,10 @@ class CotizacionController extends ApiController
                     DetalleVenta::create([
                         'venta_id'        => $venta->id,
                         'producto_id'     => $det->producto_id,
+                        'descripcion'     => $det->descripcion,
                         'cantidad'        => $det->cantidad,
                         'precio_unitario' => $det->precio_unitario,
-                        'costo_unitario'  => $costos[$det->producto_id] ?? 0,
+                        'costo_unitario'  => $det->producto_id ? ($costos[$det->producto_id] ?? 0) : 0,
                         'subtotal'        => $det->subtotal,
                     ]);
                 }

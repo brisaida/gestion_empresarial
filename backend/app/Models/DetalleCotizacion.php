@@ -9,7 +9,7 @@ class DetalleCotizacion extends Model
     protected $table = 'detalle_cotizaciones';
 
     protected $fillable = [
-        'cotizacion_id', 'producto_id',
+        'cotizacion_id', 'producto_id', 'descripcion',
         'cantidad', 'precio_unitario', 'subtotal',
     ];
 

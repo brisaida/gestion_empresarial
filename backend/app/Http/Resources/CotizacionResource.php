@@ -26,6 +26,7 @@ class CotizacionResource extends JsonResource
                 $this->detalles->map(fn($d) => [
                     'id'              => $d->id,
                     'producto_id'     => $d->producto_id,
+                    'descripcion'     => $d->descripcion,
                     'cantidad'        => (float) $d->cantidad,
                     'precio_unitario' => (float) $d->precio_unitario,
                     'subtotal'        => (float) $d->subtotal,

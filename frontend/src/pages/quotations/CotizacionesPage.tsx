@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ComboBox from '@/components/ui/ComboBox'
 import { Plus, XCircle, Search, Minus, Trash2, FileText, User,
-         CalendarDays, Hash, CheckCircle2, Lock, AlignLeft } from 'lucide-react'
+         CalendarDays, Hash, CheckCircle2, Lock, AlignLeft, PenLine } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { cotizacionesApi, clientesApi, productosApi, empresaApi } from '@/api/recursos'
@@ -10,11 +10,17 @@ import { formatCurrency, getAxiosError, todayISO, imgUrl } from '@/lib/utils'
 import type { Cotizacion, Producto } from '@/types'
 import { printCotizacion } from '@/lib/printCotizacion'
 
+// producto = null → artículo libre (no está en el catálogo, no mueve inventario)
 interface LineaCot {
-  producto: Producto
+  key: string
+  producto: Producto | null
+  descripcion: string
   cantidad: number
   precio_unitario: number
 }
+
+let lineaSeq = 0
+const nuevaKey = () => `l${++lineaSeq}`
 
 export default function CotizacionesPage() {
   const { state } = useAuth()
@@ -88,7 +94,7 @@ export default function CotizacionesPage() {
   const subtotal = lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0)
   const isv = aplicarISV && subtotal > 0
     ? lineas.reduce((sum, l) => {
-        const rate = (l.producto.tasa_isv != null ? l.producto.tasa_isv : (empresaConfig?.isv_rate ?? 15)) / 100
+        const rate = (l.producto?.tasa_isv != null ? l.producto.tasa_isv : (empresaConfig?.isv_rate ?? 15)) / 100
         const lineaBase = l.cantidad * l.precio_unitario
         const lineaDescontada = descuento > 0 ? lineaBase * (1 - descuento / subtotal) : lineaBase
         return sum + lineaDescontada * rate
@@ -104,14 +110,22 @@ export default function CotizacionesPage() {
 
   const addProduct = (p: Producto) => {
     setLineas(prev => {
-      const idx = prev.findIndex(l => l.producto.id === p.id)
+      const idx = prev.findIndex(l => l.producto?.id === p.id)
       if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, cantidad: l.cantidad + 1 } : l)
       const rate = (p.tasa_isv ?? (empresaConfig?.isv_rate ?? 15)) / 100
       const precioBase = p.precio_incluye_isv ? Number(p.precio_venta) / (1 + rate) : Number(p.precio_venta)
-      return [...prev, { producto: p, cantidad: 1, precio_unitario: precioBase }]
+      return [...prev, { key: nuevaKey(), producto: p, descripcion: '', cantidad: 1, precio_unitario: precioBase }]
     })
     setSearch(''); setShowDrop(false)
   }
+
+  const addArticuloLibre = (descripcion = '') => {
+    setLineas(prev => [...prev, { key: nuevaKey(), producto: null, descripcion, cantidad: 1, precio_unitario: 0 }])
+    setSearch(''); setShowDrop(false)
+  }
+
+  const updateDescripcion = (idx: number, value: string) =>
+    setLineas(prev => prev.map((l, i) => i === idx ? { ...l, descripcion: value } : l))
 
   const updateCantidad = (idx: number, delta: number) =>
     setLineas(prev => prev.map((l, i) => i !== idx ? l : { ...l, cantidad: Math.max(1, l.cantidad + delta) }))
@@ -125,6 +139,7 @@ export default function CotizacionesPage() {
     e.preventDefault()
     setError('')
     if (lineas.length === 0) { setError('Agrega al menos un producto.'); return }
+    if (lineas.some(l => !l.producto && !l.descripcion.trim())) { setError('Escribe la descripción de los artículos libres.'); return }
     await crear.mutateAsync({
       empresa_id:        empresaId,
       cliente_id:        clienteId ? Number(clienteId) : null,
@@ -134,7 +149,8 @@ export default function CotizacionesPage() {
       descuento,
       impuesto:          Math.round(isv * 10000) / 10000,
       detalles: lineas.map(l => ({
-        producto_id:     l.producto.id,
+        producto_id:     l.producto?.id ?? null,
+        descripcion:     l.producto ? null : l.descripcion.trim(),
         cantidad:        l.cantidad,
         precio_unitario: l.precio_unitario,
       })),
@@ -206,8 +222,8 @@ export default function CotizacionesPage() {
           <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-visible">
 
             {/* Buscador */}
-            <div className="p-4 border-b border-gray-100" ref={searchRef}>
-              <div className="relative">
+            <div className="p-4 border-b border-gray-100 flex gap-2" ref={searchRef}>
+              <div className="relative flex-1 min-w-0">
                 <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F4F7FA] border border-gray-200 rounded-xl focus-within:border-[var(--cp)] focus-within:ring-2 focus-within:ring-[var(--cp)]/20 transition-all">
                   <Search size={16} className="text-[#5F6B7A] shrink-0" />
                   <input type="text" placeholder="Buscar producto por nombre o código..."
@@ -249,11 +265,20 @@ export default function CotizacionesPage() {
                 )}
 
                 {showDrop && search.length > 0 && filteredProducts.length === 0 && (
-                  <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white rounded-xl border border-gray-200 shadow-xl px-4 py-3 text-sm text-[#5F6B7A]">
-                    No se encontraron productos con "<strong>{search}</strong>"
+                  <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden text-sm">
+                    <p className="px-4 pt-3 pb-2 text-[#5F6B7A]">No se encontraron productos con "<strong>{search}</strong>"</p>
+                    <button type="button" onClick={() => addArticuloLibre(search.trim())}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 border-t border-gray-100 text-[var(--cp)] font-semibold hover:bg-[#F4F7FA] transition-colors text-left">
+                      <PenLine size={14} /> Agregar "{search.trim()}" como artículo libre
+                    </button>
                   </div>
                 )}
               </div>
+              <button type="button" onClick={() => addArticuloLibre()}
+                title="Agregar un artículo que no está en productos"
+                className="shrink-0 flex items-center gap-1.5 px-3 rounded-xl border border-gray-200 text-sm font-semibold text-[var(--cp)] hover:bg-[#F4F7FA] hover:border-[var(--cp)] transition-all">
+                <PenLine size={14} /> <span className="hidden sm:inline">Artículo libre</span>
+              </button>
             </div>
 
             {/* Header tabla */}
@@ -274,24 +299,34 @@ export default function CotizacionesPage() {
                   <FileText size={24} className="text-gray-300" />
                 </div>
                 <p className="text-sm font-medium text-[#5F6B7A]">Sin productos aún</p>
-                <p className="text-xs text-gray-400 mt-1">Usa el buscador para agregar productos a la cotización</p>
+                <p className="text-xs text-gray-400 mt-1">Usa el buscador para agregar productos, o "Artículo libre" para cotizar algo que no está en tu catálogo</p>
               </div>
             )}
 
             {lineas.map((l, i) => (
-              <div key={l.producto.id}
+              <div key={l.key}
                 className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 min-w-[420px] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
 
-                <div className="col-span-4 flex items-center gap-2.5">
-                  {imgUrl(l.producto.imagen_url)
-                    ? <img src={imgUrl(l.producto.imagen_url)!} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
-                    : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />
-                  }
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[var(--cs)] leading-tight truncate">{l.producto.nombre}</p>
-                    {l.producto.codigo && <p className="text-xs text-gray-400 font-mono">{l.producto.codigo}</p>}
+                {l.producto ? (
+                  <div className="col-span-4 flex items-center gap-2.5">
+                    {imgUrl(l.producto.imagen_url)
+                      ? <img src={imgUrl(l.producto.imagen_url)!} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
+                      : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />
+                    }
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[var(--cs)] leading-tight truncate">{l.producto.nombre}</p>
+                      {l.producto.codigo && <p className="text-xs text-gray-400 font-mono">{l.producto.codigo}</p>}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="col-span-4 min-w-0">
+                    <input type="text" value={l.descripcion} maxLength={255} autoFocus={!l.descripcion}
+                      onChange={e => updateDescripcion(i, e.target.value)}
+                      placeholder="Descripción del artículo"
+                      className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm font-semibold text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
+                    <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1"><PenLine size={9} /> Artículo libre · no afecta inventario</p>
+                  </div>
+                )}
 
                 <div className="col-span-3 flex items-center justify-center gap-1.5">
                   <button type="button" onClick={() => updateCantidad(i, -1)}

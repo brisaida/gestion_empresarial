@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ComboBox from '@/components/ui/ComboBox'
 import { ArrowRightCircle, CheckCircle, XCircle, Send, RotateCcw, Download, Loader2,
-         Pencil, Plus, Minus, Trash2, Search, Banknote } from 'lucide-react'
+         Pencil, Plus, Minus, Trash2, Search, Banknote, PenLine } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { cotizacionesApi, bodegasApi, clientesApi, productosApi, empresaApi } from '@/api/recursos'
@@ -37,8 +37,10 @@ const acciones: Record<string, { estado: string; label: string; icon: React.Reac
   aprobada: [{ estado: 'rechazada', label: 'Rechazar', icon: <XCircle size={13} />, variant: 'danger' }],
 }
 
+// producto_id = null → artículo libre; `nombre` es su descripción editable
 interface LineaCotEdit {
-  producto_id: number
+  key: string
+  producto_id: number | null
   nombre: string
   codigo?: string | null
   imagen_url?: string | null
@@ -47,6 +49,9 @@ interface LineaCotEdit {
 }
 
 type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
+
+let editSeq = 0
+const nuevaKey = () => `e${++editSeq}`
 
 const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
 const labelCls  = "block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5"
@@ -169,9 +174,10 @@ export default function HistorialCotizacionesPage() {
       setEditDescuento(full.descuento ?? 0)
       setEditAplicarISV((full.impuesto ?? 0) > 0)
       setEditLineas(
-        (full.detalles ?? []).map((d: { producto_id: number; cantidad: number; precio_unitario: number; producto?: { id: number; nombre: string; codigo?: string | null } | null }) => ({
+        (full.detalles ?? []).map(d => ({
+          key:             nuevaKey(),
           producto_id:     d.producto_id,
-          nombre:          d.producto?.nombre ?? `Producto #${d.producto_id}`,
+          nombre:          d.producto?.nombre ?? d.descripcion ?? `Producto #${d.producto_id}`,
           codigo:          d.producto?.codigo ?? null,
           imagen_url:      null,
           cantidad:        d.cantidad,
@@ -206,8 +212,13 @@ export default function HistorialCotizacionesPage() {
     setEditLineas(prev => {
       const idx = prev.findIndex(l => l.producto_id === p.id)
       if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, cantidad: l.cantidad + 1 } : l)
-      return [...prev, { producto_id: p.id, nombre: p.nombre, codigo: p.codigo ?? null, imagen_url: p.imagen_url ?? null, cantidad: 1, precio_unitario: Number(p.precio_venta) }]
+      return [...prev, { key: nuevaKey(), producto_id: p.id, nombre: p.nombre, codigo: p.codigo ?? null, imagen_url: p.imagen_url ?? null, cantidad: 1, precio_unitario: Number(p.precio_venta) }]
     })
+    setEditSearch(''); setEditShowDrop(false)
+  }
+
+  const addEditArticuloLibre = (descripcion = '') => {
+    setEditLineas(prev => [...prev, { key: nuevaKey(), producto_id: null, nombre: descripcion, codigo: null, imagen_url: null, cantidad: 1, precio_unitario: 0 }])
     setEditSearch(''); setEditShowDrop(false)
   }
 
@@ -222,6 +233,7 @@ export default function HistorialCotizacionesPage() {
   const handleEditSubmit = async () => {
     setEditError('')
     if (editLineas.length === 0) { setEditError('Agrega al menos un producto.'); return }
+    if (editLineas.some(l => !l.producto_id && !l.nombre.trim())) { setEditError('Escribe la descripción de los artículos libres.'); return }
     if (!editCot) return
     await actualizarCot.mutateAsync({
       id: editCot.id,
@@ -234,6 +246,7 @@ export default function HistorialCotizacionesPage() {
         impuesto:          Math.round(editIsv * 10000) / 10000,
         detalles: editLineas.map(l => ({
           producto_id:     l.producto_id,
+          descripcion:     l.producto_id ? null : l.nombre.trim(),
           cantidad:        l.cantidad,
           precio_unitario: l.precio_unitario,
         })),
@@ -455,8 +468,8 @@ export default function HistorialCotizacionesPage() {
               <div className="flex-1 min-w-0 bg-[#F4F7FA] rounded-xl overflow-visible">
 
                 {/* Buscador */}
-                <div className="p-3" ref={editSearchRef}>
-                  <div className="relative">
+                <div className="p-3 flex gap-2" ref={editSearchRef}>
+                  <div className="relative flex-1 min-w-0">
                     <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg focus-within:border-[var(--cp)] focus-within:ring-2 focus-within:ring-[var(--cp)]/20 transition-all">
                       <Search size={14} className="text-[#5F6B7A] shrink-0" />
                       <input type="text" placeholder="Buscar producto..."
@@ -479,7 +492,20 @@ export default function HistorialCotizacionesPage() {
                         ))}
                       </div>
                     )}
+                    {editShowDrop && editSearch.length > 0 && editFilteredProds.length === 0 && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden text-sm">
+                        <button type="button" onClick={() => addEditArticuloLibre(editSearch.trim())}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 text-[var(--cp)] font-semibold hover:bg-[#F4F7FA] transition-colors text-left">
+                          <PenLine size={13} /> Agregar "{editSearch.trim()}" como artículo libre
+                        </button>
+                      </div>
+                    )}
                   </div>
+                  <button type="button" onClick={() => addEditArticuloLibre()}
+                    title="Agregar un artículo que no está en productos"
+                    className="shrink-0 flex items-center gap-1 px-2.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-[var(--cp)] hover:border-[var(--cp)] transition-all">
+                    <PenLine size={13} /> Libre
+                  </button>
                 </div>
 
                 {/* Líneas */}
@@ -488,11 +514,21 @@ export default function HistorialCotizacionesPage() {
                     <p className="text-center text-sm text-gray-400 py-6">Usa el buscador para agregar productos</p>
                   )}
                   {editLineas.map((l, i) => (
-                    <div key={l.producto_id} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-100">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[var(--cs)] truncate">{l.nombre}</p>
-                        {l.codigo && <p className="text-xs text-gray-400 font-mono">{l.codigo}</p>}
-                      </div>
+                    <div key={l.key} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-100">
+                      {l.producto_id ? (
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-[var(--cs)] truncate">{l.nombre}</p>
+                          {l.codigo && <p className="text-xs text-gray-400 font-mono">{l.codigo}</p>}
+                        </div>
+                      ) : (
+                        <div className="flex-1 min-w-0">
+                          <input type="text" value={l.nombre} maxLength={255} autoFocus={!l.nombre}
+                            onChange={e => setEditLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, nombre: e.target.value } : ln))}
+                            placeholder="Descripción del artículo"
+                            className="w-full rounded border border-gray-200 px-2 py-0.5 text-sm font-semibold text-[var(--cs)] focus:outline-none focus:border-[var(--cp)]" />
+                          <p className="text-[10px] text-gray-400 flex items-center gap-1"><PenLine size={9} /> Artículo libre</p>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1 shrink-0">
                         <button type="button" onClick={() => updateEditCantidad(i, -1)}
                           className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
