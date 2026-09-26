@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import * as XLSX from 'xlsx'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { dashboardApi, ventasApi, comprasApi, reportesApi } from '@/api/recursos'
+import { dashboardApi, ventasApi, comprasApi, reportesApi, empresaApi } from '@/api/recursos'
+import { exportarExcel } from '@/lib/exportExcel'
 import { formatCurrency } from '@/lib/utils'
 import { Download, Loader2, CheckCircle2, FileSpreadsheet } from 'lucide-react'
 import type { Venta, Compra } from '@/types'
@@ -24,16 +25,6 @@ const subDays = (n: number) => {
 function fmtDate(iso: string): string {
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
-}
-
-function writeXlsx(rows: object[], sheetName: string, filename: string) {
-  const wb = XLSX.utils.book_new()
-  const ws = XLSX.utils.json_to_sheet(rows)
-  // Auto column widths
-  const keys = Object.keys(rows[0] ?? {})
-  ws['!cols'] = keys.map(k => ({ wch: Math.max(k.length + 2, 14) }))
-  XLSX.utils.book_append_sheet(wb, ws, sheetName)
-  XLSX.writeFile(wb, `${filename}.xlsx`)
 }
 
 // ── DateRange input component ─────────────────────────────────────────────
@@ -124,6 +115,17 @@ export default function ReportesExportarPage() {
   const empresaId  = state.empresaActiva?.id ?? 0
   const nombreEmp  = state.empresaActiva?.nombre ?? 'Empresa'
 
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn:  () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
+  const empresaDoc = empresaConfig ?? { nombre: nombreEmp }
+
+  const writeXlsx = (rows: Record<string, unknown>[], hoja: string, archivo: string, titulo: string) =>
+    exportarExcel(rows, { hoja, archivo, titulo, empresa: empresaDoc })
+
   const [loading, setLoading] = useState<Record<string, boolean>>({})
   const [done,    setDone]    = useState<Record<string, boolean>>({})
   const [errors,  setErrors]  = useState<Record<string, string>>({})
@@ -165,7 +167,7 @@ export default function ReportesExportarPage() {
         { 'KPI': 'Proveedores activos',         'Valor': r.total_proveedores },
         { 'KPI': 'Productos con stock bajo',    'Valor': r.productos_stock_bajo },
       ]
-      writeXlsx(rows, 'KPIs', `KPIs_${nombreEmp}_${hoy()}`)
+      await writeXlsx(rows, 'KPIs', `KPIs_${nombreEmp}_${hoy()}`, `Indicadores al ${fmtDate(hoy())}`)
     },
 
     async ventas() {
@@ -188,7 +190,7 @@ export default function ReportesExportarPage() {
         'Total (L)':   v.total,
         'Estado':      v.estado,
       }))
-      writeXlsx(rows, 'Ventas', `Ventas_${rangeVentas.desde}_${rangeVentas.hasta}`)
+      await writeXlsx(rows, 'Ventas', `Ventas_${rangeVentas.desde}_${rangeVentas.hasta}`, `Ventas del ${fmtDate(rangeVentas.desde)} al ${fmtDate(rangeVentas.hasta)}`)
     },
 
     async compras() {
@@ -210,7 +212,7 @@ export default function ReportesExportarPage() {
         'Total (L)':     c.total,
         'Estado':        c.estado,
       }))
-      writeXlsx(rows, 'Compras', `Compras_${rangeCompras.desde}_${rangeCompras.hasta}`)
+      await writeXlsx(rows, 'Compras', `Compras_${rangeCompras.desde}_${rangeCompras.hasta}`, `Compras del ${fmtDate(rangeCompras.desde)} al ${fmtDate(rangeCompras.hasta)}`)
     },
 
     async ingresos() {
@@ -227,7 +229,7 @@ export default function ReportesExportarPage() {
         'Total (L)':     f.total,
       }))
       rows.push({ 'Período': 'TOTAL', 'N° ventas': resumen.cantidad, 'Total (L)': resumen.total })
-      writeXlsx(rows, 'Ingresos', `Ingresos_${rangeIngresos.desde}_${rangeIngresos.hasta}`)
+      await writeXlsx(rows, 'Ingresos', `Ingresos_${rangeIngresos.desde}_${rangeIngresos.hasta}`, `Ingresos del ${fmtDate(rangeIngresos.desde)} al ${fmtDate(rangeIngresos.hasta)}`)
     },
 
     async productos() {
@@ -245,7 +247,7 @@ export default function ReportesExportarPage() {
         'Unidades vendidas': r.total_unidades,
         'Ingreso total (L)': r.total_monto,
       }))
-      writeXlsx(rows, 'Top Productos', `TopProductos_${rangeProductos.desde}_${rangeProductos.hasta}`)
+      await writeXlsx(rows, 'Top Productos', `TopProductos_${rangeProductos.desde}_${rangeProductos.hasta}`, `Productos más vendidos del ${fmtDate(rangeProductos.desde)} al ${fmtDate(rangeProductos.hasta)}`)
     },
 
     async inventario() {
@@ -259,7 +261,7 @@ export default function ReportesExportarPage() {
         'Costo unitario (L)': r.costo,
         'Valor total (L)':   r.valor_total,
       }))
-      writeXlsx(rows, 'Inventario', `Inventario_${hoy()}`)
+      await writeXlsx(rows, 'Inventario', `Inventario_${hoy()}`, `Inventario al ${fmtDate(hoy())}`)
     },
   }
 

@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import * as XLSX from 'xlsx'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowRightLeft, CheckCircle, Download, Loader2 } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
-import { existenciasApi, bodegasApi, categoriasApi, productosApi, movimientosApi } from '@/api/recursos'
+import { empresaApi, existenciasApi, bodegasApi, categoriasApi, productosApi, movimientosApi } from '@/api/recursos'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
 import SearchBar from '@/components/ui/SearchBar'
@@ -11,6 +10,7 @@ import ComboBox from '@/components/ui/ComboBox'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import { formatNumber } from '@/lib/utils'
+import { exportarExcel } from '@/lib/exportExcel'
 import type { Existencia } from '@/types'
 
 export default function ExistenciasPage() {
@@ -25,6 +25,13 @@ export default function ExistenciasPage() {
   const [productoId, setProductoId] = useState('')
   const [soloStockBajo, setSoloStockBajo] = useState(false)
   const [exporting, setExporting]   = useState(false)
+
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn:  () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
 
   // Traslado individual (sin bodega → bodega)
   const [trasladoItem, setTrasladoItem]       = useState<Existencia | null>(null)
@@ -91,11 +98,12 @@ export default function ExistenciasPage() {
         'Stock mínimo': Number(r.producto?.stock_minimo ?? 0),
         'Estado':       r.producto?.stock_bajo ? 'Stock bajo' : 'Normal',
       }))
-      const wb = XLSX.utils.book_new()
-      const ws = XLSX.utils.json_to_sheet(rows)
-      ws['!cols'] = Object.keys(rows[0] ?? {}).map(k => ({ wch: Math.max(k.length + 2, 14) }))
-      XLSX.utils.book_append_sheet(wb, ws, 'Stock')
-      XLSX.writeFile(wb, `stock_${new Date().toISOString().slice(0, 10)}.xlsx`)
+      await exportarExcel(rows, {
+        hoja:    'Stock',
+        archivo: `stock_${new Date().toISOString().slice(0, 10)}`,
+        titulo:  soloStockBajo ? 'Existencias — stock bajo' : 'Existencias',
+        empresa: empresaConfig ?? { nombre: state.empresaActiva?.nombre ?? 'Empresa' },
+      })
     } finally {
       setExporting(false)
     }
