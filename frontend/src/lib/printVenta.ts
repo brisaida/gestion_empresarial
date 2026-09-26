@@ -8,16 +8,23 @@ export interface PrintEmpresa {
   correo?: string
   direccion?: string
   isv_rate?: number
+  color_primario?: string | null
+  color_secundario?: string | null
 }
 
 const fmt = (n: number) =>
   'L ' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 
-const NAVY = '#072B5A'
-const BLUE = '#0E78D8'
-const CYAN = '#38D6D4'
+/** Colores de la empresa para los formatos de descarga (NAVY = secundario, BLUE = primario) */
+export function coloresDocumento(e: PrintEmpresa) {
+  return {
+    NAVY: e.color_secundario || '#072B5A',
+    BLUE: e.color_primario   || '#0E78D8',
+  }
+}
 
 function empresaHeader(e: PrintEmpresa, logoSrc?: string): string {
+  const { NAVY, BLUE } = coloresDocumento(e)
   const fiscal = [
     e.nombre_legal && e.nombre_legal !== e.nombre ? `<div style="font-size:11px;color:#555;margin-top:1px">${e.nombre_legal}</div>` : '',
     e.rtn       ? `<div style="font-size:11px;color:#888;margin-top:2px">RTN: ${e.rtn}</div>` : '',
@@ -28,7 +35,7 @@ function empresaHeader(e: PrintEmpresa, logoSrc?: string): string {
   return `
     ${logoSrc
       ? `<img src="${logoSrc}" style="height:48px;max-width:150px;object-fit:contain;display:block;margin-bottom:8px" alt="Logo">`
-      : `<div style="width:40px;height:40px;background:linear-gradient(135deg,${BLUE},${CYAN});border-radius:9px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px"><span style="color:#fff;font-size:18px;font-weight:700">V</span></div>`
+      : `<div style="width:40px;height:40px;background:linear-gradient(135deg,${BLUE},${NAVY});border-radius:9px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px"><span style="color:#fff;font-size:18px;font-weight:700">V</span></div>`
     }
     <div style="font-size:17px;font-weight:700;color:${NAVY}">${e.nombre}</div>
     ${fiscal}
@@ -36,6 +43,7 @@ function empresaHeader(e: PrintEmpresa, logoSrc?: string): string {
 }
 
 export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): void {
+  const { NAVY, BLUE } = coloresDocumento(empresa)
   const detalles = v.detalles ?? []
 
   const filas = detalles.map((d, i) => {
@@ -106,7 +114,7 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
     </tr>
   </table>
 
-  <div style="height:3px;background:linear-gradient(90deg,${NAVY},${BLUE},${CYAN});border-radius:2px;margin-bottom:20px"></div>
+  <div style="height:3px;background:linear-gradient(90deg,${NAVY},${BLUE});border-radius:2px;margin-bottom:20px"></div>
 
   <!-- INFO GRID -->
   <table style="margin-bottom:20px;border-spacing:0">

@@ -5,12 +5,10 @@ import {
   Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/stores/authStore'
 import { usePermisos } from '@/lib/permisos'
 import { empresaApi } from '@/api/recursos'
-import { applyTheme } from '@/lib/theme'
 
 const nav = [
   { group: 'Principal', items: [
@@ -75,12 +73,6 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
     enabled:  empresaId > 0,
     staleTime: 5 * 60_000,
   })
-
-  useEffect(() => {
-    if (empresaConfig) {
-      applyTheme(empresaConfig.color_primario ?? '#0E78D8', empresaConfig.color_secundario ?? '#072B5A')
-    }
-  }, [empresaConfig])
 
   const nombre  = empresaConfig?.nombre ?? state.empresaActiva?.nombre ?? 'Vilena'
   const rawLogo = empresaConfig?.logo_url

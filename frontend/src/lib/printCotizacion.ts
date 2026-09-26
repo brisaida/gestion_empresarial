@@ -1,5 +1,5 @@
 import type { Cotizacion, ConfigCotizacion } from '@/types'
-import type { PrintEmpresa } from './printVenta'
+import { coloresDocumento, type PrintEmpresa } from './printVenta'
 
 // Los artículos libres llevan texto escrito a mano: escaparlo antes de meterlo en el HTML
 const escapeHtml = (t: string) =>
@@ -11,10 +11,6 @@ const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 const fmt = (n: number) =>
   'L ' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-
-const NAVY = '#072B5A'
-const BLUE = '#0E78D8'
-const CYAN = '#38D6D4'
 
 async function fetchBase64(url: string): Promise<string | null> {
   try {
@@ -34,6 +30,7 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
   const mostrarDesc = configCot?.mostrar_descripcion ?? false
   const mostrarFoto = configCot?.mostrar_foto ?? false
   const isvPct      = empresa.isv_rate ?? 15
+  const { NAVY, BLUE } = coloresDocumento(empresa)
 
   /* ── Pre-cargar imágenes de productos como base64 ─────────── */
   const imageMap = new Map<number, string>()
@@ -94,7 +91,7 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
   /* ── Logo o inicial ─────────────────────────────────────── */
   const logoHtml = logoSrc
     ? `<img src="${logoSrc}" style="height:52px;max-width:160px;object-fit:contain;display:block;margin-bottom:6px" alt="Logo">`
-    : `<div style="width:44px;height:44px;background:linear-gradient(135deg,${BLUE},${CYAN});border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:6px"><span style="color:#fff;font-size:20px;font-weight:700">${empresa.nombre[0].toUpperCase()}</span></div>`
+    : `<div style="width:44px;height:44px;background:linear-gradient(135deg,${BLUE},${NAVY});border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:6px"><span style="color:#fff;font-size:20px;font-weight:700">${empresa.nombre[0].toUpperCase()}</span></div>`
 
   /* ── Datos fiscales empresa ─────────────────────────────── */
   const empresaFiscal = [
@@ -213,7 +210,7 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
   </table>
 
   <!-- Barra de color -->
-  <div style="height:3px;background:linear-gradient(90deg,${NAVY},${BLUE},${CYAN});border-radius:2px;margin:12px 0 14px"></div>
+  <div style="height:3px;background:linear-gradient(90deg,${NAVY},${BLUE});border-radius:2px;margin:12px 0 14px"></div>
 
   <!-- ═══ CLIENTE + VALIDEZ ═══ -->
   <table style="margin-bottom:14px">

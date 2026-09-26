@@ -6,7 +6,6 @@ import { empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { getAxiosError } from '@/lib/utils'
-import { applyTheme } from '@/lib/theme'
 import type { Rubro } from '@/types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
@@ -110,10 +109,9 @@ export default function ConfiguracionPage() {
         tipo_facturacion: tipoFacturacion,
         ...colores,
       }),
-    onSuccess: (_, vars) => {
+    onSuccess: () => {
       setColoresOk(true); setColoresError('')
       setTimeout(() => setColoresOk(false), 3000)
-      applyTheme(vars.color_primario, vars.color_secundario)
       qc.invalidateQueries({ queryKey: ['empresa', empresaId] })
     },
     onError: (err) => { setColoresError(getAxiosError(err)); setColoresOk(false) },
@@ -379,11 +377,12 @@ export default function ConfiguracionPage() {
         </div>
       </div>
 
-      {/* ── Colores del sistema ── */}
+      {/* ── Colores de documentos ── */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
         <h2 className="text-sm font-semibold text-[var(--cs)] flex items-center gap-2 mb-5">
-          <Palette size={16} style={{ color: 'var(--cp)' }} /> Colores del sistema
+          <Palette size={16} style={{ color: 'var(--cp)' }} /> Colores de documentos
         </h2>
+        <p className="text-xs text-gray-400 -mt-3 mb-5">Se aplican a las facturas y cotizaciones que se imprimen o descargan.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {/* Color primario */}
@@ -391,22 +390,18 @@ export default function ConfiguracionPage() {
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
               Color primario
             </label>
-            <p className="text-xs text-gray-400 mb-3">Botones, íconos activos, acentos.</p>
+            <p className="text-xs text-gray-400 mb-3">Título del documento, etiquetas y acentos.</p>
             <div className="flex items-center gap-3">
               <input
                 type="color"
                 value={colorPrimario}
-                onChange={e => { setColorPrimario(e.target.value); applyTheme(e.target.value, colorSecundario) }}
+                onChange={e => setColorPrimario(e.target.value)}
                 className="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
               />
               <input
                 type="text"
                 value={colorPrimario}
-                onChange={e => {
-                  const v = e.target.value
-                  setColorPrimario(v)
-                  if (/^#[0-9A-Fa-f]{6}$/.test(v)) applyTheme(v, colorSecundario)
-                }}
+                onChange={e => setColorPrimario(e.target.value)}
                 maxLength={7}
                 className="w-28 font-mono text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
               />
@@ -419,22 +414,18 @@ export default function ConfiguracionPage() {
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
               Color secundario
             </label>
-            <p className="text-xs text-gray-400 mb-3">Sidebar, encabezados, textos oscuros.</p>
+            <p className="text-xs text-gray-400 mb-3">Encabezado de tablas, nombre de empresa y totales.</p>
             <div className="flex items-center gap-3">
               <input
                 type="color"
                 value={colorSecundario}
-                onChange={e => { setColorSecundario(e.target.value); applyTheme(colorPrimario, e.target.value) }}
+                onChange={e => setColorSecundario(e.target.value)}
                 className="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
               />
               <input
                 type="text"
                 value={colorSecundario}
-                onChange={e => {
-                  const v = e.target.value
-                  setColorSecundario(v)
-                  if (/^#[0-9A-Fa-f]{6}$/.test(v)) applyTheme(colorPrimario, v)
-                }}
+                onChange={e => setColorSecundario(e.target.value)}
                 maxLength={7}
                 className="w-28 font-mono text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
               />
@@ -443,13 +434,22 @@ export default function ConfiguracionPage() {
           </div>
         </div>
 
-        {/* Preview rápido */}
-        <div className="mt-5 p-4 rounded-lg border border-gray-100 bg-gray-50 flex items-center gap-3">
-          <div className="w-6 h-6 rounded-full" style={{ background: colorSecundario }} />
-          <div className="flex-1 h-2 rounded-full" style={{ background: colorPrimario }} />
-          <button className="px-4 py-1.5 rounded-lg text-white text-xs font-semibold" style={{ background: colorPrimario }}>
-            Botón
-          </button>
+        {/* Vista previa del documento */}
+        <div className="mt-5 p-4 rounded-lg border border-gray-100 bg-gray-50">
+          <div className="bg-white rounded-md shadow-sm p-4 max-w-md">
+            <div className="flex items-start justify-between">
+              <span className="text-sm font-bold" style={{ color: colorSecundario }}>Mi Empresa</span>
+              <span className="text-lg font-extrabold leading-none" style={{ color: colorPrimario }}>Cotización</span>
+            </div>
+            <div className="h-[3px] rounded-sm my-3" style={{ background: `linear-gradient(90deg, ${colorSecundario}, ${colorPrimario})` }} />
+            <div className="text-[9px] font-bold uppercase tracking-wide mb-1" style={{ color: colorPrimario }}>Cliente</div>
+            <div className="rounded-sm overflow-hidden text-[10px]">
+              <div className="flex justify-between px-2 py-1 text-white font-semibold" style={{ background: colorSecundario }}>
+                <span>Descripción</span><span>Total</span>
+              </div>
+              <div className="flex justify-between px-2 py-1 text-gray-500"><span>Producto</span><span>L 100.00</span></div>
+            </div>
+          </div>
         </div>
 
         {coloresError && <p className="mt-3 text-sm text-red-600">{coloresError}</p>}
@@ -459,7 +459,7 @@ export default function ConfiguracionPage() {
           <button
             type="button"
             className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            onClick={() => { setColorPrimario('#0E78D8'); setColorSecundario('#072B5A'); applyTheme('#0E78D8', '#072B5A') }}
+            onClick={() => { setColorPrimario('#0E78D8'); setColorSecundario('#072B5A') }}
           >
             Restaurar colores por defecto
           </button>
