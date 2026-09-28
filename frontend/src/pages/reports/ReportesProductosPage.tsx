@@ -100,7 +100,7 @@ export default function ReportesProductosPage() {
                       <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
                         i === 0 ? 'bg-[var(--cp)] text-white' :
                         i === 1 ? 'bg-[var(--cs)] text-white' :
-                        i === 2 ? 'bg-[#38D6D4] text-white' :
+                        i === 2 ? 'bg-[var(--cp)]/60 text-white' :
                         'bg-gray-100 text-[#5F6B7A]'
                       }`}>{i + 1}</span>
                     </td>
@@ -122,7 +122,7 @@ export default function ReportesProductosPage() {
                             style={{
                               width: `${pct}%`,
                               background: i === 0
-                                ? 'linear-gradient(90deg, var(--cp), #38D6D4)'
+                                ? 'linear-gradient(90deg, var(--cs), var(--cp))'
                                 : 'var(--cp)',
                               opacity: 1 - i * 0.07,
                             }}

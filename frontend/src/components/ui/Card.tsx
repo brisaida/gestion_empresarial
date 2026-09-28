@@ -25,9 +25,9 @@ interface MetricCardProps {
 }
 
 const colors = {
-  electric: { bg: 'bg-[#0E78D8]/8',  icon: 'bg-[#0E78D8]/15 text-[var(--cp)]', border: 'border-[#0E78D8]/20' },
-  cyan:     { bg: 'bg-[#38D6D4]/8',  icon: 'bg-[#38D6D4]/15 text-[#38D6D4]', border: 'border-[#38D6D4]/20' },
-  indigo:   { bg: 'bg-[#0E78D8]/8',  icon: 'bg-[#0E78D8]/15 text-[var(--cp)]', border: 'border-[#0E78D8]/20' },
+  electric: { bg: 'bg-[var(--cp)]/8',  icon: 'bg-[var(--cp)]/15 text-[var(--cp)]', border: 'border-[var(--cp)]/20' },
+  cyan:     { bg: 'bg-[var(--cs)]/8',  icon: 'bg-[var(--cs)]/15 text-[var(--cs)]', border: 'border-[var(--cs)]/20' },
+  indigo:   { bg: 'bg-[var(--cp)]/8',  icon: 'bg-[var(--cp)]/15 text-[var(--cp)]', border: 'border-[var(--cp)]/20' },
   emerald:  { bg: 'bg-emerald-50',   icon: 'bg-emerald-100 text-emerald-600',  border: 'border-emerald-100' },
   amber:    { bg: 'bg-amber-50',     icon: 'bg-amber-100 text-amber-600',      border: 'border-amber-100' },
   red:      { bg: 'bg-red-50',       icon: 'bg-red-100 text-red-600',          border: 'border-red-100' },

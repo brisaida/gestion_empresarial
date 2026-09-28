@@ -111,7 +111,7 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
       )}>
         {/* Logo / inicial */}
         <div className="w-8 h-8 rounded-lg shrink-0 shadow-lg overflow-hidden flex items-center justify-center"
-          style={!logoUrl ? { background: 'linear-gradient(135deg, var(--cp) 0%, #38D6D4 100%)' } : undefined}
+          style={!logoUrl ? { background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' } : undefined}
         >
           {logoUrl
             ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />

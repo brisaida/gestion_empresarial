@@ -346,7 +346,7 @@ export default function VentasPage() {
       </div>
 
       <div className="flex justify-between items-center px-4 py-3.5 rounded-xl text-white font-bold"
-        style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 60%, #38D6D4 100%)' }}>
+        style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' }}>
         <span className="text-sm">TOTAL</span>
         <span className="text-lg tracking-tight">{formatCurrency(total)}</span>
       </div>

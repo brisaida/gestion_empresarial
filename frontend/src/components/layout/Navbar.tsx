@@ -34,7 +34,7 @@ export default function Navbar({ collapsed, onToggle }: Props) {
 
         {state.empresaActiva && (
           <div className="hidden sm:flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#38D6D4]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--cp)]" />
             <span className="text-sm font-semibold text-[var(--cs)]">
               {state.empresaActiva.nombre}
             </span>
@@ -56,7 +56,7 @@ export default function Navbar({ collapsed, onToggle }: Props) {
           >
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-              style={{ background: 'linear-gradient(135deg, var(--cp) 0%, #38D6D4 100%)' }}
+              style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' }}
             >
               {(state.usuario?.nombre?.[0] ?? 'U').toUpperCase()}
             </div>

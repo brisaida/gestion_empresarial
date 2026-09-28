@@ -286,7 +286,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-4 rounded-full bg-[#38D6D4] inline-block" />
+              <span className="w-1 h-4 rounded-full bg-[var(--cp)] inline-block" />
               <h2 className="text-sm font-semibold text-[var(--cs)]">Productos más vendidos</h2>
             </div>
             <Link to="/reportes/productos" className="text-xs text-[var(--cp)] hover:text-[var(--cs)] flex items-center gap-1 font-semibold transition-colors">
@@ -308,7 +308,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-3">
                         <span
                           className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0"
-                          style={{ background: i === 0 ? 'linear-gradient(135deg, var(--cp), #38D6D4)' : '#F4F7FA', color: i === 0 ? 'white' : '#5F6B7A' }}
+                          style={{ background: i === 0 ? 'linear-gradient(135deg, var(--cs), var(--cp))' : '#F4F7FA', color: i === 0 ? 'white' : '#5F6B7A' }}
                         >
                           {i + 1}
                         </span>
