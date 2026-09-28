@@ -34,6 +34,7 @@ import RestaurantePage           from '@/pages/restaurant/RestaurantePage'
 import ReportesIngresosPage      from '@/pages/reports/ReportesIngresosPage'
 import ReportesProductosPage     from '@/pages/reports/ReportesProductosPage'
 import ReportesExportarPage      from '@/pages/reports/ReportesExportarPage'
+import ColoresEmpresa            from '@/components/ui/ColoresEmpresa'
 import SuperAdminLayout         from '@/pages/super-admin/SuperAdminLayout'
 import DashboardSAPage          from '@/pages/super-admin/DashboardSAPage'
 import EmpresasAdminPage        from '@/pages/super-admin/EmpresasAdminPage'
@@ -94,9 +95,9 @@ export default function App() {
               <Route path="restaurante"             element={<Guard perm="ventas"><RestaurantePage /></Guard>} />
               <Route path="recetas"                element={<Guard perm="ventas"><RecetasPage /></Guard>} />
               <Route path="cocina"                 element={<Guard perm="ventas"><CocinaPage /></Guard>} />
-              <Route path="reportes/ingresos"      element={<Guard perm="reportes"><ReportesIngresosPage /></Guard>} />
-              <Route path="reportes/productos"     element={<Guard perm="reportes"><ReportesProductosPage /></Guard>} />
-              <Route path="reportes/exportar"      element={<Guard perm="reportes"><ReportesExportarPage /></Guard>} />
+              <Route path="reportes/ingresos"      element={<Guard perm="reportes"><ColoresEmpresa><ReportesIngresosPage /></ColoresEmpresa></Guard>} />
+              <Route path="reportes/productos"     element={<Guard perm="reportes"><ColoresEmpresa><ReportesProductosPage /></ColoresEmpresa></Guard>} />
+              <Route path="reportes/exportar"      element={<Guard perm="reportes"><ColoresEmpresa><ReportesExportarPage /></ColoresEmpresa></Guard>} />
               <Route path="configuracion"          element={<Guard perm="configuracion"><ConfiguracionPage /></Guard>} />
             </Route>
 
