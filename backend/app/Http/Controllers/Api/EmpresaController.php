@@ -103,6 +103,46 @@ class EmpresaController extends ApiController
         return response()->json(['success' => true, 'data' => ['logo_base64' => $base64]]);
     }
 
+    /* ── Firma y sello (se guardan en la BD, sin URL pública) ────── */
+    public function uploadFirmaSello(Request $request, string $tipo): JsonResponse
+    {
+        abort_unless(in_array($tipo, ['firma', 'sello']), 404);
+        $empresa = Empresa::findOrFail($request->integer('empresa_id'));
+
+        // Sin SVG: solo imágenes rasterizadas
+        $request->validate([
+            'imagen' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:1024'],
+        ]);
+
+        $file = $request->file('imagen');
+        $data = 'data:' . $file->getMimeType() . ';base64,' . base64_encode($file->get());
+
+        $empresa->forceFill(["{$tipo}_imagen" => $data])->save();
+
+        return response()->json(['success' => true, 'message' => ucfirst($tipo) . ' actualizada.', 'data' => [$tipo => $data]]);
+    }
+
+    public function deleteFirmaSello(Request $request, string $tipo): JsonResponse
+    {
+        abort_unless(in_array($tipo, ['firma', 'sello']), 404);
+        $empresa = Empresa::findOrFail($request->integer('empresa_id'));
+
+        $empresa->forceFill(["{$tipo}_imagen" => null])->save();
+
+        return response()->json(['success' => true, 'message' => ucfirst($tipo) . ' eliminada.']);
+    }
+
+    /** Vista previa en Configuración (requiere permiso de configuración). */
+    public function firmaSello(Request $request): JsonResponse
+    {
+        $empresa = Empresa::findOrFail($request->integer('empresa_id'));
+
+        return response()->json(['success' => true, 'data' => [
+            'firma' => $empresa->firma_imagen,
+            'sello' => $empresa->sello_imagen,
+        ]]);
+    }
+
     /* ── Helper: estructura de respuesta ────────────────────────── */
     private function resource(Empresa $e): array
     {
@@ -124,6 +164,8 @@ class EmpresaController extends ApiController
             'color_primario'       => $e->color_primario      ?? '#0E78D8',
             'color_secundario'     => $e->color_secundario    ?? '#072B5A',
             'timeout_inactividad'  => (int) ($e->timeout_inactividad ?? 30),
+            'tiene_firma'          => (bool) $e->firma_imagen,
+            'tiene_sello'          => (bool) $e->sello_imagen,
         ];
     }
 }

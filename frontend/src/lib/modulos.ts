@@ -15,6 +15,7 @@ export const MODULOS: ModuloDefinicion[] = [
   { key: 'configuracion', label: 'Configuración',       descripcion: 'Datos fiscales, logo e ISV de la empresa' },
   { key: 'ver_costos',    label: 'Ver precios de costo', descripcion: 'Mostrar precio de costo en productos y compras' },
   { key: 'reportes',      label: 'Reportes',             descripcion: 'Ver reportes de ingresos y productos más vendidos' },
+  { key: 'firmar',        label: 'Autorizar documentos', descripcion: 'Firmar y sellar requisiciones y cotizaciones con PIN' },
 ]
 
 export const TODOS_LOS_MODULOS = MODULOS.map(m => m.key)

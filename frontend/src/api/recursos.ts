@@ -3,7 +3,7 @@ import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
   Producto, Existencia, DashboardData, Movimiento, Compra, Venta, Cotizacion,
-  Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja,
+  Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja, Requisicion, DatosFirma,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -23,6 +23,18 @@ const remove = (url: string) =>
 
 // ── Empresa (configuración) ────────────────────────────────────────────────
 export const empresaApi = {
+  firmaSello: (empresaId: number) =>
+    client.get<ApiResponse<{ firma: string | null; sello: string | null }>>('/empresa/firma-sello', { params: { empresa_id: empresaId } }),
+  uploadFirmaSello: (empresaId: number, tipo: 'firma' | 'sello', file: File) => {
+    const form = new FormData()
+    form.append('imagen', file)
+    form.append('empresa_id', String(empresaId))
+    return client.post<ApiResponse<Record<string, string>>>(`/empresa/${tipo}/imagen`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  deleteFirmaSello: (empresaId: number, tipo: 'firma' | 'sello') =>
+    client.delete(`/empresa/${tipo}/imagen`, { params: { empresa_id: empresaId } }),
   get: (empresaId: number) =>
     client.get<ApiResponse<EmpresaConfig>>('/empresa', { params: { empresa_id: empresaId } }),
   update: (empresaId: number, data: Partial<EmpresaConfig>) =>
@@ -182,10 +194,25 @@ export const cotizacionesApi = {
   create:           (data: unknown) => create<Cotizacion>('/cotizaciones', data),
   update:           (id: number, data: unknown) => update<Cotizacion>(`/cotizaciones/${id}`, data),
   cambiarEstado:    (id: number, estado: string) => client.post<ApiResponse<Cotizacion>>(`/cotizaciones/${id}/estado`, { estado }),
+  autorizar:        (id: number, pin: string) => client.post<ApiResponse<Cotizacion>>(`/cotizaciones/${id}/autorizar`, { pin }),
+  firma:            (id: number) => client.get<ApiResponse<DatosFirma | null>>(`/cotizaciones/${id}/firma`),
   convertir:        (id: number, data: { bodega_id: number; fecha_venta?: string }) =>
     client.post<ApiResponse<Venta>>(`/cotizaciones/${id}/convertir`, data),
   siguienteNumero:  (empresaId: number) =>
     client.get<ApiResponse<{ numero_cotizacion: string }>>('/cotizaciones/siguiente-numero', { params: { empresa_id: empresaId } }),
+}
+
+// ── Requisiciones ─────────────────────────────────────────────────────────
+export const requisicionesApi = {
+  list:            (params: Record<string, unknown>) => list<Requisicion>('/requisiciones', params),
+  get:             (id: number) => get<Requisicion>(`/requisiciones/${id}`),
+  create:          (data: unknown) => create<Requisicion>('/requisiciones', data),
+  update:          (id: number, data: unknown) => update<Requisicion>(`/requisiciones/${id}`, data),
+  cambiarEstado:   (id: number, estado: string) => client.post<ApiResponse<Requisicion>>(`/requisiciones/${id}/estado`, { estado }),
+  autorizar:       (id: number, pin: string) => client.post<ApiResponse<Requisicion>>(`/requisiciones/${id}/autorizar`, { pin }),
+  firma:           (id: number) => client.get<ApiResponse<DatosFirma | null>>(`/requisiciones/${id}/firma`),
+  siguienteNumero: (empresaId: number) =>
+    client.get<ApiResponse<{ numero_requisicion: string }>>('/requisiciones/siguiente-numero', { params: { empresa_id: empresaId } }),
 }
 
 // ── Transferencias ────────────────────────────────────────────────────────

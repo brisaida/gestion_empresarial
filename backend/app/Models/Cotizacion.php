@@ -12,6 +12,7 @@ class Cotizacion extends Model
         'empresa_id', 'cliente_id', 'usuario_id', 'venta_id',
         'numero_cotizacion', 'fecha_cotizacion', 'fecha_vencimiento',
         'observaciones', 'subtotal', 'descuento', 'impuesto', 'total', 'estado',
+        'autorizado_por', 'autorizado_at',
     ];
 
     protected function casts(): array
@@ -23,6 +24,7 @@ class Cotizacion extends Model
             'descuento'         => 'decimal:4',
             'impuesto'          => 'decimal:4',
             'total'             => 'decimal:4',
+            'autorizado_at'     => 'datetime',
         ];
     }
 
@@ -31,4 +33,5 @@ class Cotizacion extends Model
     public function usuario()    { return $this->belongsTo(Usuario::class); }
     public function venta()      { return $this->belongsTo(Venta::class); }
     public function detalles()   { return $this->hasMany(DetalleCotizacion::class); }
+    public function autorizador() { return $this->belongsTo(User::class, 'autorizado_por'); }
 }

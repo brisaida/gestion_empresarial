@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ComboBox from '@/components/ui/ComboBox'
 import { ArrowRightCircle, CheckCircle, XCircle, Send, RotateCcw, Download, Loader2,
-         Pencil, Plus, Minus, Trash2, Search, Banknote, PenLine } from 'lucide-react'
+         Pencil, Plus, Minus, Trash2, Search, Banknote, PenLine, ShieldCheck } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { cotizacionesApi, bodegasApi, clientesApi, productosApi, empresaApi } from '@/api/recursos'
@@ -9,6 +9,8 @@ import { Table, Pagination, type Column } from '@/components/ui/Table'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import SearchBar from '@/components/ui/SearchBar'
+import AutorizarModal from '@/components/ui/AutorizarModal'
+import { usePermisos } from '@/lib/permisos'
 import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
 import type { Cotizacion, EstadoCotizacion, Producto } from '@/types'
 
@@ -65,6 +67,8 @@ export default function HistorialCotizacionesPage() {
   const [search, setSearch]         = useState('')
   const [loadingPdf, setLoadingPdf] = useState<number | null>(null)
   const [pdfError, setPdfError]     = useState('')
+  const [autorizarCot, setAutorizarCot] = useState<Cotizacion | null>(null)
+  const { hasPerm } = usePermisos()
 
   /* ── Modal cambiar estado ── */
   const [estadoModal, setEstadoModal] = useState<{ cot: Cotizacion; nuevoEstado: string; label: string } | null>(null)
@@ -259,13 +263,14 @@ export default function HistorialCotizacionesPage() {
     setPdfError('')
     setLoadingPdf(cot.id)
     try {
-      const [cotRes, empresaRes, logoRes, { printCotizacion }] = await Promise.all([
+      const [cotRes, empresaRes, logoRes, firmaRes, { printCotizacion }] = await Promise.all([
         cotizacionesApi.get(cot.id),
         empresaApi.get(empresaId),
         empresaApi.logoBase64(empresaId),
+        cot.autorizado ? cotizacionesApi.firma(cot.id) : Promise.resolve(null),
         import('@/lib/printCotizacion'),
       ])
-      await printCotizacion(cotRes.data.data, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined, empresaRes.data.data.config_cotizacion)
+      await printCotizacion(cotRes.data.data, empresaRes.data.data, logoRes.data.data.logo_base64 ?? undefined, empresaRes.data.data.config_cotizacion, firmaRes?.data.data)
     } catch { setPdfError('No se pudo generar el documento.') }
     finally { setLoadingPdf(null) }
   }
@@ -304,7 +309,7 @@ export default function HistorialCotizacionesPage() {
       align: 'center', width: '110px',
     },
     {
-      key: 'acciones', header: '', align: 'right', width: '240px',
+      key: 'acciones', header: '', align: 'right', width: '300px',
       cell: r => (
         <div className="flex items-center justify-end gap-1 flex-wrap">
 
@@ -316,10 +321,23 @@ export default function HistorialCotizacionesPage() {
           </button>
 
           {/* Editar borrador */}
-          {r.estado === 'borrador' && (
+          {r.estado === 'borrador' && !r.autorizado && (
             <button onClick={() => openEdit(r)}
               className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors">
               <Pencil size={13} /> Editar
+            </button>
+          )}
+
+          {/* Autorización con firma y sello */}
+          {r.autorizado ? (
+            <span title={`Autorizada por ${r.autorizado_por ?? ''}`}
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold text-emerald-600">
+              <ShieldCheck size={13} /> Autorizada
+            </span>
+          ) : hasPerm('firmar') && !['rechazada', 'vencida'].includes(r.estado) && (
+            <button onClick={() => setAutorizarCot(r)}
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors">
+              <ShieldCheck size={13} /> Autorizar
             </button>
           )}
 
@@ -374,6 +392,16 @@ export default function HistorialCotizacionesPage() {
         <Table columns={columns} data={data?.data ?? []} loading={isLoading} error={isError ? 'Error al cargar las cotizaciones.' : undefined} emptyMessage="No hay cotizaciones registradas." />
         {data?.meta && <Pagination currentPage={data.meta.current_page} lastPage={data.meta.last_page} total={data.meta.total} onPage={setPage} />}
       </div>
+
+      <AutorizarModal
+        open={autorizarCot !== null}
+        onClose={() => setAutorizarCot(null)}
+        documento={`cotización ${autorizarCot?.numero_cotizacion ?? ''}`}
+        onAutorizar={async pin => {
+          await cotizacionesApi.autorizar(autorizarCot!.id, pin)
+          qc.invalidateQueries({ queryKey: ['cotizaciones'] })
+        }}
+      />
 
       {/* ── Modal cambiar estado ── */}
       <Modal open={estadoModal !== null} onClose={() => setEstadoModal(null)} title="Cambiar estado" size="sm">

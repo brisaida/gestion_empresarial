@@ -8,4 +8,7 @@ export const authApi = {
   logout: () => client.post('/auth/logout'),
 
   me: () => client.get<ApiResponse<Usuario>>('/auth/me'),
+
+  guardarPin: (password: string, pin: string, pin_confirmation: string) =>
+    client.post<ApiResponse<Usuario>>('/auth/pin', { password, pin, pin_confirmation }),
 }

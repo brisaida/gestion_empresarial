@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\ImportarCategoriasController;
 use App\Http\Controllers\Api\ImportarProductosController;
 use App\Http\Controllers\Api\RecetaController;
 use App\Http\Controllers\Api\ReporteController;
+use App\Http\Controllers\Api\RequisicionController;
 use App\Http\Controllers\Api\SesionCajaController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::get('auth/me',      [AuthController::class, 'me']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
+    Route::post('auth/pin',    [AuthController::class, 'guardarPin'])->middleware('throttle:5,1');
 
     // Empresa — GET siempre accesible (sidebar, PDFs); mutaciones requieren configuracion
     Route::get('empresa',             [EmpresaController::class, 'show']);
@@ -48,6 +50,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('empresa',         [EmpresaController::class, 'update']);
         Route::post('empresa/logo',   [EmpresaController::class, 'uploadLogo']);
         Route::delete('empresa/logo', [EmpresaController::class, 'deleteLogo']);
+        Route::get('empresa/firma-sello',       [EmpresaController::class, 'firmaSello']);
+        Route::post('empresa/{tipo}/imagen',    [EmpresaController::class, 'uploadFirmaSello'])->whereIn('tipo', ['firma', 'sello']);
+        Route::delete('empresa/{tipo}/imagen',  [EmpresaController::class, 'deleteFirmaSello'])->whereIn('tipo', ['firma', 'sello']);
     });
 
     // Dashboard
@@ -89,6 +94,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('compras', CompraController::class)->only(['index', 'store', 'show']);
         Route::post('compras/{compra}/recibir',  [CompraController::class, 'recibir']);
         Route::post('compras/{compra}/cancelar', [CompraController::class, 'cancelar']);
+
+        // Requisiciones (pedido a proveedor, solo documento)
+        Route::get('requisiciones/siguiente-numero', [RequisicionController::class, 'siguienteNumero']);
+        Route::apiResource('requisiciones', RequisicionController::class)
+            ->only(['index', 'store', 'show', 'update'])
+            ->parameters(['requisiciones' => 'requisicion']);
+        Route::post('requisiciones/{requisicion}/estado', [RequisicionController::class, 'cambiarEstado']);
+        Route::get('requisiciones/{requisicion}/firma',   [RequisicionController::class, 'firma']);
+        Route::post('requisiciones/{requisicion}/autorizar', [RequisicionController::class, 'autorizar'])->middleware('throttle:5,1');
     });
 
     // Cotizaciones
@@ -99,6 +113,8 @@ Route::middleware('auth:sanctum')->group(function () {
             ->parameters(['cotizaciones' => 'cotizacion']);
         Route::post('cotizaciones/{cotizacion}/estado',    [CotizacionController::class, 'cambiarEstado']);
         Route::post('cotizaciones/{cotizacion}/convertir', [CotizacionController::class, 'convertirAVenta']);
+        Route::get('cotizaciones/{cotizacion}/firma',      [CotizacionController::class, 'firma']);
+        Route::post('cotizaciones/{cotizacion}/autorizar', [CotizacionController::class, 'autorizar'])->middleware('throttle:5,1');
     });
 
     // Ventas + Comandas + Mesas (restaurante)

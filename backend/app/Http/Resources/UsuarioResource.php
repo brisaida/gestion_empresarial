@@ -15,6 +15,7 @@ class UsuarioResource extends JsonResource
             'correo'         => $this->correo,
             'activo'         => $this->activo,
             'es_super_admin' => $this->es_super_admin,
+            'tiene_pin'      => (bool) $this->pin_firma,
             'created_at'     => $this->created_at?->toDateTimeString(),
         ];
     }

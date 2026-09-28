@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Bell, ChevronDown, LogOut, PanelLeftClose, PanelLeft, ShieldCheck } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, PanelLeftClose, PanelLeft, ShieldCheck, KeyRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/stores/authStore'
 import { authApi } from '@/api/auth'
+import { usePermisos } from '@/lib/permisos'
+import PinModal from './PinModal'
 
 interface Props {
   collapsed: boolean
@@ -13,6 +15,8 @@ export default function Navbar({ collapsed, onToggle }: Props) {
   const { state, logout } = useAuth()
   const navigate = useNavigate()
   const [userMenu, setUserMenu] = useState(false)
+  const [pinOpen, setPinOpen]   = useState(false)
+  const { hasPerm } = usePermisos()
   const esSuperAdmin = state.usuario?.es_super_admin ?? false
 
   const handleLogout = async () => {
@@ -86,6 +90,16 @@ export default function Navbar({ collapsed, onToggle }: Props) {
                     <div className="border-t border-gray-100 my-1" />
                   </>
                 )}
+                {hasPerm('firmar') && (
+                  <button
+                    onClick={() => { setUserMenu(false); setPinOpen(true) }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--cs)] hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    <KeyRound size={15} className="text-[var(--cp)]" />
+                    PIN de autorización
+                    {!state.usuario?.tiene_pin && <span className="ml-auto w-2 h-2 rounded-full bg-amber-400" title="Aún no has creado tu PIN" />}
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
@@ -98,6 +112,7 @@ export default function Navbar({ collapsed, onToggle }: Props) {
           )}
         </div>
       </div>
+      <PinModal open={pinOpen} onClose={() => setPinOpen(false)} />
     </header>
   )
 }

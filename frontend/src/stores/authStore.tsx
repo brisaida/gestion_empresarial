@@ -4,6 +4,7 @@ import type { AuthState, EmpresaResumen, Usuario } from '@/types'
 type Action =
   | { type: 'LOGIN'; token: string; usuario: Usuario; empresas: EmpresaResumen[] }
   | { type: 'SET_EMPRESA'; empresa: EmpresaResumen }
+  | { type: 'SET_USUARIO'; usuario: Usuario }
   | { type: 'LOGOUT' }
 
 const STORAGE_KEY = 'auth'
@@ -24,6 +25,8 @@ function reducer(state: AuthState, action: Action): AuthState {
     }
     case 'SET_EMPRESA':
       return { ...state, empresaActiva: action.empresa }
+    case 'SET_USUARIO':
+      return { ...state, usuario: action.usuario }
     case 'LOGOUT':
       return { token: null, usuario: null, empresas: [], empresaActiva: null }
   }
@@ -33,6 +36,7 @@ interface AuthContextValue {
   state: AuthState
   login: (token: string, usuario: Usuario, empresas: EmpresaResumen[]) => void
   setEmpresa: (empresa: EmpresaResumen) => void
+  setUsuario: (usuario: Usuario) => void
   logout: () => void
 }
 
@@ -57,9 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setEmpresa = (empresa: EmpresaResumen) =>
     dispatch({ type: 'SET_EMPRESA', empresa })
 
+  const setUsuario = (usuario: Usuario) =>
+    dispatch({ type: 'SET_USUARIO', usuario })
+
   const logout = () => dispatch({ type: 'LOGOUT' })
 
-  return <AuthContext value={{ state, login, setEmpresa, logout }}>{children}</AuthContext>
+  return <AuthContext value={{ state, login, setEmpresa, setUsuario, logout }}>{children}</AuthContext>
 }
 
 export function useAuth() {

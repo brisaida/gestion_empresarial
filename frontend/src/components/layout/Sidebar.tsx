@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse, Bookmark,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen, ClipboardPen, ClipboardCheck,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
@@ -38,6 +38,8 @@ const nav = [
   { group: 'Compras', items: [
     { to: '/compras',                label: 'Nueva compra',        icon: ShoppingCart,    end: true,  permiso: 'compras'       },
     { to: '/compras/historial',      label: 'Historial compras',   icon: ClipboardList,   end: true,  permiso: 'compras'       },
+    { to: '/requisiciones',          label: 'Nueva requisición',   icon: ClipboardPen,    end: true,  permiso: 'compras'       },
+    { to: '/requisiciones/historial', label: 'Requisiciones',      icon: ClipboardCheck,  end: true,  permiso: 'compras'       },
   ]},
   { group: 'Catálogos', items: [
     { to: '/productos',              label: 'Productos',           icon: Package,         end: false, permiso: 'catalogos'     },

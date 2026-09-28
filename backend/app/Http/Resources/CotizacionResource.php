@@ -22,6 +22,9 @@ class CotizacionResource extends JsonResource
             'estado'             => $this->estado,
             'cliente'            => $this->whenLoaded('cliente', fn() => ['id' => $this->cliente->id, 'nombre' => $this->cliente->nombre]),
             'venta_id'           => $this->venta_id,
+            'autorizado'         => (bool) $this->autorizado_at,
+            'autorizado_por'     => $this->whenLoaded('autorizador', fn() => $this->autorizador?->nombre),
+            'autorizado_at'      => $this->autorizado_at?->toDateTimeString(),
             'detalles'           => $this->whenLoaded('detalles', fn() =>
                 $this->detalles->map(fn($d) => [
                     'id'              => $d->id,

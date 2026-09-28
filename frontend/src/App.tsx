@@ -34,6 +34,8 @@ import RestaurantePage           from '@/pages/restaurant/RestaurantePage'
 import ReportesIngresosPage      from '@/pages/reports/ReportesIngresosPage'
 import ReportesProductosPage     from '@/pages/reports/ReportesProductosPage'
 import ReportesExportarPage      from '@/pages/reports/ReportesExportarPage'
+import RequisicionPage           from '@/pages/requisitions/RequisicionPage'
+import HistorialRequisicionesPage from '@/pages/requisitions/HistorialRequisicionesPage'
 import SuperAdminLayout         from '@/pages/super-admin/SuperAdminLayout'
 import DashboardSAPage          from '@/pages/super-admin/DashboardSAPage'
 import EmpresasAdminPage        from '@/pages/super-admin/EmpresasAdminPage'
@@ -84,6 +86,9 @@ export default function App() {
               <Route path="movimientos" element={<Guard perm="inventario"><MovimientosPage /></Guard>} />
               <Route path="compras"            element={<Guard perm="compras"><ComprasPage /></Guard>} />
               <Route path="compras/historial" element={<Guard perm="compras"><HistorialComprasPage /></Guard>} />
+              <Route path="requisiciones"              element={<Guard perm="compras"><RequisicionPage /></Guard>} />
+              <Route path="requisiciones/historial"    element={<Guard perm="compras"><HistorialRequisicionesPage /></Guard>} />
+              <Route path="requisiciones/:id/editar"   element={<Guard perm="compras"><RequisicionPage key="editar" /></Guard>} />
               <Route path="traslados"           element={<Guard perm="traslados"><TrasladosPage /></Guard>} />
               <Route path="traslados/historial" element={<Guard perm="traslados"><HistorialTrasladosPage /></Guard>} />
               <Route path="cotizaciones"           element={<Guard perm="cotizaciones"><CotizacionesPage /></Guard>} />

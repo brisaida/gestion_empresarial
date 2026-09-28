@@ -8,6 +8,7 @@ use App\Models\Rol;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends ApiController
 {
@@ -58,6 +59,26 @@ class AuthController extends ApiController
             'success' => true,
             'data'    => new UsuarioResource($user),
         ]);
+    }
+
+    /* ── PIN personal para autorizar documentos ───────────────────── */
+    public function guardarPin(Request $request): JsonResponse
+    {
+        $request->validate([
+            'password' => ['required', 'string'],
+            'pin'      => ['required', 'string', 'regex:/^\d{4,6}$/', 'confirmed'],
+        ], [
+            'pin.regex' => 'El PIN debe tener de 4 a 6 dígitos.',
+        ]);
+
+        $user = $request->user();
+        if (! Hash::check($request->password, $user->password)) {
+            return response()->json(['success' => false, 'message' => 'La contraseña no es correcta.'], 422);
+        }
+
+        $user->forceFill(['pin_firma' => Hash::make($request->pin)])->save();
+
+        return response()->json(['success' => true, 'message' => 'PIN guardado.', 'data' => new UsuarioResource($user)]);
     }
 
     public function logout(Request $request): JsonResponse

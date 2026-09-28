@@ -18,6 +18,9 @@ class Empresa extends Model
         'timeout_inactividad',
     ];
 
+    // Imágenes de firma y sello: solo se entregan al imprimir documentos autorizados
+    protected $hidden = ['firma_imagen', 'sello_imagen'];
+
     protected function casts(): array
     {
         return [

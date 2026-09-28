@@ -6,6 +6,7 @@ import { empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { applyTheme } from '@/lib/theme'
+import FirmaSelloSection from './FirmaSelloSection'
 import { getAxiosError } from '@/lib/utils'
 import type { Rubro } from '@/types'
 
@@ -227,6 +228,9 @@ export default function ConfiguracionPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Firma y sello ───────────────────────────────────────── */}
+      <FirmaSelloSection empresaId={empresaId} />
 
       {/* ── Datos generales ────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">

@@ -1,5 +1,6 @@
-import type { Cotizacion, ConfigCotizacion } from '@/types'
+import type { Cotizacion, ConfigCotizacion, DatosFirma } from '@/types'
 import { coloresDocumento, type PrintEmpresa } from './printVenta'
+import { bloqueFirma } from './firmaDocumento'
 
 // Los artículos libres llevan texto escrito a mano: escaparlo antes de meterlo en el HTML
 const escapeHtml = (t: string) =>
@@ -12,7 +13,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 const fmt = (n: number) =>
   'L ' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 
-async function fetchBase64(url: string): Promise<string | null> {
+export async function fetchBase64(url: string): Promise<string | null> {
   try {
     const res = await fetch(url)
     if (!res.ok) return null
@@ -25,7 +26,7 @@ async function fetchBase64(url: string): Promise<string | null> {
   } catch { return null }
 }
 
-export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: string, configCot?: ConfigCotizacion): Promise<void> {
+export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logoSrc?: string, configCot?: ConfigCotizacion, firma?: DatosFirma | null): Promise<void> {
   const detalles    = c.detalles ?? []
   const mostrarDesc = configCot?.mostrar_descripcion ?? false
   const mostrarFoto = configCot?.mostrar_foto ?? false
@@ -290,6 +291,15 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
       </td>
     </tr>
   </table>
+
+  <!-- ═══ FIRMA (solo cotizaciones autorizadas) ═══ -->
+  ${firma ? `
+  <table style="margin:4px 0 18px">
+    <tr>
+      <td style="width:55%"></td>
+      <td style="padding:0 30px;text-align:center;vertical-align:bottom">${bloqueFirma(firma, 'Autorizado por')}</td>
+    </tr>
+  </table>` : ''}
 
   <!-- ═══ FOOTER ═══ -->
   <div style="border-top:1px solid #E5E9EE;padding-top:12px;display:flex;justify-content:space-between;align-items:center">

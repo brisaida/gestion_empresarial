@@ -5,6 +5,7 @@ export interface Usuario {
   correo: string
   activo: boolean
   es_super_admin: boolean
+  tiene_pin?: boolean
 }
 
 export type Rubro = 'tienda' | 'distribuidora' | 'farmacia' | 'ferreteria' | 'restaurante'
@@ -38,6 +39,8 @@ export interface EmpresaConfig {
   tipo_facturacion?: 'ticket' | 'factura_a4'
   color_primario?: string
   color_secundario?: string
+  tiene_firma?: boolean
+  tiene_sello?: boolean
   timeout_inactividad?: number
 }
 
@@ -265,6 +268,9 @@ export interface Cotizacion {
   impuesto: number
   total: number
   estado: EstadoCotizacion
+  autorizado?: boolean
+  autorizado_por?: string | null
+  autorizado_at?: string | null
   cliente?: { id: number; nombre: string }
   detalles?: DetalleCotizacion[]
 }
@@ -282,6 +288,45 @@ export interface DetalleVenta {
   producto?: string | null
   codigo?: string | null
   receta?: string | null
+}
+
+// ── Firma y sello de documentos autorizados ──────────────────────────────
+export interface DatosFirma {
+  firma: string | null
+  sello: string | null
+  autorizado_por: string | null
+  autorizado_at: string
+}
+
+// ── Requisiciones ─────────────────────────────────────────────────────────
+export type EstadoRequisicion = 'borrador' | 'enviada' | 'recibida' | 'cancelada'
+
+export interface DetalleRequisicion {
+  id: number
+  /** null = artículo libre */
+  producto_id: number | null
+  codigo: string | null
+  descripcion: string
+  cantidad: number
+  imagen_url: string | null
+}
+
+export interface Requisicion {
+  id: number
+  empresa_id: number
+  proveedor_id: number | null
+  numero_requisicion: string
+  fecha_requisicion: string
+  realizado_por: string | null
+  observaciones: string | null
+  estado: EstadoRequisicion
+  total_articulos?: number
+  autorizado?: boolean
+  autorizado_por?: string | null
+  autorizado_at?: string | null
+  proveedor?: { id: number; nombre: string; rtn?: string | null; telefono?: string | null; correo?: string | null; direccion?: string | null } | null
+  detalles?: DetalleRequisicion[]
+  created_at?: string
 }
 
 // ── Recetas ───────────────────────────────────────────────────────────────

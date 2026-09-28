@@ -10,6 +10,7 @@ use App\Models\DetalleCotizacion;
 use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Models\Producto;
+use App\Services\AutorizacionService;
 use App\Services\InventarioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,10 @@ use Illuminate\Support\Facades\DB;
 
 class CotizacionController extends ApiController
 {
-    public function __construct(private readonly InventarioService $inventario) {}
+    public function __construct(
+        private readonly InventarioService $inventario,
+        private readonly AutorizacionService $autorizacion,
+    ) {}
 
     /* ── Siguiente número correlativo ─────────────────────────────── */
     public function siguienteNumero(Request $request): JsonResponse
@@ -41,7 +45,7 @@ class CotizacionController extends ApiController
     /* ── Listado ──────────────────────────────────────────────────── */
     public function index(Request $request): JsonResponse
     {
-        $query = Cotizacion::with(['cliente'])
+        $query = Cotizacion::with(['cliente', 'autorizador:id,nombre'])
             ->where('empresa_id', $request->integer('empresa_id'));
 
         if ($request->filled('estado'))      $query->where('estado', $request->estado);
@@ -117,7 +121,7 @@ class CotizacionController extends ApiController
                 ]);
             }
 
-            return $cotizacion->load(['cliente', 'detalles.producto']);
+            return $cotizacion->load(['cliente', 'detalles.producto', 'autorizador:id,nombre']);
         });
 
         return $this->created(new CotizacionResource($cotizacion));
@@ -126,7 +130,7 @@ class CotizacionController extends ApiController
     /* ── Ver detalle ──────────────────────────────────────────────── */
     public function show(Cotizacion $cotizacion): JsonResponse
     {
-        $cotizacion->load(['cliente', 'detalles.producto']);
+        $cotizacion->load(['cliente', 'detalles.producto', 'autorizador:id,nombre']);
         return response()->json(['success' => true, 'data' => new CotizacionResource($cotizacion)]);
     }
 
@@ -135,6 +139,9 @@ class CotizacionController extends ApiController
     {
         if ($cotizacion->estado !== 'borrador') {
             return $this->error('Solo se pueden editar cotizaciones en estado borrador.', 422);
+        }
+        if ($cotizacion->autorizado_at) {
+            return $this->error('La cotización ya fue autorizada y no se puede editar.', 422);
         }
 
         $validated = $request->validate([
@@ -181,7 +188,7 @@ class CotizacionController extends ApiController
             }
         });
 
-        $cotizacion->load(['cliente', 'detalles.producto']);
+        $cotizacion->load(['cliente', 'detalles.producto', 'autorizador:id,nombre']);
         return response()->json(['success' => true, 'message' => 'Cotización actualizada.', 'data' => new CotizacionResource($cotizacion)]);
     }
 
@@ -205,6 +212,34 @@ class CotizacionController extends ApiController
 
         $cotizacion->update(['estado' => $nuevoEstado]);
         return response()->json(['success' => true, 'message' => 'Estado actualizado.', 'data' => new CotizacionResource($cotizacion)]);
+    }
+
+    /* ── Autorizar con PIN (firma y sello de la empresa) ────────────── */
+    public function autorizar(Request $request, Cotizacion $cotizacion): JsonResponse
+    {
+        $request->validate(['pin' => ['required', 'string', 'max:10']]);
+
+        if (in_array($cotizacion->estado, ['rechazada', 'vencida'])) {
+            return $this->error('No se puede autorizar una cotización rechazada o vencida.', 422);
+        }
+
+        try {
+            // El servicio verifica que el usuario tenga "firmar" en la empresa de la cotización
+            $this->autorizacion->autorizar($cotizacion, $request->user(), $request->string('pin'));
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+
+        $cotizacion->load(['cliente', 'detalles.producto', 'autorizador:id,nombre']);
+        return response()->json(['success' => true, 'message' => 'Cotización autorizada.', 'data' => new CotizacionResource($cotizacion)]);
+    }
+
+    /* ── Firma y sello para imprimir (solo si está autorizada) ──────── */
+    public function firma(Request $request, Cotizacion $cotizacion): JsonResponse
+    {
+        abort_unless($request->user()->tienePermiso($cotizacion->empresa_id, 'cotizaciones'), 404);
+
+        return response()->json(['success' => true, 'data' => $this->autorizacion->datosFirma($cotizacion->load('autorizador:id,nombre'))]);
     }
 
     /* ── Convertir a venta ────────────────────────────────────────── */
