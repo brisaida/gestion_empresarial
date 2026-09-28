@@ -5,6 +5,7 @@ import { useAuth } from '@/stores/authStore'
 import { empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import { applyTheme } from '@/lib/theme'
 import { getAxiosError } from '@/lib/utils'
 import type { Rubro } from '@/types'
 
@@ -109,9 +110,10 @@ export default function ConfiguracionPage() {
         tipo_facturacion: tipoFacturacion,
         ...colores,
       }),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       setColoresOk(true); setColoresError('')
       setTimeout(() => setColoresOk(false), 3000)
+      applyTheme(vars.color_primario, vars.color_secundario)
       qc.invalidateQueries({ queryKey: ['empresa', empresaId] })
     },
     onError: (err) => { setColoresError(getAxiosError(err)); setColoresOk(false) },
@@ -377,12 +379,12 @@ export default function ConfiguracionPage() {
         </div>
       </div>
 
-      {/* ── Colores de documentos ── */}
+      {/* ── Colores de la empresa ── */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
         <h2 className="text-sm font-semibold text-[var(--cs)] flex items-center gap-2 mb-5">
-          <Palette size={16} style={{ color: 'var(--cp)' }} /> Colores de documentos
+          <Palette size={16} style={{ color: 'var(--cp)' }} /> Colores de la empresa
         </h2>
-        <p className="text-xs text-gray-400 -mt-3 mb-5">Se aplican a las facturas y cotizaciones que se imprimen o descargan.</p>
+        <p className="text-xs text-gray-400 -mt-3 mb-5">Se aplican al sistema y a las facturas, cotizaciones y Excel que se descargan.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {/* Color primario */}
@@ -390,18 +392,22 @@ export default function ConfiguracionPage() {
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
               Color primario
             </label>
-            <p className="text-xs text-gray-400 mb-3">Título del documento, etiquetas y acentos.</p>
+            <p className="text-xs text-gray-400 mb-3">Botones, íconos activos y títulos de documentos.</p>
             <div className="flex items-center gap-3">
               <input
                 type="color"
                 value={colorPrimario}
-                onChange={e => setColorPrimario(e.target.value)}
+                onChange={e => { setColorPrimario(e.target.value); applyTheme(e.target.value, colorSecundario) }}
                 className="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
               />
               <input
                 type="text"
                 value={colorPrimario}
-                onChange={e => setColorPrimario(e.target.value)}
+                onChange={e => {
+                  const v = e.target.value
+                  setColorPrimario(v)
+                  if (/^#[0-9A-Fa-f]{6}$/.test(v)) applyTheme(v, colorSecundario)
+                }}
                 maxLength={7}
                 className="w-28 font-mono text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
               />
@@ -414,18 +420,22 @@ export default function ConfiguracionPage() {
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
               Color secundario
             </label>
-            <p className="text-xs text-gray-400 mb-3">Encabezado de tablas, nombre de empresa y totales.</p>
+            <p className="text-xs text-gray-400 mb-3">Sidebar, encabezados y tablas de documentos.</p>
             <div className="flex items-center gap-3">
               <input
                 type="color"
                 value={colorSecundario}
-                onChange={e => setColorSecundario(e.target.value)}
+                onChange={e => { setColorSecundario(e.target.value); applyTheme(colorPrimario, e.target.value) }}
                 className="w-12 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
               />
               <input
                 type="text"
                 value={colorSecundario}
-                onChange={e => setColorSecundario(e.target.value)}
+                onChange={e => {
+                  const v = e.target.value
+                  setColorSecundario(v)
+                  if (/^#[0-9A-Fa-f]{6}$/.test(v)) applyTheme(colorPrimario, v)
+                }}
                 maxLength={7}
                 className="w-28 font-mono text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]"
               />
@@ -459,7 +469,7 @@ export default function ConfiguracionPage() {
           <button
             type="button"
             className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            onClick={() => { setColorPrimario('#0E78D8'); setColorSecundario('#072B5A') }}
+            onClick={() => { setColorPrimario('#0E78D8'); setColorSecundario('#072B5A'); applyTheme('#0E78D8', '#072B5A') }}
           >
             Restaurar colores por defecto
           </button>
