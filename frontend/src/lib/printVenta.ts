@@ -47,13 +47,12 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
   const detalles = v.detalles ?? []
 
   const filas = detalles.map((d, i) => {
-    const nombre = typeof d.producto === 'string' ? d.producto : (d.producto?.nombre ?? 'Producto')
-    const codigo = typeof d.producto === 'object' ? d.producto?.codigo : undefined
+    const nombre = d.producto ?? d.receta ?? 'Producto'
     return `
     <tr style="background:${i % 2 === 0 ? '#ffffff' : '#F4F7FA'}">
+      <td style="padding:8px 12px;color:#555;font-size:12px;font-family:monospace;white-space:nowrap">${d.codigo ?? '—'}</td>
       <td style="padding:8px 12px">
         <strong style="color:${NAVY};font-size:13px">${nombre}</strong>
-        ${codigo ? `<br><span style="color:#888;font-size:11px;font-family:monospace">${codigo}</span>` : ''}
       </td>
       <td style="padding:8px 12px;text-align:center;color:#555;font-size:13px">${Number(d.cantidad).toFixed(2)}</td>
       <td style="padding:8px 12px;text-align:right;color:#555;font-size:13px">${fmt(d.precio_unitario)}</td>
@@ -62,12 +61,12 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
   }).join('')
 
   const filaDescuento = v.descuento > 0
-    ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">Descuento</td><td style="padding:4px 12px;text-align:right;color:#dc2626;font-weight:600">− ${fmt(v.descuento)}</td></tr>`
+    ? `<tr><td colspan="3"></td><td style="padding:4px 12px;color:#888;text-align:right">Descuento</td><td style="padding:4px 12px;text-align:right;color:#dc2626;font-weight:600">− ${fmt(v.descuento)}</td></tr>`
     : ''
 
   const isvPct = empresa.isv_rate ?? 15
   const filaISV = v.impuesto > 0
-    ? `<tr><td colspan="2"></td><td style="padding:4px 12px;color:#888;text-align:right">ISV (${isvPct}%)</td><td style="padding:4px 12px;text-align:right;color:#555">${fmt(v.impuesto)}</td></tr>`
+    ? `<tr><td colspan="3"></td><td style="padding:4px 12px;color:#888;text-align:right">ISV (${isvPct}%)</td><td style="padding:4px 12px;text-align:right;color:#555">${fmt(v.impuesto)}</td></tr>`
     : ''
 
   const estadoColor = v.estado === 'cancelada' ? '#dc2626' : '#059669'
@@ -138,6 +137,7 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
   <table style="border-radius:8px;overflow:hidden;margin-bottom:16px">
     <thead>
       <tr style="background:${NAVY}">
+        <th style="padding:10px 12px;text-align:left;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.5px;width:110px">Código</th>
         <th style="padding:10px 12px;text-align:left;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Descripción</th>
         <th style="padding:10px 12px;text-align:center;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.5px;width:80px">Cant.</th>
         <th style="padding:10px 12px;text-align:right;color:#fff;font-size:11px;text-transform:uppercase;letter-spacing:.5px;width:130px">Precio unit.</th>
@@ -145,17 +145,17 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
       </tr>
     </thead>
     <tbody>
-      ${filas || `<tr><td colspan="4" style="padding:20px;text-align:center;color:#aaa">Sin productos</td></tr>`}
+      ${filas || `<tr><td colspan="5" style="padding:20px;text-align:center;color:#aaa">Sin productos</td></tr>`}
     </tbody>
     <tfoot style="border-top:2px solid #E5E9EE">
-      <tr><td colspan="2"></td>
+      <tr><td colspan="3"></td>
         <td style="padding:6px 12px;color:#888;text-align:right;font-size:13px">Subtotal</td>
         <td style="padding:6px 12px;text-align:right;font-size:13px;color:#555">${fmt(v.subtotal)}</td>
       </tr>
       ${filaDescuento}
       ${filaISV}
       <tr style="border-top:2px solid ${NAVY}">
-        <td colspan="2"></td>
+        <td colspan="3"></td>
         <td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:700;color:${NAVY}">TOTAL</td>
         <td style="padding:10px 12px;text-align:right;font-size:16px;font-weight:700;color:${NAVY}">${fmt(v.total)}</td>
       </tr>

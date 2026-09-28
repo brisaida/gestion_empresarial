@@ -280,6 +280,7 @@ export interface DetalleVenta {
   precio_unitario: number
   subtotal: number
   producto?: string | null
+  codigo?: string | null
   receta?: string | null
 }
 

@@ -11,7 +11,7 @@ export function printTicket(v: Venta, empresa: PrintEmpresa): void {
   const isvPct   = empresa.isv_rate ?? 15
 
   const filas = detalles.map(d => {
-    const nombre = typeof d.producto === 'string' ? d.producto : (d.producto?.nombre ?? 'Producto')
+    const nombre = (d.codigo ? `${d.codigo} ` : '') + (d.producto ?? d.receta ?? 'Producto')
     const cant   = Number(d.cantidad).toFixed(2)
     const price  = fmt(d.precio_unitario)
     const sub    = fmt(d.subtotal)
