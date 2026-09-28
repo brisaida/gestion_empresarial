@@ -34,7 +34,7 @@ function empresaHeader(e: PrintEmpresa, logoSrc?: string): string {
 
   return `
     ${logoSrc
-      ? `<img src="${logoSrc}" style="height:48px;max-width:150px;object-fit:contain;display:block;margin-bottom:8px" alt="Logo">`
+      ? `<img src="${logoSrc}" style="height:90px;max-width:260px;object-fit:contain;display:block;margin-bottom:10px" alt="Logo">`
       : `<div style="width:40px;height:40px;background:linear-gradient(135deg,${BLUE},${NAVY});border-radius:9px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px"><span style="color:#fff;font-size:18px;font-weight:700">V</span></div>`
     }
     <div style="font-size:17px;font-weight:700;color:${NAVY}">${e.nombre}</div>
