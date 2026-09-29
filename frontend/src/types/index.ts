@@ -401,7 +401,7 @@ export interface Venta {
   total: number
   estado: EstadoVenta
   metodo_pago?: 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto' | null
-  cliente?: { id: number; nombre: string }
+  cliente?: { id: number; nombre: string; rtn?: string | null } | null
   bodega?: { id: number; nombre: string }
   detalles?: DetalleVenta[]
 }

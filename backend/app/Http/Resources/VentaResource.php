@@ -22,7 +22,7 @@ class VentaResource extends JsonResource
             'total'          => (float) $this->total,
             'estado'         => $this->estado,
             'metodo_pago'    => $this->metodo_pago ?? 'efectivo',
-            'cliente'        => $this->whenLoaded('cliente', fn() => ['id' => $this->cliente->id, 'nombre' => $this->cliente->nombre]),
+            'cliente'        => $this->whenLoaded('cliente', fn() => $this->cliente ? ['id' => $this->cliente->id, 'nombre' => $this->cliente->nombre, 'rtn' => $this->cliente->rtn] : null),
             'bodega'         => $this->whenLoaded('bodega', fn() => ['id' => $this->bodega->id, 'nombre' => $this->bodega->nombre]),
             'detalles'       => $this->whenLoaded('detalles', fn() => $this->detalles->map(fn($d) => [
                 'id'              => $d->id,

@@ -87,7 +87,8 @@ export function printTicket(v: Venta, empresa: PrintEmpresa): void {
   <div class="center num-fac">${v.numero_factura ?? '—'}</div>
   <div class="center fiscal">Fecha: ${v.fecha_venta}</div>
   ${v.cliente?.nombre
-    ? `<div class="center fiscal" style="margin-top:2px">Cliente: ${v.cliente.nombre}</div>`
+    ? `<div class="center fiscal" style="margin-top:2px">Cliente: ${v.cliente.nombre}</div>
+       ${v.cliente.rtn ? `<div class="center fiscal">RTN: ${v.cliente.rtn}</div>` : ''}`
     : ''}
 
   <div class="sep center">${line()}</div>

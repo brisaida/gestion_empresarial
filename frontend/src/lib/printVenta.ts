@@ -34,7 +34,7 @@ function empresaHeader(e: PrintEmpresa, logoSrc?: string): string {
 
   return `
     ${logoSrc
-      ? `<img src="${logoSrc}" style="height:90px;max-width:260px;object-fit:contain;display:block;margin-bottom:10px" alt="Logo">`
+      ? `<img src="${logoSrc}" style="height:160px;max-width:100%;object-fit:contain;object-position:left center;display:block;margin-bottom:10px" alt="Logo">`
       : `<div style="width:40px;height:40px;background:linear-gradient(135deg,${BLUE},${NAVY});border-radius:9px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px"><span style="color:#fff;font-size:18px;font-weight:700">V</span></div>`
     }
     <div style="font-size:17px;font-weight:700;color:${NAVY}">${e.nombre}</div>
@@ -100,15 +100,14 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
   <!-- HEADER -->
   <table style="margin-bottom:24px">
     <tr>
-      <td>${empresaHeader(empresa, logoSrc)}</td>
+      <td style="width:65%;vertical-align:top;padding-right:16px">${empresaHeader(empresa, logoSrc)}</td>
       <td style="text-align:right;vertical-align:top">
         <div style="font-size:26px;font-weight:800;color:${BLUE};letter-spacing:2px">FACTURA</div>
         <div style="font-size:16px;font-weight:700;color:${NAVY};margin-top:4px">${v.numero_factura ?? '—'}</div>
+        ${v.estado === 'cancelada' ? `
         <div style="margin-top:4px">
-          <span style="font-size:10px;font-weight:700;color:#fff;background:${estadoColor};padding:2px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px">
-            ${v.estado === 'cancelada' ? 'CANCELADA' : 'COMPLETADA'}
-          </span>
-        </div>
+          <span style="font-size:10px;font-weight:700;color:#fff;background:${estadoColor};padding:2px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px">CANCELADA</span>
+        </div>` : ''}
       </td>
     </tr>
   </table>
@@ -118,17 +117,14 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
   <!-- INFO GRID -->
   <table style="margin-bottom:20px;border-spacing:0">
     <tr>
-      <td style="width:33%;padding:10px 12px;background:#F4F7FA;border-radius:6px 0 0 6px;border-right:2px solid #fff">
+      <td style="width:65%;padding:10px 12px;background:#F4F7FA;border-radius:6px 0 0 6px;border-right:2px solid #fff">
         <div style="font-size:9px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Facturado a</div>
         <div style="font-size:14px;font-weight:700;color:${NAVY}">${v.cliente?.nombre ?? 'Consumidor final'}</div>
+        <div style="font-size:11px;color:#555;margin-top:2px">RTN: ${v.cliente?.rtn || '—'}</div>
       </td>
-      <td style="width:33%;padding:10px 12px;background:#F4F7FA;border-right:2px solid #fff">
+      <td style="width:35%;padding:10px 12px;background:#F4F7FA;border-radius:0 6px 6px 0">
         <div style="font-size:9px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fecha de emisión</div>
         <div style="font-size:14px;font-weight:700;color:${NAVY}">${v.fecha_venta}</div>
-      </td>
-      <td style="width:33%;padding:10px 12px;background:#F4F7FA;border-radius:0 6px 6px 0">
-        <div style="font-size:9px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Bodega</div>
-        <div style="font-size:14px;font-weight:700;color:${NAVY}">${v.bodega?.nombre ?? '—'}</div>
       </td>
     </tr>
   </table>
