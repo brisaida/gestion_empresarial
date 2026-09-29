@@ -10,8 +10,8 @@ class Requisicion extends Model
 
     protected $fillable = [
         'empresa_id', 'proveedor_id', 'usuario_id',
-        'numero_requisicion', 'fecha_requisicion', 'realizado_por',
-        'observaciones', 'estado', 'autorizado_por', 'autorizado_at',
+        'numero_requisicion', 'fecha_requisicion', 'realizado_por', 'condicion',
+        'observaciones', 'subtotal', 'impuesto', 'total', 'estado', 'autorizado_por', 'autorizado_at',
     ];
 
     protected function casts(): array
@@ -19,6 +19,9 @@ class Requisicion extends Model
         return [
             'fecha_requisicion' => 'date',
             'autorizado_at'     => 'datetime',
+            'subtotal'          => 'decimal:4',
+            'impuesto'          => 'decimal:4',
+            'total'             => 'decimal:4',
         ];
     }
 

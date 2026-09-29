@@ -10,12 +10,15 @@ class DetalleRequisicion extends Model
 
     protected $fillable = [
         'requisicion_id', 'producto_id', 'codigo', 'descripcion', 'cantidad',
+        'precio_unitario', 'subtotal',
     ];
 
     protected function casts(): array
     {
         return [
-            'cantidad' => 'decimal:4',
+            'cantidad'        => 'decimal:4',
+            'precio_unitario' => 'decimal:4',
+            'subtotal'        => 'decimal:4',
         ];
     }
 

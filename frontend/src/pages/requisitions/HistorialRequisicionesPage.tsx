@@ -9,7 +9,7 @@ import SearchBar from '@/components/ui/SearchBar'
 import Button from '@/components/ui/Button'
 import AutorizarModal from '@/components/ui/AutorizarModal'
 import { usePermisos } from '@/lib/permisos'
-import { getAxiosError } from '@/lib/utils'
+import { getAxiosError, formatCurrency } from '@/lib/utils'
 import { printRequisicion } from '@/lib/printRequisicion'
 import type { Requisicion, EstadoRequisicion } from '@/types'
 
@@ -83,6 +83,7 @@ export default function HistorialRequisicionesPage() {
     { key: 'proveedor', header: 'Proveedor', cell: r => r.proveedor?.nombre ?? <span className="text-gray-400">—</span> },
     { key: 'realizado', header: 'Realizado por', cell: r => r.realizado_por ?? '—' },
     { key: 'articulos', header: 'Artículos', align: 'center', cell: r => r.total_articulos ?? '—' },
+    { key: 'total', header: 'Total', align: 'right', cell: r => <span className="font-bold text-[var(--cs)]">{formatCurrency(r.total)}</span> },
     {
       key: 'estado', header: 'Estado', cell: r => {
         const { label, cls } = estadoConfig[r.estado]

@@ -308,6 +308,9 @@ export interface DetalleRequisicion {
   codigo: string | null
   descripcion: string
   cantidad: number
+  precio_unitario: number
+  subtotal: number
+  tasa_isv: number | null
   imagen_url: string | null
 }
 
@@ -318,7 +321,11 @@ export interface Requisicion {
   numero_requisicion: string
   fecha_requisicion: string
   realizado_por: string | null
+  condicion: 'credito' | 'contado' | null
   observaciones: string | null
+  subtotal: number
+  impuesto: number
+  total: number
   estado: EstadoRequisicion
   total_articulos?: number
   autorizado?: boolean

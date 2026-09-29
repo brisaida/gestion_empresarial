@@ -57,9 +57,10 @@ class RequisicionController extends ApiController
                 'numero_requisicion' => $this->siguiente($validated['empresa_id'], lock: true),
                 'fecha_requisicion'  => $validated['fecha_requisicion'],
                 'realizado_por'      => $validated['realizado_por'] ?? $request->user()->nombre,
+                'condicion'          => $validated['condicion'] ?? null,
                 'observaciones'      => $validated['observaciones'] ?? null,
                 'estado'             => 'borrador',
-            ]);
+            ] + $this->totales($validated));
 
             $this->guardarDetalles($requisicion, $validated['detalles']);
 
@@ -96,8 +97,9 @@ class RequisicionController extends ApiController
                 'proveedor_id'      => $validated['proveedor_id'] ?? null,
                 'fecha_requisicion' => $validated['fecha_requisicion'],
                 'realizado_por'     => $validated['realizado_por'] ?? $requisicion->realizado_por,
+                'condicion'         => $validated['condicion'] ?? null,
                 'observaciones'     => $validated['observaciones'] ?? null,
-            ]);
+            ] + $this->totales($validated));
 
             $requisicion->detalles()->delete();
             $this->guardarDetalles($requisicion, $validated['detalles']);
@@ -162,6 +164,9 @@ class RequisicionController extends ApiController
             'proveedor_id'      => ['nullable', 'integer', 'exists:proveedores,id'],
             'fecha_requisicion' => ['required', 'date'],
             'realizado_por'     => ['nullable', 'string', 'max:150'],
+            'condicion'         => ['nullable', 'string', 'in:credito,contado'],
+            // ISV calculado en el frontend según la tasa de cada producto (igual que cotizaciones)
+            'impuesto'          => ['nullable', 'numeric', 'min:0'],
             'observaciones'     => ['nullable', 'string', 'max:1000'],
             'detalles'          => ['required', 'array', 'min:1'],
             // Línea de catálogo (producto_id) o artículo libre (descripcion)
@@ -169,6 +174,7 @@ class RequisicionController extends ApiController
             'detalles.*.descripcion' => ['nullable', 'required_without:detalles.*.producto_id', 'string', 'max:255'],
             'detalles.*.codigo'      => ['nullable', 'string', 'max:60'],
             'detalles.*.cantidad'    => ['required', 'numeric', 'min:0.0001'],
+            'detalles.*.precio_unitario' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
@@ -181,9 +187,20 @@ class RequisicionController extends ApiController
                 'producto_id'    => $det['producto_id'] ?? null,
                 'codigo'         => $libre ? (trim($det['codigo'] ?? '') ?: null) : null,
                 'descripcion'    => $libre ? trim($det['descripcion']) : null,
-                'cantidad'       => $det['cantidad'],
+                'cantidad'        => $det['cantidad'],
+                'precio_unitario' => $det['precio_unitario'] ?? 0,
+                'subtotal'        => $det['cantidad'] * ($det['precio_unitario'] ?? 0),
             ]);
         }
+    }
+
+    /** Subtotal (sin ISV) calculado aquí; el ISV viene del frontend. */
+    private function totales(array $validated): array
+    {
+        $subtotal = collect($validated['detalles'])->sum(fn($d) => $d['cantidad'] * ($d['precio_unitario'] ?? 0));
+        $impuesto = $validated['impuesto'] ?? 0;
+
+        return ['subtotal' => $subtotal, 'impuesto' => $impuesto, 'total' => $subtotal + $impuesto];
     }
 
     private function siguiente(int $empresaId, bool $lock = false): string

@@ -7,17 +7,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { requisicionesApi, proveedoresApi, productosApi, empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
-import { getAxiosError, todayISO, imgUrl } from '@/lib/utils'
+import { getAxiosError, todayISO, imgUrl, formatCurrency } from '@/lib/utils'
 import type { Requisicion, Producto } from '@/types'
 import { printRequisicion } from '@/lib/printRequisicion'
 
 // producto = null → artículo libre (código y descripción escritos a mano)
+// precio = como lo escribe el usuario (con o sin ISV según el switch); tasa = ISV del producto
 interface LineaReq {
   key: string
   producto: Pick<Producto, 'id' | 'nombre' | 'codigo' | 'imagen_url'> | null
   codigo: string
   descripcion: string
   cantidad: number
+  precio: number
+  tasa: number | null
 }
 
 let lineaSeq = 0
@@ -40,6 +43,8 @@ export default function RequisicionPage() {
   const [fecha, setFecha]               = useState(todayISO())
   const [realizadoPor, setRealizadoPor] = useState(state.usuario?.nombre ?? '')
   const [observaciones, setObservaciones] = useState('')
+  const [condicion, setCondicion]       = useState<'credito' | 'contado'>('contado')
+  const [incluyeIsv, setIncluyeIsv]     = useState(true)
   const [lineas, setLineas]             = useState<LineaReq[]>([])
 
   const [search, setSearch]     = useState('')
@@ -47,6 +52,12 @@ export default function RequisicionPage() {
   const searchRef = useRef<HTMLDivElement>(null)
 
   const { data: proveedores } = useQuery({ queryKey: ['proveedores-all', empresaId], queryFn: () => proveedoresApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data), enabled: empresaId > 0 })
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn:  () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
   const { data: productos }   = useQuery({ queryKey: ['productos-all', empresaId],   queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then(r => r.data.data), enabled: empresaId > 0 })
 
   const { data: numData, refetch: refetchNum } = useQuery({
@@ -67,12 +78,16 @@ export default function RequisicionPage() {
     setFecha(editando.fecha_requisicion)
     setRealizadoPor(editando.realizado_por ?? '')
     setObservaciones(editando.observaciones ?? '')
+    setCondicion(editando.condicion ?? 'contado')
+    setIncluyeIsv(false) // se guardan precios sin ISV
     setLineas((editando.detalles ?? []).map(d => ({
       key: nuevaKey(),
       producto: d.producto_id ? { id: d.producto_id, nombre: d.descripcion, codigo: d.codigo ?? undefined, imagen_url: d.imagen_url ?? undefined } : null,
       codigo: d.producto_id ? '' : (d.codigo ?? ''),
       descripcion: d.producto_id ? '' : d.descripcion,
       cantidad: d.cantidad,
+      precio: d.precio_unitario,
+      tasa: d.tasa_isv,
     })))
   }, [editando])
 
@@ -117,24 +132,35 @@ export default function RequisicionPage() {
      (p.codigo ?? '').toLowerCase().includes(search.toLowerCase()))
   ).slice(0, 8)
 
-  const totalUnidades = lineas.reduce((s, l) => s + l.cantidad, 0)
+  /* ── Totales: precio base (sin ISV) por línea + ISV según la tasa del producto ── */
+  const tasaDe = (l: LineaReq) => (l.tasa ?? empresaConfig?.isv_rate ?? 15) / 100
+  const precioBase = (l: LineaReq) => incluyeIsv ? l.precio / (1 + tasaDe(l)) : l.precio
+  const subtotal = lineas.reduce((s, l) => s + l.cantidad * precioBase(l), 0)
+  const isv      = lineas.reduce((s, l) => s + l.cantidad * precioBase(l) * tasaDe(l), 0)
+  const total    = subtotal + isv
+  const r4 = (n: number) => Math.round(n * 10000) / 10000
 
   const resetForm = () => {
     setProveedorId(''); setFecha(todayISO()); setRealizadoPor(state.usuario?.nombre ?? '')
-    setObservaciones(''); setLineas([]); setSearch(''); setError('')
+    setObservaciones(''); setCondicion('contado'); setIncluyeIsv(true)
+    setLineas([]); setSearch(''); setError('')
   }
 
   const addProduct = (p: Producto) => {
     setLineas(prev => {
       const idx = prev.findIndex(l => l.producto?.id === p.id)
       if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, cantidad: l.cantidad + 1 } : l)
-      return [...prev, { key: nuevaKey(), producto: p, codigo: '', descripcion: '', cantidad: 1 }]
+      // Precio sugerido: costo del catálogo (sin ISV), ajustado si se escribe con ISV
+      const tasa  = p.tasa_isv != null ? Number(p.tasa_isv) : null
+      const costo = Number(p.costo ?? 0)
+      const precio = incluyeIsv ? costo * (1 + (tasa ?? empresaConfig?.isv_rate ?? 15) / 100) : costo
+      return [...prev, { key: nuevaKey(), producto: p, codigo: '', descripcion: '', cantidad: 1, precio: r4(precio), tasa }]
     })
     setSearch(''); setShowDrop(false)
   }
 
   const addArticuloLibre = (descripcion = '') => {
-    setLineas(prev => [...prev, { key: nuevaKey(), producto: null, codigo: '', descripcion, cantidad: 1 }])
+    setLineas(prev => [...prev, { key: nuevaKey(), producto: null, codigo: '', descripcion, cantidad: 1, precio: 0, tasa: null }])
     setSearch(''); setShowDrop(false)
   }
 
@@ -153,12 +179,15 @@ export default function RequisicionPage() {
       proveedor_id:      proveedorId ? Number(proveedorId) : null,
       fecha_requisicion: fecha,
       realizado_por:     realizadoPor.trim() || null,
+      condicion,
       observaciones:     observaciones.trim() || null,
+      impuesto:          r4(isv),
       detalles: lineas.map(l => ({
         producto_id: l.producto?.id ?? null,
         codigo:      l.producto ? null : (l.codigo.trim() || null),
         descripcion: l.producto ? null : l.descripcion.trim(),
         cantidad:    l.cantidad,
+        precio_unitario: r4(precioBase(l)),
       })),
     })
   }
@@ -189,7 +218,7 @@ export default function RequisicionPage() {
 
         {/* ── Cabecera ─────────────────────────────────────────────── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <label className={labelCls}><span className="flex items-center gap-1.5"><Hash size={11} /> N° de pedido</span></label>
               <div className="relative">
@@ -217,6 +246,14 @@ export default function RequisicionPage() {
             <div>
               <label className={labelCls}><span className="flex items-center gap-1.5"><UserRound size={11} /> Realizado por</span></label>
               <input type="text" value={realizadoPor} maxLength={150} onChange={e => setRealizadoPor(e.target.value)} className={inputCls} />
+            </div>
+
+            <div>
+              <label className={labelCls}>Condición</label>
+              <select value={condicion} onChange={e => setCondicion(e.target.value as 'credito' | 'contado')} className={inputCls}>
+                <option value="contado">Contado</option>
+                <option value="credito">Crédito</option>
+              </select>
             </div>
           </div>
         </div>
@@ -284,10 +321,12 @@ export default function RequisicionPage() {
 
             <div className="overflow-x-auto">
               {lineas.length > 0 && (
-                <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/70 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100 min-w-[480px]">
-                  <div className="col-span-3">Código</div>
-                  <div className="col-span-5">Descripción</div>
+                <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/70 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100 min-w-[640px]">
+                  <div className="col-span-2">Código</div>
+                  <div className="col-span-3">Descripción</div>
                   <div className="col-span-3 text-center">Cantidad</div>
+                  <div className="col-span-2 text-right">Precio {incluyeIsv ? '(c/ISV)' : '(s/ISV)'}</div>
+                  <div className="col-span-1 text-right">Total</div>
                   <div className="col-span-1" />
                 </div>
               )}
@@ -304,29 +343,29 @@ export default function RequisicionPage() {
 
               {lineas.map((l, i) => (
                 <div key={l.key}
-                  className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 min-w-[480px] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
+                  className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 min-w-[640px] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
 
                   {l.producto ? (
                     <>
-                      <div className="col-span-3 flex items-center gap-2.5 min-w-0">
+                      <div className="col-span-2 flex items-center gap-2 min-w-0">
                         {imgUrl(l.producto.imagen_url)
                           ? <img src={imgUrl(l.producto.imagen_url)!} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
                           : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />}
                         <span className="text-sm font-mono font-semibold text-[var(--cs)] truncate">{l.producto.codigo || '—'}</span>
                       </div>
-                      <div className="col-span-5 min-w-0">
+                      <div className="col-span-3 min-w-0">
                         <p className="text-sm font-semibold text-[var(--cs)] leading-tight truncate">{l.producto.nombre}</p>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="col-span-3">
+                      <div className="col-span-2">
                         <input type="text" value={l.codigo} maxLength={60}
                           onChange={e => updateLinea(i, { codigo: e.target.value })}
                           placeholder="Código"
                           className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm font-mono text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
                       </div>
-                      <div className="col-span-5 min-w-0">
+                      <div className="col-span-3 min-w-0">
                         <input type="text" value={l.descripcion} maxLength={255} autoFocus={!l.descripcion}
                           onChange={e => updateLinea(i, { descripcion: e.target.value })}
                           placeholder="Descripción del artículo"
@@ -350,6 +389,16 @@ export default function RequisicionPage() {
                     </button>
                   </div>
 
+                  <div className="col-span-2">
+                    <input type="number" min="0" step="0.01" value={l.precio || ''} placeholder="0.00"
+                      onChange={e => updateLinea(i, { precio: Number(e.target.value) || 0 })}
+                      className="w-full text-right rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
+                  </div>
+
+                  <div className="col-span-1 text-right">
+                    <span className="text-sm font-bold text-[var(--cs)]">{formatCurrency(l.cantidad * precioBase(l))}</span>
+                  </div>
+
                   <div className="col-span-1 flex justify-center">
                     <button type="button" onClick={() => removeLinea(i)}
                       className="p-1.5 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors">
@@ -365,13 +414,29 @@ export default function RequisicionPage() {
           <div className="w-full sm:w-64 shrink-0 space-y-4">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
               <p className="text-xs font-bold text-[var(--cs)] uppercase tracking-wider">Resumen</p>
-              <div className="flex justify-between text-sm text-[#5F6B7A]">
-                <span>Artículos</span><span className="font-medium">{lineas.length}</span>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-[#5F6B7A]">Precios incluyen ISV</span>
+                <button type="button" onClick={() => setIncluyeIsv(v => !v)}
+                  style={{ height: '22px', width: '40px' }}
+                  className={`rounded-full transition-all flex items-center px-0.5 ${incluyeIsv ? 'bg-[var(--cp)]' : 'bg-gray-200'}`}>
+                  <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${incluyeIsv ? 'translate-x-[18px]' : 'translate-x-0'}`} />
+                </button>
               </div>
+
+              <div className="border-t border-gray-100 pt-3 space-y-2">
+                <div className="flex justify-between text-sm text-[#5F6B7A]">
+                  <span>Subtotal</span><span className="font-medium">{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-[#5F6B7A]">
+                  <span>ISV</span><span className="font-medium">{formatCurrency(isv)}</span>
+                </div>
+              </div>
+
               <div className="flex justify-between items-center px-4 py-3.5 rounded-xl text-white font-bold"
                 style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' }}>
-                <span className="text-sm">UNIDADES</span>
-                <span className="text-lg tracking-tight">{totalUnidades}</span>
+                <span className="text-sm">TOTAL</span>
+                <span className="text-lg tracking-tight">{formatCurrency(total)}</span>
               </div>
             </div>
 
