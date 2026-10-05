@@ -1,5 +1,12 @@
 import type { Venta } from '@/types'
-import type { PrintEmpresa } from './printVenta'
+import { formatoNumeroFactura, type PrintEmpresa } from './printVenta'
+import { numeroALetras } from './numeroALetras'
+
+/** YYYY-MM-DD → DD/MM/YYYY */
+const fecha = (f?: string | null) => {
+  const m = f?.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (f ?? '')
+}
 
 const fmt = (n: number) =>
   'L ' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
@@ -27,7 +34,7 @@ export function printTicket(v: Venta, empresa: PrintEmpresa): void {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>${v.numero_factura ?? 'Ticket'}</title>
+  <title>${formatoNumeroFactura(v.numero_factura) || 'Ticket'}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -84,8 +91,8 @@ export function printTicket(v: Venta, empresa: PrintEmpresa): void {
   <div class="sep center">${line()}</div>
 
   <!-- N° FACTURA Y FECHA -->
-  <div class="center num-fac">${v.numero_factura ?? '—'}</div>
-  <div class="center fiscal">Fecha: ${v.fecha_venta}</div>
+  <div class="center num-fac">${formatoNumeroFactura(v.numero_factura) || '—'}</div>
+  <div class="center fiscal">Fecha: ${fecha(v.fecha_venta)}</div>
   ${v.cliente?.nombre
     ? `<div class="center fiscal" style="margin-top:2px">Cliente: ${v.cliente.nombre}</div>
        ${v.cliente.rtn ? `<div class="center fiscal">RTN: ${v.cliente.rtn}</div>` : ''}`
@@ -103,12 +110,32 @@ export function printTicket(v: Venta, empresa: PrintEmpresa): void {
   ${v.descuento > 0
     ? `<div class="sub-row"><span>Descuento</span><span>- ${fmt(v.descuento)}</span></div>`
     : ''}
-  ${v.impuesto > 0
-    ? `<div class="sub-row"><span>ISV (${isvPct}%)</span><span>${fmt(v.impuesto)}</span></div>`
-    : ''}
+  ${v.exonerado
+    ? `<div class="sub-row"><span>ISV</span><span>EXONERADO</span></div>`
+    : v.impuesto > 0
+      ? `<div class="sub-row"><span>ISV (${isvPct}%)</span><span>${fmt(v.impuesto)}</span></div>`
+      : ''}
   <div class="sep center">${line('=')}</div>
   <div class="total-row"><span>TOTAL</span><span>${fmt(v.total)}</span></div>
   <div class="sep center">${line('=')}</div>
+  <div class="fiscal" style="margin-top:4px">SON: ${numeroALetras(v.total)}</div>
+
+  ${v.exonerado ? `
+  <div class="fiscal" style="margin-top:6px">
+    ${v.orden_compra_exenta  ? `<div>N° O/C exenta: ${v.orden_compra_exenta}</div>` : ''}
+    ${v.constancia_exonerado ? `<div>N° Const. exonerado: ${v.constancia_exonerado}</div>` : ''}
+    ${v.registro_sag         ? `<div>N° Registro SAG: ${v.registro_sag}</div>` : ''}
+  </div>` : ''}
+
+  <!-- DATOS FISCALES (copia del CAI al emitir la factura) -->
+  ${v.cai ? `
+  <div class="sep center">${line()}</div>
+  <div class="fiscal">
+    <div>CAI: ${v.cai}</div>
+    ${v.cai_rango_desde || v.cai_rango_hasta ? `<div>Rango autorizado:</div><div>${v.cai_rango_desde ?? ''} al</div><div>${v.cai_rango_hasta ?? ''}</div>` : ''}
+    ${v.cai_fecha_limite ? `<div>Fecha límite de emisión: ${fecha(v.cai_fecha_limite)}</div>` : ''}
+  </div>
+  <div class="center fiscal bold" style="margin-top:4px">LA FACTURA ES BENEFICIO DE TODOS, EXÍJALA</div>` : ''}
 
   <!-- FOOTER -->
   <div class="center gracias" style="margin-top:10px">

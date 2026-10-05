@@ -9,6 +9,7 @@ use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Models\Producto;
 use App\Services\InventarioService;
+use App\Services\NumeracionFacturaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -152,22 +153,15 @@ class ComandaController extends ApiController
                 $descuento = (float) ($validated['descuento'] ?? 0);
                 $impuesto  = (float) ($validated['impuesto'] ?? 0);
 
-                // Número de factura correlativo si no viene
-                $numeroFactura = $validated['numero_factura'] ?? null;
-                if (! $numeroFactura) {
-                    $last = Venta::where('empresa_id', $comanda->empresa_id)
-                        ->where('numero_factura', 'like', 'FAC-%')
-                        ->orderByDesc('id')->value('numero_factura');
-                    $sig = $last ? ((int) substr($last, 4)) + 1 : 1;
-                    $numeroFactura = 'FAC-' . str_pad($sig, 4, '0', STR_PAD_LEFT);
-                }
+                // Número de factura y datos del CAI (rango SAR)
+                $fiscal = NumeracionFacturaService::asignar($comanda->empresa_id);
 
                 $venta = Venta::create([
                     'empresa_id'     => $comanda->empresa_id,
                     'bodega_id'      => $comanda->bodega_id,
                     'cliente_id'     => $validated['cliente_id'] ?? null,
                     'usuario_id'     => $request->user()->id,
-                    'numero_factura' => $numeroFactura,
+                    ...$fiscal,
                     'fecha_venta'    => now()->toDateString(),
                     'subtotal'       => $subtotal,
                     'descuento'      => $descuento,

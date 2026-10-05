@@ -9,6 +9,7 @@ use App\Models\Producto;
 use App\Models\Receta;
 use App\Models\Venta;
 use App\Services\InventarioService;
+use App\Services\NumeracionFacturaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -125,14 +126,8 @@ class MesaController extends ApiController
                 $descuento = (float) ($validated['descuento'] ?? 0);
                 $impuesto  = (float) ($validated['impuesto'] ?? 0);
 
-                // Número correlativo de factura
-                $last = Venta::where('empresa_id', $mesa->empresa_id)
-                    ->where('numero_factura', 'like', 'FAC-%')
-                    ->lockForUpdate()
-                    ->orderByDesc('id')
-                    ->value('numero_factura');
-                $sig           = $last ? ((int) substr($last, 4)) + 1 : 1;
-                $numeroFactura = 'FAC-' . str_pad($sig, 4, '0', STR_PAD_LEFT);
+                // Número de factura y datos del CAI (rango SAR)
+                $fiscal = NumeracionFacturaService::asignar($mesa->empresa_id);
 
                 // Calcular subtotal total de todas las comandas
                 $subtotal = $comandasListas->flatMap(fn($c) => $c->detalles)
@@ -143,7 +138,7 @@ class MesaController extends ApiController
                     'bodega_id'      => $validated['bodega_id'],
                     'cliente_id'     => $validated['cliente_id'] ?? null,
                     'usuario_id'     => $request->user()->id,
-                    'numero_factura' => $numeroFactura,
+                    ...$fiscal,
                     'fecha_venta'    => now()->toDateString(),
                     'subtotal'       => $subtotal,
                     'descuento'      => $descuento,

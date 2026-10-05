@@ -10,6 +10,7 @@ use App\Models\Receta;
 use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Services\InventarioService;
+use App\Services\NumeracionFacturaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -55,23 +56,9 @@ class VentaController extends ApiController
     /** Devuelve el siguiente número de factura correlativo para la empresa. */
     public function siguienteNumero(Request $request): JsonResponse
     {
-        $empresaId = $request->integer('empresa_id');
-
-        $ultima = Venta::where('empresa_id', $empresaId)
-            ->whereNotNull('numero_factura')
-            ->where('numero_factura', 'like', 'FAC-%')
-            ->orderByDesc('id')
-            ->value('numero_factura');
-
-        $siguiente = 1;
-        if ($ultima) {
-            $partes    = explode('-', $ultima);
-            $siguiente = ((int) end($partes)) + 1;
-        }
-
         return response()->json([
             'success' => true,
-            'data'    => ['numero_factura' => 'FAC-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT)],
+            'data'    => NumeracionFacturaService::estado($request->integer('empresa_id')),
         ]);
     }
 
@@ -84,29 +71,19 @@ class VentaController extends ApiController
                 $subtotal    = collect($validated['detalles'])->sum(fn($d) => $d['cantidad'] * $d['precio_unitario']);
                 $descuento   = $validated['descuento']   ?? 0;
                 $costoEnvio  = $validated['costo_envio'] ?? 0;
-                $impuesto    = $validated['impuesto']    ?? 0;
+                $exonerado   = (bool) ($validated['exonerado'] ?? false);
+                // Una venta exonerada no cobra ISV
+                $impuesto    = $exonerado ? 0 : ($validated['impuesto'] ?? 0);
 
-                // Auto-generar número correlativo si no viene en el payload
-                $numeroFactura = $validated['numero_factura'] ?? null;
-                if (! $numeroFactura) {
-                    $ultima = Venta::where('empresa_id', $validated['empresa_id'])
-                        ->whereNotNull('numero_factura')
-                        ->where('numero_factura', 'like', 'FAC-%')
-                        ->lockForUpdate()
-                        ->orderByDesc('id')
-                        ->value('numero_factura');
-
-                    $partes        = $ultima ? explode('-', $ultima) : [];
-                    $siguiente     = $partes ? ((int) end($partes)) + 1 : 1;
-                    $numeroFactura = 'FAC-' . str_pad($siguiente, 4, '0', STR_PAD_LEFT);
-                }
+                // El número y los datos del CAI siempre los asigna el servidor (rango SAR)
+                $fiscal = NumeracionFacturaService::asignar($validated['empresa_id']);
 
                 $venta = Venta::create([
                     'empresa_id'     => $validated['empresa_id'],
                     'cliente_id'     => $validated['cliente_id'] ?? null,
                     'bodega_id'      => $validated['bodega_id'],
                     'usuario_id'     => $request->user()->id,
-                    'numero_factura' => $numeroFactura,
+                    ...$fiscal,
                     'fecha_venta'    => $validated['fecha_venta'],
                     'subtotal'       => $subtotal,
                     'descuento'      => $descuento,
@@ -114,6 +91,10 @@ class VentaController extends ApiController
                     'impuesto'       => $impuesto,
                     'total'          => $subtotal - $descuento + $costoEnvio + $impuesto,
                     'metodo_pago'    => $validated['metodo_pago'] ?? 'efectivo',
+                    'exonerado'            => $exonerado,
+                    'orden_compra_exenta'  => $exonerado ? ($validated['orden_compra_exenta'] ?? null) : null,
+                    'constancia_exonerado' => $exonerado ? ($validated['constancia_exonerado'] ?? null) : null,
+                    'registro_sag'         => $exonerado ? ($validated['registro_sag'] ?? null) : null,
                     'estado'         => 'completada',
                 ]);
 
@@ -172,13 +153,13 @@ class VentaController extends ApiController
             return $this->error($e->getMessage(), 422);
         }
 
-        $venta->load(['cliente', 'bodega', 'detalles.producto']);
+        $venta->load(['cliente', 'bodega', 'usuario', 'detalles.producto.unidadMedida']);
         return $this->created(new VentaResource($venta));
     }
 
     public function show(Venta $venta): JsonResponse
     {
-        $venta->load(['cliente', 'bodega', 'detalles.producto']);
+        $venta->load(['cliente', 'bodega', 'usuario', 'detalles.producto.unidadMedida']);
         return response()->json(['success' => true, 'data' => new VentaResource($venta)]);
     }
 

@@ -14,6 +14,7 @@ class Empresa extends Model
         'telefono', 'direccion', 'isv_rate', 'logo', 'activo', 'rubro',
         'config_cotizacion',
         'tipo_facturacion',
+        'cai', 'factura_rango_desde', 'factura_rango_hasta', 'factura_fecha_limite',
         'color_primario', 'color_secundario',
         'timeout_inactividad',
     ];
@@ -27,6 +28,7 @@ class Empresa extends Model
             'activo'            => 'boolean',
             'isv_rate'          => 'decimal:2',
             'config_cotizacion' => 'array',
+            'factura_fecha_limite' => 'date',
         ];
     }
 

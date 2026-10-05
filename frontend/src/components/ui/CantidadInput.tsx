@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 interface Props {
   value: number
@@ -14,10 +14,13 @@ interface Props {
  */
 export default function CantidadInput({ value, onChange, onRemove, className }: Props) {
   const [draft, setDraft] = useState(String(value))
+  const [prevValue, setPrevValue] = useState(value)
 
-  useEffect(() => {
-    setDraft(prev => (Number(prev) === value ? prev : String(value)))
-  }, [value])
+  // Si la cantidad cambia desde fuera (botones + / −), sincronizar el texto
+  if (value !== prevValue) {
+    setPrevValue(value)
+    if (Number(draft) !== value) setDraft(String(value))
+  }
 
   return (
     <input

@@ -46,6 +46,8 @@ export default function VentasPage() {
   const [cobraEnvio, setCobraEnvio]   = useState(false)
   const [costoEnvio, setCostoEnvio]   = useState(0)
   const [aplicarISV, setAplicarISV]   = useState(true)
+  const [exonerado, setExonerado]     = useState(false)
+  const [exoneracion, setExoneracion] = useState({ orden_compra_exenta: '', constancia_exonerado: '', registro_sag: '' })
   const [lineas, setLineas]         = useState<LineaVenta[]>([])
 
   const [metodoPago, setMetodoPago] = useState<'efectivo'|'tarjeta'|'transferencia'|'mixto'>('efectivo')
@@ -90,10 +92,10 @@ export default function VentasPage() {
 
   const { data: numData, refetch: refetchNum } = useQuery({
     queryKey: ['venta-siguiente-num', empresaId],
-    queryFn:  () => ventasApi.siguienteNumero(empresaId).then(r => r.data.data.numero_factura),
+    queryFn:  () => ventasApi.siguienteNumero(empresaId).then(r => r.data.data),
     enabled:  empresaId > 0,
   })
-  useEffect(() => { if (numData) setNFactura(numData) }, [numData])
+  useEffect(() => { if (numData) setNFactura(numData.numero_factura ?? '') }, [numData])
 
   const crear = useMutation({
     mutationFn: (payload: unknown) => ventasApi.create(payload),
@@ -170,7 +172,7 @@ export default function VentasPage() {
   const totalItems = lineas.reduce((s, l) => s + l.cantidad, 0)
 
   const subtotal = lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0)
-  const isv = aplicarISV && subtotal > 0
+  const isv = aplicarISV && !exonerado && subtotal > 0
     ? lineas.reduce((sum, l) => {
         const rate = (l.tipo === 'producto' && l.producto?.tasa_isv != null
           ? l.producto.tasa_isv
@@ -208,12 +210,13 @@ export default function VentasPage() {
       resetForm(); setMesa('')
       toast.info(`Pedido ${c.numero_comanda} enviado a cocina.`)
     },
-    onError: (err) => setError(err instanceof Error ? err.message : getAxiosError(err)),
+    onError: (err) => toast.error(err instanceof Error ? err.message : getAxiosError(err)),
   })
 
   const resetForm = () => {
     setClienteId(''); setBodegaId(''); setFecha(todayISO())
     setDescuento(0); setCobraEnvio(false); setCostoEnvio(0); setAplicarISV(true); setLineas([])
+    setExonerado(false); setExoneracion({ orden_compra_exenta: '', constancia_exonerado: '', registro_sag: '' })
     setMetodoPago('efectivo'); setSearch('')
   }
 
@@ -257,6 +260,10 @@ export default function VentasPage() {
     costo_envio:    cobraEnvio ? costoEnvio : 0,
     impuesto:       Math.round(isv * 10000) / 10000,
     metodo_pago:    metodoPago,
+    exonerado,
+    orden_compra_exenta:  exonerado ? exoneracion.orden_compra_exenta.trim() || null : null,
+    constancia_exonerado: exonerado ? exoneracion.constancia_exonerado.trim() || null : null,
+    registro_sag:         exonerado ? exoneracion.registro_sag.trim() || null : null,
     detalles: lineas.map(l => ({
       producto_id:     l.tipo === 'producto' ? l.producto!.id : null,
       receta_id:       l.tipo === 'receta'   ? l.receta!.id   : null,
@@ -340,7 +347,12 @@ export default function VentasPage() {
             <span>Envío</span><span className="font-medium">+ {formatCurrency(envio)}</span>
           </div>
         )}
-        {aplicarISV && (
+        {exonerado && (
+          <div className="flex justify-between text-sm text-[#5F6B7A]">
+            <span>ISV</span><span className="font-medium text-emerald-600">Exonerado</span>
+          </div>
+        )}
+        {aplicarISV && !exonerado && (
           <div className="flex justify-between text-sm text-[#5F6B7A]">
             <span>ISV ({empresaConfig?.isv_rate ?? 15}%)</span>
             <span className="font-medium">{formatCurrency(isv)}</span>
@@ -378,7 +390,7 @@ export default function VentasPage() {
               loading={enviarCocina.isPending}
               icon={<UtensilsCrossed size={15} />}
               disabled={lineas.length === 0 || !bodegaId || sinSesion}
-              onClick={() => { setError(''); enviarCocina.mutate() }}
+              onClick={() => enviarCocina.mutate()}
               className="w-full justify-center"
               style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' }}
             >
@@ -466,6 +478,24 @@ export default function VentasPage() {
         )}
       </div>
 
+      {numData?.aviso && (
+        <div className={`flex items-center justify-between gap-4 px-4 py-3.5 rounded-xl border ${
+          numData.bloqueado ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+          <div className={`flex items-center gap-3 ${numData.bloqueado ? 'text-red-800' : 'text-amber-800'}`}>
+            <AlertTriangle size={18} className={`shrink-0 ${numData.bloqueado ? 'text-red-500' : 'text-amber-500'}`} />
+            <div>
+              <p className="text-sm font-semibold">{numData.bloqueado ? 'No se puede facturar' : 'Revisa tu CAI'}</p>
+              <p className={`text-xs mt-0.5 ${numData.bloqueado ? 'text-red-700' : 'text-amber-700'}`}>{numData.aviso}</p>
+            </div>
+          </div>
+          <button onClick={() => navigate('/configuracion')}
+            className={`shrink-0 px-3 py-1.5 text-white text-xs font-semibold rounded-lg transition-colors ${
+              numData.bloqueado ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}`}>
+            Ir a Configuración
+          </button>
+        </div>
+      )}
+
       {sinSesion && (
         <div className="flex items-center justify-between gap-4 px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-xl">
           <div className="flex items-center gap-3 text-amber-800">
@@ -546,6 +576,38 @@ export default function VentasPage() {
                 ]}
               />
             </div>
+          </div>
+
+          {/* Venta exonerada (SAR) */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={exonerado} onChange={e => setExonerado(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 accent-[var(--cp)]" />
+              <span className="text-sm font-semibold text-[var(--cs)]">Venta exonerada</span>
+              <span className="text-xs text-[#5F6B7A]">— no cobra ISV</span>
+            </label>
+            {exonerado && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                <div>
+                  <label className={labelCls}>N° orden de compra exenta</label>
+                  <input value={exoneracion.orden_compra_exenta}
+                    onChange={e => setExoneracion(x => ({ ...x, orden_compra_exenta: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
+                </div>
+                <div>
+                  <label className={labelCls}>N° constancia de registro exonerado</label>
+                  <input value={exoneracion.constancia_exonerado}
+                    onChange={e => setExoneracion(x => ({ ...x, constancia_exonerado: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
+                </div>
+                <div>
+                  <label className={labelCls}>N° registro de la SAG</label>
+                  <input value={exoneracion.registro_sag}
+                    onChange={e => setExoneracion(x => ({ ...x, registro_sag: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

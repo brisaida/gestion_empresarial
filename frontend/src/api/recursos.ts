@@ -244,7 +244,7 @@ export const ventasApi = {
   create:           (data: unknown) => create<Venta>('/ventas', data),
   cancelar:         (id: number) => client.post<ApiResponse<Venta>>(`/ventas/${id}/cancelar`),
   siguienteNumero:  (empresaId: number) =>
-    client.get<ApiResponse<{ numero_factura: string }>>('/ventas/siguiente-numero', { params: { empresa_id: empresaId } }),
+    client.get<ApiResponse<{ numero_factura: string | null; aviso: string | null; bloqueado: boolean }>>('/ventas/siguiente-numero', { params: { empresa_id: empresaId } }),
 }
 
 // ── Comandas ───────────────────────────────────────────────────────────────

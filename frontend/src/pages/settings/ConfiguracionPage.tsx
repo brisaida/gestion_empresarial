@@ -36,6 +36,7 @@ export default function ConfiguracionPage() {
   const [colorPrimario,      setColorPrimario]      = useState('#0E78D8')
   const [colorSecundario,    setColorSecundario]    = useState('#072B5A')
   const [timeoutInactividad, setTimeoutInactividad] = useState(30)
+  const [fiscal, setFiscal] = useState({ cai: '', factura_rango_desde: '', factura_rango_hasta: '', factura_fecha_limite: '' })
 
   // Inicializar form cuando llegan los datos
   const initialized = useRef(false)
@@ -59,6 +60,12 @@ export default function ConfiguracionPage() {
     setColorPrimario(empresa.color_primario   ?? '#0E78D8')
     setColorSecundario(empresa.color_secundario ?? '#072B5A')
     setTimeoutInactividad(empresa.timeout_inactividad ?? 30)
+    setFiscal({
+      cai:                  empresa.cai                  ?? '',
+      factura_rango_desde:  empresa.factura_rango_desde  ?? '',
+      factura_rango_hasta:  empresa.factura_rango_hasta  ?? '',
+      factura_fecha_limite: empresa.factura_fecha_limite ?? '',
+    })
   }
 
   /* ── Guardar datos generales + cotizaciones ─────────────────── */
@@ -89,6 +96,10 @@ export default function ConfiguracionPage() {
       rubro: (form.rubro as Rubro) || null,
       config_cotizacion: configCot,
       tipo_facturacion: tipo,
+      cai:                  fiscal.cai.trim() || null,
+      factura_rango_desde:  fiscal.factura_rango_desde.trim() || null,
+      factura_rango_hasta:  fiscal.factura_rango_hasta.trim() || null,
+      factura_fecha_limite: fiscal.factura_fecha_limite || null,
     }),
     onSuccess: () => {
       setFacturacionOk(true); setFacturacionError('')
@@ -367,6 +378,23 @@ export default function ConfiguracionPage() {
               <p className="text-xs text-[#5F6B7A] mt-0.5">Formato angosto estilo supermercado o restaurante. Ideal para impresoras térmicas de 80 mm.</p>
             </div>
           </button>
+        </div>
+
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <p className="text-xs font-bold text-[var(--cs)] uppercase tracking-wide mb-1">Datos fiscales (SAR)</p>
+          <p className="text-xs text-[#5F6B7A] mb-4">Datos de tu resolución de CAI. Se usan en la factura y en la numeración correlativa.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <Input label="CAI" value={fiscal.cai} placeholder="XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX-XX"
+                onChange={e => setFiscal(f => ({ ...f, cai: e.target.value }))} />
+            </div>
+            <Input label="Rango autorizado — desde" value={fiscal.factura_rango_desde} placeholder="000-001-01-00000001"
+              onChange={e => setFiscal(f => ({ ...f, factura_rango_desde: e.target.value }))} />
+            <Input label="Rango autorizado — hasta" value={fiscal.factura_rango_hasta} placeholder="000-001-01-00000500"
+              onChange={e => setFiscal(f => ({ ...f, factura_rango_hasta: e.target.value }))} />
+            <Input label="Fecha límite de emisión" type="date" value={fiscal.factura_fecha_limite}
+              onChange={e => setFiscal(f => ({ ...f, factura_fecha_limite: e.target.value }))} />
+          </div>
         </div>
 
         {facturacionError && <p className="mt-3 text-sm text-red-600">{facturacionError}</p>}

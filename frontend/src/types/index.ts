@@ -37,6 +37,10 @@ export interface EmpresaConfig {
   logo_url?: string | null
   config_cotizacion?: ConfigCotizacion
   tipo_facturacion?: 'ticket' | 'factura_a4'
+  cai?: string | null
+  factura_rango_desde?: string | null
+  factura_rango_hasta?: string | null
+  factura_fecha_limite?: string | null
   color_primario?: string
   color_secundario?: string
   tiene_firma?: boolean
@@ -287,6 +291,8 @@ export interface DetalleVenta {
   subtotal: number
   producto?: string | null
   codigo?: string | null
+  unidad?: string | null
+  tasa_isv?: number | null
   receta?: string | null
 }
 
@@ -401,6 +407,11 @@ export interface Venta {
   bodega_id: number
   usuario_id: number
   numero_factura?: string
+  // Datos del CAI vigentes al emitir la factura
+  cai?: string | null
+  cai_rango_desde?: string | null
+  cai_rango_hasta?: string | null
+  cai_fecha_limite?: string | null
   fecha_venta: string
   subtotal: number
   descuento: number
@@ -408,7 +419,13 @@ export interface Venta {
   total: number
   estado: EstadoVenta
   metodo_pago?: 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto' | null
-  cliente?: { id: number; nombre: string; rtn?: string | null } | null
+  costo_envio?: number
+  exonerado?: boolean
+  orden_compra_exenta?: string | null
+  constancia_exonerado?: string | null
+  registro_sag?: string | null
+  vendedor?: string | null
+  cliente?: { id: number; nombre: string; rtn?: string | null; direccion?: string | null } | null
   bodega?: { id: number; nombre: string }
   detalles?: DetalleVenta[]
 }

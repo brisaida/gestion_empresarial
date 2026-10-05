@@ -11,14 +11,17 @@ class Venta extends Model
 
     protected $fillable = [
         'empresa_id', 'cliente_id', 'bodega_id', 'usuario_id',
-        'numero_factura', 'fecha_venta',
+        'numero_factura', 'cai', 'cai_rango_desde', 'cai_rango_hasta', 'cai_fecha_limite', 'fecha_venta',
         'subtotal', 'impuesto', 'descuento', 'costo_envio', 'total', 'estado', 'metodo_pago',
+        'exonerado', 'orden_compra_exenta', 'constancia_exonerado', 'registro_sag',
     ];
 
     protected function casts(): array
     {
         return [
             'fecha_venta' => 'date',
+            'cai_fecha_limite' => 'date',
+            'exonerado' => 'boolean',
             'subtotal'    => 'decimal:4',
             'impuesto'    => 'decimal:4',
             'descuento'    => 'decimal:4',
