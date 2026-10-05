@@ -1,5 +1,6 @@
 import type { Cotizacion, ConfigCotizacion, DatosFirma } from '@/types'
-import { coloresDocumento, type PrintEmpresa } from './printVenta'
+import { type PrintEmpresa } from './printVenta'
+import { numeroALetras } from './numeroALetras'
 import { bloqueFirma } from './firmaDocumento'
 
 // Los artículos libres llevan texto escrito a mano: escaparlo antes de meterlo en el HTML
@@ -10,8 +11,13 @@ export type { PrintEmpresa }
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
-const fmt = (n: number) =>
-  'L ' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+const num = (n: number) => Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
+/** YYYY-MM-DD → DD/MM/YYYY */
+const fecha = (f?: string | null) => {
+  const m = f?.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (f ?? '')
+}
 
 export async function fetchBase64(url: string): Promise<string | null> {
   try {
@@ -31,7 +37,6 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
   const mostrarDesc = configCot?.mostrar_descripcion ?? false
   const mostrarFoto = configCot?.mostrar_foto ?? false
   const isvPct      = empresa.isv_rate ?? 15
-  const { NAVY, BLUE } = coloresDocumento(empresa)
 
   /* ── Pre-cargar imágenes de productos como base64 ─────────── */
   const imageMap = new Map<number, string>()
@@ -48,267 +53,211 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
     )
   }
 
-  const estados: Record<string, { label: string; color: string }> = {
-    borrador:   { label: 'BORRADOR',   color: '#6B7280' },
-    enviada:    { label: 'ENVIADA',    color: '#0E78D8' },
-    aprobada:   { label: 'APROBADA',   color: '#059669' },
-    rechazada:  { label: 'RECHAZADA',  color: '#DC2626' },
-    convertida: { label: 'CONVERTIDA', color: '#7C3AED' },
-    vencida:    { label: 'VENCIDA',    color: '#D97706' },
+  const estados: Record<string, string> = {
+    borrador: 'BORRADOR', enviada: 'ENVIADA', aprobada: 'APROBADA',
+    rechazada: 'RECHAZADA', convertida: 'CONVERTIDA', vencida: 'VENCIDA',
   }
-  const estadoInfo = estados[c.estado] ?? { label: c.estado.toUpperCase(), color: '#6B7280' }
+  const estado = estados[c.estado] ?? c.estado.toUpperCase()
+  const esc = (t?: string | null) => escapeHtml(t ?? '')
 
   /* ── Filas de productos ─────────────────────────────────── */
-  const filas = detalles.map((d, i) => {
+  const filas = detalles.map(d => {
     const imgSrc = mostrarFoto && d.producto?.id != null ? imageMap.get(d.producto.id) : null
     const descHtml = mostrarDesc && d.producto?.descripcion
-      ? `<div style="color:#888;font-size:10.5px;margin-top:2px;line-height:1.4">${d.producto.descripcion}</div>`
+      ? `<div class="desc">${esc(d.producto.descripcion)}</div>`
       : ''
-
-    const bg = i % 2 === 0 ? '#ffffff' : '#F4F7FA'
     const fotoCelda = mostrarFoto
-      ? `<td style="padding:6px 8px;text-align:center;border-bottom:1px solid #EEF0F4;width:80px">
-          ${imgSrc
-            ? `<img src="${imgSrc}" style="width:60px;height:60px;object-fit:contain;border-radius:6px;border:1px solid #E5E9EE;display:inline-block" alt="">`
-            : `<div style="width:60px;height:60px;border-radius:6px;border:1px solid #E5E9EE;background:#F4F7FA;display:inline-block"></div>`
-          }
-        </td>`
+      ? `<td class="c">${imgSrc ? `<img src="${imgSrc}" class="foto" alt="">` : '<div class="foto vacia"></div>'}</td>`
       : ''
+    const cant = Number(d.cantidad) % 1 === 0 ? Number(d.cantidad) : num(d.cantidad)
     return `
-    <tr style="background:${bg}">
-      ${fotoCelda}
-      <td style="padding:9px 10px;text-align:center;color:#555;font-size:12px;border-bottom:1px solid #EEF0F4">${Number(d.cantidad).toFixed(2)}</td>
-      <td style="padding:9px 10px;border-bottom:1px solid #EEF0F4">
-        <span style="color:${NAVY};font-size:12.5px;font-weight:600">${d.producto?.nombre ?? escapeHtml(d.descripcion ?? 'Producto')}</span>
-        ${d.producto?.codigo ? `<span style="color:#aaa;font-size:10px;font-family:monospace;margin-left:5px">[${d.producto.codigo}]</span>` : ''}
-        ${descHtml}
-      </td>
-      <td style="padding:9px 10px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #EEF0F4">${fmt(d.precio_unitario)}</td>
-      <td style="padding:9px 10px;text-align:center;color:#555;font-size:12px;border-bottom:1px solid #EEF0F4">${isvPct}%</td>
-      <td style="padding:9px 10px;text-align:right;font-weight:700;color:${NAVY};font-size:12.5px;border-bottom:1px solid #EEF0F4">${fmt(d.subtotal)}</td>
-    </tr>`
+      <tr>
+        ${fotoCelda}
+        <td class="c">${cant}</td>
+        <td>${d.producto?.codigo ? `<span class="cod">${esc(d.producto.codigo)}</span> ` : ''}${esc(d.producto?.nombre ?? d.descripcion ?? 'Producto')}${descHtml}</td>
+        <td class="r">${num(d.precio_unitario)}</td>
+        <td class="r">${num(d.subtotal)}</td>
+      </tr>`
   }).join('')
 
-  /* ── Logo o inicial ─────────────────────────────────────── */
-  const logoHtml = logoSrc
-    ? `<img src="${logoSrc}" style="height:52px;max-width:160px;object-fit:contain;display:block;margin-bottom:6px" alt="Logo">`
-    : `<div style="width:44px;height:44px;background:linear-gradient(135deg,${BLUE},${NAVY});border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:6px"><span style="color:#fff;font-size:20px;font-weight:700">${empresa.nombre[0].toUpperCase()}</span></div>`
+  // Alto vacío para que el cuadro de productos llene la página (aprox. en mm)
+  const altoFila = mostrarFoto ? 19 : mostrarDesc ? 9 : 5.6
+  const relleno = Math.max(6, 128 - detalles.length * altoFila - (c.observaciones ? 14 : 0) - (firma ? 28 : 0))
 
-  /* ── Datos fiscales empresa ─────────────────────────────── */
-  const empresaFiscal = [
-    empresa.nombre_legal && empresa.nombre_legal !== empresa.nombre
-      ? `<div style="font-size:10.5px;color:#555;margin-top:1px;font-style:italic">${empresa.nombre_legal}</div>` : '',
-    empresa.rtn       ? `<div style="font-size:10.5px;color:#666;margin-top:2px">RTN: ${empresa.rtn}</div>` : '',
-    empresa.direccion ? `<div style="font-size:10.5px;color:#666;margin-top:1px">${empresa.direccion}</div>` : '',
-    empresa.telefono  ? `<div style="font-size:10.5px;color:#666;margin-top:1px">Tel: ${empresa.telefono}${empresa.correo ? `  ·  ${empresa.correo}` : ''}</div>`
-                      : (empresa.correo ? `<div style="font-size:10.5px;color:#666;margin-top:1px">${empresa.correo}</div>` : ''),
+  /* ── Empresa ────────────────────────────────────────────── */
+  const datosEmpresa = [
+    `<div class="razon">${esc(empresa.nombre_legal || empresa.nombre)}</div>`,
+    empresa.rtn       ? `<div class="b">R.T.N.: ${esc(empresa.rtn)}</div>` : '',
+    empresa.direccion ? `<div>${esc(empresa.direccion)}</div>` : '',
+    empresa.telefono  ? `<div>TEL.: ${esc(empresa.telefono)}</div>` : '',
+    empresa.correo    ? `<div>Correo electrónico: ${esc(empresa.correo)}</div>` : '',
   ].filter(Boolean).join('')
 
-  /* ── Datos del cliente ──────────────────────────────────── */
+  /* ── Cliente ────────────────────────────────────────────── */
   const cli = c.cliente as (typeof c.cliente & { rtn?: string; telefono?: string; direccion?: string; correo?: string }) | undefined
-  const clienteDetalle = [
-    cli?.rtn       ? `<div style="font-size:11px;color:#555;margin-top:2px">RTN: ${cli.rtn}</div>` : '',
-    cli?.direccion ? `<div style="font-size:11px;color:#555;margin-top:1px">${cli.direccion}</div>` : '',
-    cli?.telefono  ? `<div style="font-size:11px;color:#555;margin-top:1px">Tel: ${cli.telefono}</div>` : '',
-    cli?.correo    ? `<div style="font-size:11px;color:#555;margin-top:1px">${cli.correo}</div>` : '',
-  ].filter(Boolean).join('')
-
-  /* ── Observaciones ──────────────────────────────────────── */
-  const obsBlock = c.observaciones ? `
-    <div style="margin-bottom:18px;padding:12px 14px;border-left:4px solid ${BLUE};background:#F4F7FA;border-radius:4px">
-      <p style="margin:0 0 4px;font-size:9.5px;font-weight:700;color:${BLUE};text-transform:uppercase;letter-spacing:.6px">Comentarios o instrucciones especiales</p>
-      <p style="margin:0;font-size:12px;color:#444;line-height:1.6">${c.observaciones}</p>
-    </div>` : ''
+  const clienteExtra = [cli?.direccion, cli?.telefono ? `Tel.: ${cli.telefono}` : '', cli?.correo]
+    .filter(Boolean).map(t => esc(t)).join(' · ')
 
   /* ── Totales ────────────────────────────────────────────── */
-  const filaDescuento = c.descuento > 0
-    ? `<tr>
-        <td style="padding:5px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5">Descuento</td>
-        <td style="padding:5px 14px;text-align:right;color:#DC2626;font-weight:600;font-size:12px;border-bottom:1px solid #F0F2F5">− ${fmt(c.descuento)}</td>
-       </tr>` : ''
-
-  const filaISV = c.impuesto > 0
-    ? `<tr>
-        <td style="padding:5px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5">ISV (${isvPct}%)</td>
-        <td style="padding:5px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5">${fmt(c.impuesto)}</td>
-       </tr>` : ''
+  const fila = (label: string, valor: number, cls = '') =>
+    `<tr class="${cls}"><th>${label}</th><td class="l">L.</td><td class="v">${num(valor)}</td></tr>`
+  const filasTotales = [
+    fila('SUB TOTAL', c.subtotal),
+    c.descuento > 0 ? fila('DESCUENTOS Y REBAJAS', c.descuento) : '',
+    fila(`I.S.V. ${isvPct}%`, c.impuesto),
+    fila('TOTAL', c.total, 'total'),
+  ].join('')
 
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>${c.numero_cotizacion} — Cotización</title>
+  <title>${esc(c.numero_cotizacion)} — Cotización</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { font-family: Arial, Helvetica, sans-serif; color: #333; background: #fff; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #222; background: #fff; font-size: 11px; }
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      @page { size: A4; margin: 12mm 14mm; }
+      @page { size: letter; margin: 10mm; }
       .no-print { display: none !important; }
+      .page { padding: 0; }
     }
-    .page {
-      width: 100%;
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 28px 32px 24px;
-      display: flex;
-      flex-direction: column;
-      min-height: calc(297mm - 24mm); /* A4 menos márgenes de impresión */
-    }
-    table { width: 100%; border-collapse: collapse; }
-    .label { font-size: 9px; font-weight: 700; color: ${BLUE}; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 3px; }
-    .value { font-size: 13px; font-weight: 700; color: ${NAVY}; }
-    /* La sección de la tabla crece para llenar el espacio disponible */
-    .tabla-section { flex: 1; display: flex; flex-direction: column; }
-    .tabla-productos { flex: 1; height: 100%; border-collapse: collapse; width: 100%; }
-    /* Fila vacía que absorbe el espacio sobrante */
-    .filler-row { height: 100%; }
-    .filler-row td { border-left: 1px solid #E5E9EE; border-right: 1px solid #E5E9EE; }
-    .filler-row td:first-child { border-left: none; }
-    .filler-row td:last-child  { border-right: none; }
+    .page { width: 196mm; min-height: 254mm; margin: 0 auto; padding: 8mm 0; display: flex; flex-direction: column; }
+    table { border-collapse: collapse; }
+
+    .top { display: flex; justify-content: space-between; gap: 10mm; }
+    .emp { font-size: 10px; line-height: 1.35; color: #444; }
+    .emp img { max-height: 26mm; max-width: 70mm; object-fit: contain; display: block; margin-bottom: 6px; }
+    .emp .razon { font-size: 13px; font-weight: 800; color: #222; text-transform: uppercase; }
+    .emp .b { font-weight: 700; color: #222; }
+    .doc { text-align: right; display: flex; flex-direction: column; justify-content: space-between; min-width: 72mm; }
+    .doc h1 { font-size: 18px; letter-spacing: 1px; }
+    .doc .no { font-size: 22px; white-space: nowrap; }
+    .doc .no small { font-size: 11px; font-weight: 700; }
+    .doc .estado { font-size: 9.5px; font-weight: 700; color: #555; margin-top: 2px; letter-spacing: .5px; }
+    .doc .linea { font-size: 11px; margin-top: 6px; text-align: left; display: flex; gap: 6px; align-items: flex-end; }
+    .doc .linea b { white-space: nowrap; font-weight: 400; }
+    .doc .linea span { flex: 1; border-bottom: 1px solid #999; padding: 0 4px 1px; font-size: 12px; }
+
+    .cliente { margin-top: 12px; display: flex; align-items: stretch; border: 1px solid #999; border-radius: 6px; overflow: hidden; }
+    .cliente .tag { background: #333; color: #fff; font-weight: 700; padding: 9px 12px; font-size: 11px; }
+    .cliente .nom { flex: 1; padding: 9px 12px; font-size: 12px; }
+    .cliente .rtn { padding: 9px 14px; font-size: 12px; white-space: nowrap; }
+    .cliente .rtn b { font-size: 10px; margin-right: 8px; }
+    .cli-extra { font-size: 10px; color: #555; margin: 4px 2px 0; }
+
+    .obs { margin-top: 10px; border: 1px solid #aaa; border-radius: 8px; padding: 6px 12px; }
+    .obs small { font-size: 8px; font-weight: 700; display: block; margin-bottom: 2px; }
+    .obs p { font-size: 11px; line-height: 1.45; }
+
+    .det { width: 100%; margin-top: 12px; }
+    .det table { width: 100%; }
+    .det thead th { background: #333; color: #fff; font-size: 11px; padding: 7px 6px; border-left: 1px solid #fff; }
+    .det thead th:first-child { border-left: none; border-top-left-radius: 6px; }
+    .det thead th:last-child { border-top-right-radius: 6px; }
+    .det tbody td { border-left: 1px solid #999; padding: 4px 6px; font-size: 11px; vertical-align: top; }
+    .det tbody td:last-child { border-right: 1px solid #999; }
+    .det tbody tr.relleno td { border-bottom: 1px solid #999; }
+    .det .c { text-align: center; } .det .r { text-align: right; }
+    .det .cod { font-size: 9px; color: #555; font-family: monospace; }
+    .det .desc { font-size: 9.5px; color: #666; margin-top: 2px; line-height: 1.35; }
+    .det .foto { width: 60px; height: 60px; object-fit: contain; display: inline-block; border: 1px solid #ddd; border-radius: 4px; }
+    .det .foto.vacia { background: #f4f4f4; }
+
+    .bottom { display: flex; gap: 10mm; margin-top: auto; padding-top: 12px; align-items: flex-start; }
+    .izq { flex: 1.15; }
+    .letras { background: #D1D3D4; border: 1px solid #aaa; border-radius: 12px; padding: 4px 12px 8px; min-height: 12mm; }
+    .letras small { font-size: 8px; font-weight: 700; display: block; margin-bottom: 3px; }
+    .letras div { font-size: 11px; font-weight: 700; }
+    .firma { margin-top: 10px; text-align: center; }
+
+    .tot { flex: 1; }
+    .tot table { width: 100%; }
+    .tot th { text-align: right; font-size: 10px; font-weight: 700; padding: 0 4px; white-space: nowrap; }
+    .tot td.l { width: 14px; font-size: 10px; font-weight: 700; }
+    .tot td.v { background: #D1D3D4; border: 1px solid #aaa; text-align: right; padding: 3px 8px; font-size: 11px; width: 40%; }
+    .tot tr.total th, .tot tr.total td.l { color: #C0392B; font-size: 12px; padding-top: 4px; }
+    .tot tr.total td.v { background: #fff; font-weight: 700; font-size: 13px; }
+
+    .pie { margin-top: 14px; display: flex; justify-content: space-between; font-size: 10px; color: #555; }
+    .pie b { font-size: 11px; color: #333; letter-spacing: .3px; }
   </style>
 </head>
 <body>
-<div class="page">
 
-  <div class="no-print" style="text-align:right;margin-bottom:16px">
-    <button onclick="window.print()" style="background:${BLUE};color:#fff;border:none;padding:9px 22px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:600">
-      🖨️ Guardar / Imprimir PDF
-    </button>
+<div class="no-print" style="text-align:right;max-width:196mm;margin:16px auto 0">
+  <button onclick="window.print()" style="background:#333;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">
+    🖨️ Guardar / Imprimir PDF
+  </button>
+</div>
+
+<div class="page">
+  <div class="top">
+    <div class="emp">
+      ${logoSrc ? `<img src="${logoSrc}" alt="Logo">` : ''}
+      ${datosEmpresa}
+    </div>
+    <div class="doc">
+      <div>
+        <h1>COTIZACIÓN</h1>
+        <div class="no"><small>No.</small> ${esc(c.numero_cotizacion)}</div>
+        <div class="estado">${estado}</div>
+      </div>
+      <div>
+        <div class="linea"><b>FECHA:</b> <span>${fecha(c.fecha_cotizacion)}</span></div>
+        <div class="linea"><b>VÁLIDA HASTA:</b> <span>${c.fecha_vencimiento ? fecha(c.fecha_vencimiento) : 'Sin vencimiento'}</span></div>
+      </div>
+    </div>
   </div>
 
-  <!-- ═══ ENCABEZADO ═══ -->
-  <table style="margin-bottom:0">
-    <tr>
-      <td style="width:55%;vertical-align:top;padding-right:20px">
-        ${logoHtml}
-        <div style="font-size:18px;font-weight:800;color:${NAVY};margin-bottom:3px">${empresa.nombre}</div>
-        ${empresaFiscal}
-      </td>
-      <td style="vertical-align:top;text-align:right">
-        <div style="font-size:40px;font-weight:900;color:${BLUE};letter-spacing:1px;line-height:1">Cotización</div>
-        <div style="margin-top:10px;display:inline-block;text-align:left;min-width:200px">
-          <table style="width:auto;margin-left:auto">
-            <tr>
-              <td style="font-size:10.5px;color:#888;padding:2px 8px 2px 0;white-space:nowrap">FECHA</td>
-              <td style="font-size:10.5px;font-weight:700;color:${NAVY};padding:2px 0">${c.fecha_cotizacion}</td>
-            </tr>
-            <tr>
-              <td style="font-size:10.5px;color:#888;padding:2px 8px 2px 0;white-space:nowrap">N.° COTIZACIÓN</td>
-              <td style="font-size:10.5px;font-weight:700;color:${NAVY};padding:2px 0">${c.numero_cotizacion}</td>
-            </tr>
-            <tr>
-              <td style="font-size:10.5px;color:#888;padding:2px 8px 2px 0;white-space:nowrap">ESTADO</td>
-              <td style="padding:2px 0">
-                <span style="font-size:9.5px;font-weight:700;color:#fff;background:${estadoInfo.color};padding:2px 8px;border-radius:20px">${estadoInfo.label}</span>
-              </td>
-            </tr>
-          </table>
-        </div>
-      </td>
-    </tr>
-  </table>
+  <div class="cliente">
+    <div class="tag">CLIENTE:</div>
+    <div class="nom">${esc(cli?.nombre ?? 'CONSUMIDOR FINAL')}</div>
+    <div class="rtn"><b>R.T.N.:</b>${esc(cli?.rtn)}</div>
+  </div>
+  ${clienteExtra ? `<div class="cli-extra">${clienteExtra}</div>` : ''}
 
-  <!-- Barra de color -->
-  <div style="height:3px;background:linear-gradient(90deg,${NAVY},${BLUE});border-radius:2px;margin:12px 0 14px"></div>
+  ${c.observaciones ? `
+  <div class="obs">
+    <small>COMENTARIOS O INSTRUCCIONES ESPECIALES:</small>
+    <p>${esc(c.observaciones)}</p>
+  </div>` : ''}
 
-  <!-- ═══ CLIENTE + VALIDEZ ═══ -->
-  <table style="margin-bottom:14px">
-    <tr style="vertical-align:top">
-      <td style="width:55%;padding-right:20px">
-        <div style="font-size:10px;font-weight:700;color:${NAVY};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;border-bottom:2px solid ${BLUE};padding-bottom:3px;display:inline-block">Cotización para:</div>
-        <div style="font-size:14px;font-weight:700;color:${NAVY};margin-top:4px">${cli?.nombre ?? 'Consumidor general'}</div>
-        ${clienteDetalle}
-      </td>
-      <td style="vertical-align:top">
-        <table style="width:100%">
-          <tr>
-            <td style="background:#F4F7FA;padding:9px 14px;border-radius:6px 6px 0 0;border-bottom:2px solid #fff">
-              <div class="label">Válida hasta</div>
-              <div class="value" style="color:${c.fecha_vencimiento ? NAVY : '#bbb'}">${c.fecha_vencimiento ?? 'Sin vencimiento'}</div>
-            </td>
-          </tr>
-          <tr>
-            <td style="background:#F4F7FA;padding:9px 14px;border-radius:0 0 6px 6px">
-              <div class="label">Tasa ISV</div>
-              <div class="value">${isvPct}%</div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-
-  <!-- Observaciones -->
-  ${obsBlock}
-
-  <!-- ═══ TABLA DE PRODUCTOS (flex:1 → llena el resto de la página) ═══ -->
-  <div class="tabla-section">
-    <table class="tabla-productos">
+  <div class="det">
+    <table>
       <thead>
-        <tr style="background:${NAVY}">
-          ${mostrarFoto ? `<th style="padding:10px;text-align:center;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:80px">Foto</th>` : ''}
-          <th style="padding:10px;text-align:center;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:65px">Cantidad</th>
-          <th style="padding:10px;text-align:left;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px">Descripción</th>
-          <th style="padding:10px;text-align:right;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:110px">Precio unit.</th>
-          <th style="padding:10px;text-align:center;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:70px">ISV %</th>
-          <th style="padding:10px;text-align:right;color:#fff;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;width:110px">Monto</th>
+        <tr>
+          ${mostrarFoto ? '<th style="width:76px">FOTO</th>' : ''}
+          <th style="width:11%">CANTIDAD</th>
+          <th style="letter-spacing:6px">DESCRIPCION</th>
+          <th style="width:15%">PRECIO<br>UNITARIO</th>
+          <th style="width:16%">TOTAL</th>
         </tr>
       </thead>
       <tbody>
         ${filas}
-        <!-- Fila vacía que estira la tabla hasta llenar la página -->
-        <tr class="filler-row">
-          ${mostrarFoto ? `<td style="border-bottom:1px solid #E5E9EE"></td>` : ''}
-          <td style="border-bottom:1px solid #E5E9EE"></td>
-          <td style="border-bottom:1px solid #E5E9EE"></td>
-          <td style="border-bottom:1px solid #E5E9EE"></td>
-          <td style="border-bottom:1px solid #E5E9EE"></td>
-          <td style="border-bottom:1px solid #E5E9EE"></td>
-        </tr>
+        <tr class="relleno" style="height:${relleno}mm">${mostrarFoto ? '<td></td>' : ''}<td></td><td></td><td></td><td></td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- ═══ TOTALES ═══ -->
-  <table style="margin-top:0;margin-bottom:20px">
-    <tr>
-      <td style="width:55%"></td>
-      <td>
-        <table style="width:100%;border:1px solid #E5E9EE;border-top:none;border-radius:0 0 6px 6px;overflow:hidden">
-          <tr>
-            <td style="padding:6px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5">Subtotal</td>
-            <td style="padding:6px 14px;text-align:right;color:#555;font-size:12px;border-bottom:1px solid #F0F2F5;width:110px">${fmt(c.subtotal)}</td>
-          </tr>
-          ${filaDescuento}
-          ${filaISV}
-          <tr style="background:${NAVY}">
-            <td style="padding:10px 14px;text-align:right;font-size:13px;font-weight:700;color:#fff">TOTAL</td>
-            <td style="padding:10px 14px;text-align:right;font-size:15px;font-weight:800;color:#fff">${fmt(c.total)}</td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-
-  <!-- ═══ FIRMA (solo cotizaciones autorizadas) ═══ -->
-  ${firma ? `
-  <table style="margin:4px 0 18px">
-    <tr>
-      <td style="width:55%"></td>
-      <td style="padding:0 30px;text-align:center;vertical-align:bottom">${bloqueFirma(firma, 'Autorizado por')}</td>
-    </tr>
-  </table>` : ''}
-
-  <!-- ═══ FOOTER ═══ -->
-  <div style="border-top:1px solid #E5E9EE;padding-top:12px;display:flex;justify-content:space-between;align-items:center">
-    <div style="font-size:10px;color:#aaa">
-      ${empresa.nombre}${empresa.telefono ? ` · Tel: ${empresa.telefono}` : ''}${empresa.correo ? ` · ${empresa.correo}` : ''}
+  <div class="bottom">
+    <div class="izq">
+      <div class="letras">
+        <small>VALOR EN LETRAS:</small>
+        <div>${numeroALetras(c.total)}</div>
+      </div>
+      ${firma ? `<div class="firma">${bloqueFirma(firma, 'Autorizado por')}</div>` : ''}
     </div>
-    <div style="font-size:11px;font-weight:700;color:${BLUE};letter-spacing:.5px">¡GRACIAS POR SU PREFERENCIA!</div>
+    <div class="tot">
+      <table>${filasTotales}</table>
+    </div>
   </div>
 
+  <div class="pie">
+    <span>Precios sujetos a cambio sin previo aviso. Este documento no es una factura.</span>
+    <b>¡GRACIAS POR SU PREFERENCIA!</b>
+  </div>
 </div>
 </body>
 </html>`
