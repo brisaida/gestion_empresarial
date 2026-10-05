@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { requisicionesApi, proveedoresApi, productosApi, empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
+import CantidadInput from '@/components/ui/CantidadInput'
 import { getAxiosError, todayISO, imgUrl, formatCurrency } from '@/lib/utils'
 import type { Requisicion, Producto } from '@/types'
 import { printRequisicion } from '@/lib/printRequisicion'
@@ -376,12 +377,13 @@ export default function RequisicionPage() {
                   )}
 
                   <div className="col-span-3 flex items-center justify-center gap-1.5">
-                    <button type="button" onClick={() => updateLinea(i, { cantidad: Math.max(1, l.cantidad - 1) })}
+                    <button type="button" onClick={() => l.cantidad <= 1 ? removeLinea(i) : updateLinea(i, { cantidad: l.cantidad - 1 })}
                       className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                       <Minus size={12} />
                     </button>
-                    <input type="number" min="1" step="1" value={l.cantidad}
-                      onChange={e => updateLinea(i, { cantidad: Math.max(1, Number(e.target.value) || 1) })}
+                    <CantidadInput value={l.cantidad}
+                      onChange={n => updateLinea(i, { cantidad: n })}
+                      onRemove={() => removeLinea(i)}
                       className="w-14 text-center rounded-lg border border-gray-200 py-1.5 text-sm font-bold text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
                     <button type="button" onClick={() => updateLinea(i, { cantidad: l.cantidad + 1 })}
                       className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">

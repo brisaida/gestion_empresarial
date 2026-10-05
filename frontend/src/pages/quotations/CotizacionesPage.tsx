@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { cotizacionesApi, clientesApi, productosApi, empresaApi } from '@/api/recursos'
 import Button from '@/components/ui/Button'
+import CantidadInput from '@/components/ui/CantidadInput'
 import { formatCurrency, getAxiosError, todayISO, imgUrl } from '@/lib/utils'
 import type { Cotizacion, Producto } from '@/types'
 import { printCotizacion } from '@/lib/printCotizacion'
@@ -128,7 +129,9 @@ export default function CotizacionesPage() {
     setLineas(prev => prev.map((l, i) => i === idx ? { ...l, descripcion: value } : l))
 
   const updateCantidad = (idx: number, delta: number) =>
-    setLineas(prev => prev.map((l, i) => i !== idx ? l : { ...l, cantidad: Math.max(1, l.cantidad + delta) }))
+    setLineas(prev => prev
+      .map((l, i) => i !== idx ? l : { ...l, cantidad: l.cantidad + delta })
+      .filter(l => l.cantidad > 0))
 
   const updatePrecio = (idx: number, value: string) =>
     setLineas(prev => prev.map((l, i) => i === idx ? { ...l, precio_unitario: Number(value) || 0 } : l))
@@ -333,8 +336,9 @@ export default function CotizacionesPage() {
                     className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                     <Minus size={12} />
                   </button>
-                  <input type="number" min="1" step="1" value={l.cantidad}
-                    onChange={e => setLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: Math.max(1, Number(e.target.value) || 1) } : ln))}
+                  <CantidadInput value={l.cantidad}
+                    onChange={n => setLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: n } : ln))}
+                    onRemove={() => removeLinea(i)}
                     className="w-14 text-center rounded-lg border border-gray-200 py-1.5 text-sm font-bold text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]" />
                   <button type="button" onClick={() => updateCantidad(i, +1)}
                     className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">

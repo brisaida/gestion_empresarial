@@ -7,6 +7,7 @@ import { useAuth } from '@/stores/authStore'
 import { cotizacionesApi, bodegasApi, clientesApi, productosApi, empresaApi } from '@/api/recursos'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import Button from '@/components/ui/Button'
+import CantidadInput from '@/components/ui/CantidadInput'
 import Modal from '@/components/ui/Modal'
 import SearchBar from '@/components/ui/SearchBar'
 import AutorizarModal from '@/components/ui/AutorizarModal'
@@ -227,7 +228,9 @@ export default function HistorialCotizacionesPage() {
   }
 
   const updateEditCantidad = (idx: number, delta: number) =>
-    setEditLineas(prev => prev.map((l, i) => i !== idx ? l : { ...l, cantidad: Math.max(1, l.cantidad + delta) }))
+    setEditLineas(prev => prev
+      .map((l, i) => i !== idx ? l : { ...l, cantidad: l.cantidad + delta })
+      .filter(l => l.cantidad > 0))
 
   const updateEditPrecio = (idx: number, value: string) =>
     setEditLineas(prev => prev.map((l, i) => i === idx ? { ...l, precio_unitario: Number(value) || 0 } : l))
@@ -562,8 +565,9 @@ export default function HistorialCotizacionesPage() {
                           className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">
                           <Minus size={10} />
                         </button>
-                        <input type="number" min="1" step="1" value={l.cantidad}
-                          onChange={e => setEditLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: Math.max(1, Number(e.target.value) || 1) } : ln))}
+                        <CantidadInput value={l.cantidad}
+                          onChange={n => setEditLineas(prev => prev.map((ln, idx) => idx === i ? { ...ln, cantidad: n } : ln))}
+                          onRemove={() => removeEditLinea(i)}
                           className="w-10 text-center rounded border border-gray-200 py-0.5 text-sm font-bold text-[var(--cs)] focus:outline-none focus:border-[var(--cp)]" />
                         <button type="button" onClick={() => updateEditCantidad(i, +1)}
                           className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] transition-all">

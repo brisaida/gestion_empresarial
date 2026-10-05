@@ -580,12 +580,11 @@ export default function ComprasPage() {
                       </div>
                     </div>
                     <div className="col-span-1 flex items-end justify-center">
-                      {lineas.length > 1 && (
-                        <button type="button" onClick={() => setLineas(p => p.filter((_, idx) => idx !== i))}
-                          className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                          <Trash2 size={15} />
-                        </button>
-                      )}
+                      <button type="button"
+                        onClick={() => setLineas(p => p.length > 1 ? p.filter((_, idx) => idx !== i) : [emptyLinea()])}
+                        className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   </div>
 
