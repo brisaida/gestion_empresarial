@@ -109,7 +109,7 @@ export default function LoginPage() {
                   type="submit"
                   disabled={isSubmitting}
                   className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ background: isSubmitting ? '#5F6B7A' : 'linear-gradient(135deg, var(--cp) 0%, #38D6D4 100%)', boxShadow: '0 4px 20px rgba(14, 120, 216, 0.4)' }}
+                  style={{ background: isSubmitting ? '#5F6B7A' : 'linear-gradient(135deg, var(--cp) 0%, color-mix(in srgb, var(--cp) 75%, black) 100%)', boxShadow: '0 4px 20px var(--cp-30)' }}
                 >
                   {isSubmitting ? (
                     <>
