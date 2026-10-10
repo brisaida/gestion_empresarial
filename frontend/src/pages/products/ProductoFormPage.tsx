@@ -5,14 +5,15 @@ import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ImagePlus, X, ScanBarcode, Camera, CameraOff, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, ImagePlus, X, ScanBarcode, Camera, CameraOff, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
-import { productosApi, categoriasApi, marcasApi, unidadesApi, bodegasApi } from '@/api/recursos'
-import { getAxiosError } from '@/lib/utils'
+import { productosApi, categoriasApi, marcasApi, unidadesApi, bodegasApi, empresaApi } from '@/api/recursos'
+import { getAxiosError, formatCurrency } from '@/lib/utils'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import ComboBox from '@/components/ui/ComboBox'
+import Modal from '@/components/ui/Modal'
 import type { Producto } from '@/types'
 
 const schema = z.object({
@@ -25,14 +26,14 @@ const schema = z.object({
   unidad_medida_id:   z.string().optional(),
   costo:              z.coerce.number().min(0),
   precio_venta:       z.coerce.number().min(0),
-  tasa_isv:           z.union([z.coerce.number(), z.literal('')]).optional(),
+  tasa_isv:           z.union([z.literal(''), z.coerce.number()]).optional(),
   precio_incluye_isv: z.boolean().default(false),
   stock_minimo:       z.coerce.number().min(0).default(0),
   tamaño:             z.string().optional(),
-  peso:               z.union([z.coerce.number(), z.literal('')]).optional(),
-  largo:              z.union([z.coerce.number(), z.literal('')]).optional(),
-  ancho:              z.union([z.coerce.number(), z.literal('')]).optional(),
-  alto:               z.union([z.coerce.number(), z.literal('')]).optional(),
+  peso:               z.union([z.literal(''), z.coerce.number()]).optional(),
+  largo:              z.union([z.literal(''), z.coerce.number()]).optional(),
+  ancho:              z.union([z.literal(''), z.coerce.number()]).optional(),
+  alto:               z.union([z.literal(''), z.coerce.number()]).optional(),
   maneja_lote:        z.boolean().default(false),
   maneja_vencimiento: z.boolean().default(false),
   maneja_serie:       z.boolean().default(false),
@@ -74,6 +75,14 @@ export default function ProductoFormPage() {
   const readerRef = useRef<BrowserMultiFormatReader | null>(null)
 
   const [apiError, setApiError] = useState('')
+  const [pendiente, setPendiente] = useState<FormValues | null>(null)
+
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn:  () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
 
   const { data: cats }     = useQuery({ queryKey: ['categorias', empresaId],      queryFn: () => categoriasApi.list({ empresa_id: empresaId, per_page: 100, solo_activos: true }).then(r => r.data.data), enabled: empresaId > 0 })
   const { data: marcas }   = useQuery({ queryKey: ['marcas', empresaId],           queryFn: () => marcasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data), enabled: empresaId > 0 })
@@ -86,7 +95,7 @@ export default function ProductoFormPage() {
     enabled:  isEdit,
   })
 
-  const { register, handleSubmit, reset, control, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: { costo: 0, precio_venta: 0, stock_minimo: 0, activo: true, precio_incluye_isv: true },
   })
@@ -139,9 +148,16 @@ export default function ProductoFormPage() {
     marca_id:         v.marca_id ? Number(v.marca_id) : null,
     unidad_medida_id: v.unidad_medida_id ? Number(v.unidad_medida_id) : null,
     bodega_id:        v.bodega_id ? Number(v.bodega_id) : null,
+    tasa_isv:         v.tasa_isv === '' || v.tasa_isv == null ? null : Number(v.tasa_isv),
   })
 
-  const onSubmit = async (v: FormValues) => {
+  // Al enviar el formulario solo se abre el resumen; se guarda al confirmar
+  const onSubmit = (v: FormValues) => {
+    setApiError('')
+    setPendiente(v)
+  }
+
+  const guardar = async (v: FormValues) => {
     setApiError('')
     let productoId: number
     try {
@@ -159,8 +175,20 @@ export default function ProductoFormPage() {
         qc.invalidateQueries({ queryKey: ['productos'] })
       }
       navigate('/productos')
-    } catch { /* error already set by mutation */ }
+    } catch { setPendiente(null) /* error already set by mutation */ }
   }
+
+  // Resumen de precios tal como se aplicará al vender o cotizar
+  const resumen = (() => {
+    if (!pendiente) return null
+    const usaTasaEmpresa = pendiente.tasa_isv === '' || pendiente.tasa_isv == null
+    const tasa   = usaTasaEmpresa ? Number(empresaConfig?.isv_rate ?? 15) : Number(pendiente.tasa_isv)
+    const precio = Number(pendiente.precio_venta)
+    const costo  = Number(pendiente.costo)
+    const base   = pendiente.precio_incluye_isv ? precio / (1 + tasa / 100) : precio
+    const isv    = base * tasa / 100
+    return { usaTasaEmpresa, tasa, costo, base, isv, final: base + isv, ganancia: base - costo }
+  })()
 
   // ── Barcode scanner ──────────────────────────────────────────────────────
   const scannedRef = useRef(false)
@@ -219,7 +247,7 @@ export default function ProductoFormPage() {
     return <div className="flex items-center justify-center h-48 text-[#5F6B7A] text-sm">Cargando producto…</div>
   }
 
-  const saving = isSubmitting || uploadingImg
+  const saving = createMut.isPending || updateMut.isPending || uploadingImg
 
   return (
     <div className="max-w-6xl mx-auto space-y-5 pb-10">
@@ -570,6 +598,67 @@ export default function ProductoFormPage() {
           </Button>
         </div>
       </form>
+
+      {/* ── Confirmación antes de guardar ── */}
+      <Modal open={!!pendiente && !!resumen} onClose={() => { if (!saving) setPendiente(null) }} title="Revisa antes de guardar" size="sm">
+        {pendiente && resumen && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-[11px] text-[#5F6B7A]">Código: <span className="font-medium text-[var(--cs)]">{pendiente.codigo?.trim() || 'Sin código'}</span></p>
+              <p className="text-sm font-semibold text-[var(--cs)] break-words">{pendiente.nombre}</p>
+            </div>
+
+            <div className="rounded-xl border border-gray-100 divide-y divide-gray-100 text-sm">
+              <div className="flex justify-between px-3 py-2">
+                <span className="text-[#5F6B7A]">Costo</span>
+                <span className="text-[var(--cs)]">{formatCurrency(resumen.costo)}</span>
+              </div>
+              <div className="flex justify-between px-3 py-2">
+                <span className="text-[#5F6B7A]">Precio sin ISV</span>
+                <span className="text-[var(--cs)]">{formatCurrency(resumen.base)}</span>
+              </div>
+              <div className="flex justify-between px-3 py-2">
+                <span className="text-[#5F6B7A]">ISV ({resumen.tasa}%{resumen.usaTasaEmpresa ? ' · empresa' : ''})</span>
+                <span className="text-[var(--cs)]">{formatCurrency(resumen.isv)}</span>
+              </div>
+              <div className="flex justify-between px-3 py-2 bg-[#F4F7FA] font-semibold">
+                <span className="text-[var(--cs)]">Precio final al cliente</span>
+                <span className="text-[var(--cs)]">{formatCurrency(resumen.final)}</span>
+              </div>
+              <div className="flex justify-between px-3 py-2">
+                <span className="text-[#5F6B7A]">Ganancia por unidad</span>
+                <span className={resumen.ganancia < 0 ? 'text-red-600 font-medium' : 'text-[var(--cs)]'}>{formatCurrency(resumen.ganancia)}</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-[#5F6B7A]">
+              {pendiente.precio_incluye_isv
+                ? 'El precio de venta ya incluye ISV: el impuesto se extrae del precio.'
+                : 'El precio de venta no incluye ISV: el impuesto se suma encima.'}
+            </p>
+
+            {resumen.tasa === 0 && (
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                <span>Este producto quedará exento (ISV 0%). No se cobrará impuesto al venderlo.</span>
+              </div>
+            )}
+            {resumen.ganancia < 0 && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">
+                <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                <span>El precio sin ISV es menor que el costo.</span>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="secondary" disabled={saving} onClick={() => setPendiente(null)}>Corregir</Button>
+              <Button type="button" loading={saving} onClick={() => guardar(pendiente)}>
+                {saving ? (uploadingImg ? 'Subiendo imagen…' : 'Guardando…') : (isEdit ? 'Sí, guardar cambios' : 'Sí, crear producto')}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
