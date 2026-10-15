@@ -39,6 +39,7 @@ export default function ProductosPage() {
   const [selectedIds, setSelectedIds]       = useState<Set<number>>(new Set())
   const [deleteMasivoOpen, setDeleteMasivoOpen] = useState(false)
   const [masivoError, setMasivoError]       = useState('')
+  const [deleteError, setDeleteError]       = useState('')
 
   // Importar Excel
   const [importModal,  setImportModal]  = useState(false)
@@ -49,8 +50,17 @@ export default function ProductosPage() {
   // Limpiar selección al cambiar de página
   useEffect(() => { setSelectedIds(new Set()) }, [crud.meta.current_page])
 
+  const eliminar = useMutation({
+    mutationFn: ({ id, descartar }: { id: number; descartar: boolean }) => productosApi.eliminar(id, descartar),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['productos'] })
+      setDeleteId(null)
+    },
+    onError: (err) => setDeleteError(getAxiosError(err)),
+  })
+
   const eliminarMasivo = useMutation({
-    mutationFn: (ids: number[]) => productosApi.eliminarMasivo(ids),
+    mutationFn: ({ ids, descartar }: { ids: number[]; descartar: boolean }) => productosApi.eliminarMasivo(ids, descartar),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['productos'] })
       setSelectedIds(new Set())
@@ -65,6 +75,11 @@ export default function ProductosPage() {
     onSuccess:  (res) => { setImportResult(res.data.data); qc.invalidateQueries({ queryKey: ['productos'] }) },
     onError:    (err) => setImportResult({ creados: 0, omitidos: 0, sin_bodega: false, errores: [{ fila: 0, error: getAxiosError(err) }] }),
   })
+
+  // Productos a eliminar que todavía tienen existencias (se descartan con un ajuste de inventario)
+  const productoAEliminar = crud.data.find(p => p.id === deleteId)
+  const stockAEliminar    = productoAEliminar?.stock_total ?? 0
+  const seleccionConStock = crud.data.filter(p => selectedIds.has(p.id) && (p.stock_total ?? 0) > 0)
 
   const allSelected = crud.data.length > 0 && crud.data.every(p => selectedIds.has(p.id))
   const someSelected = crud.data.some(p => selectedIds.has(p.id))
@@ -164,7 +179,7 @@ export default function ProductosPage() {
       cell: (r) => (
         <div className="flex items-center justify-end gap-1">
           <button onClick={() => navigate(`/productos/${r.id}/editar`)} className="p-1.5 rounded text-gray-400 hover:text-[var(--cp)] hover:bg-[var(--cp)]/8 transition-colors"><Pencil size={15} /></button>
-          <button onClick={() => setDeleteId(r.id)} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={15} /></button>
+          <button onClick={() => { setDeleteError(''); setDeleteId(r.id) }} className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={15} /></button>
         </div>
       ),
     },
@@ -242,28 +257,42 @@ export default function ProductosPage() {
 
       {/* Modal eliminar */}
       <Modal open={deleteId !== null} onClose={() => setDeleteId(null)} title="Eliminar producto" size="sm">
-        <p className="text-sm text-[#5F6B7A] mb-6">¿Eliminar este producto? Solo es posible si no tiene stock en inventario.</p>
-        {crud.error && <p className="mb-4 text-sm text-red-600">{crud.error}</p>}
-        <div className="flex justify-end gap-2">
+        <p className="text-sm text-[#5F6B7A] mb-4">
+          ¿Eliminar <strong>{productoAEliminar?.nombre}</strong>? El producto quedará inactivo y se conserva en el historial de ventas y compras.
+        </p>
+        {stockAEliminar > 0 && (
+          <p className="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            Tiene <strong>{formatNumber(stockAEliminar, 2)}</strong> unidades en inventario. Se descartarán con un ajuste de inventario (salida).
+          </p>
+        )}
+        {deleteError && <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{deleteError}</p>}
+        <div className="flex justify-end gap-2 mt-6">
           <Button variant="secondary" onClick={() => setDeleteId(null)}>Cancelar</Button>
-          <Button variant="danger" loading={crud.remove.isPending} onClick={async () => { await crud.remove.mutateAsync(deleteId!); setDeleteId(null) }}>Eliminar</Button>
+          <Button variant="danger" loading={eliminar.isPending} onClick={() => eliminar.mutate({ id: deleteId!, descartar: stockAEliminar > 0 })}>
+            {stockAEliminar > 0 ? 'Descartar existencias y eliminar' : 'Eliminar'}
+          </Button>
         </div>
       </Modal>
 
       {/* Modal eliminar masivo */}
       <Modal open={deleteMasivoOpen} onClose={() => setDeleteMasivoOpen(false)} title="Eliminar productos" size="sm">
         <p className="text-sm text-[#5F6B7A] mb-2">
-          ¿Eliminar <strong>{selectedIds.size} producto{selectedIds.size !== 1 ? 's' : ''}</strong>? Solo se eliminarán los que no tengan stock en inventario.
+          ¿Eliminar <strong>{selectedIds.size} producto{selectedIds.size !== 1 ? 's' : ''}</strong>? Quedarán inactivos y se conservan en el historial de ventas y compras.
         </p>
+        {seleccionConStock.length > 0 && (
+          <p className="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            Con existencias en inventario: <strong>{seleccionConStock.map(p => p.nombre).join(', ')}</strong>. Se descartarán con un ajuste de inventario (salida).
+          </p>
+        )}
         {masivoError && <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{masivoError}</p>}
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="secondary" onClick={() => setDeleteMasivoOpen(false)}>Cancelar</Button>
           <Button
             variant="danger"
             loading={eliminarMasivo.isPending}
-            onClick={() => eliminarMasivo.mutate([...selectedIds])}
+            onClick={() => eliminarMasivo.mutate({ ids: [...selectedIds], descartar: seleccionConStock.length > 0 })}
           >
-            Eliminar
+            {seleccionConStock.length > 0 ? 'Descartar existencias y eliminar' : 'Eliminar'}
           </Button>
         </div>
       </Modal>

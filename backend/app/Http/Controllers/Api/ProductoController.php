@@ -7,13 +7,17 @@ use App\Http\Requests\Product\UpdateProductoRequest;
 use App\Http\Resources\ProductoResource;
 use App\Models\Existencia;
 use App\Models\Producto;
+use App\Services\InventarioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends ApiController
 {
+    public function __construct(private readonly InventarioService $inventario) {}
+
     public function index(Request $request): JsonResponse
     {
         $query = Producto::where('empresa_id', $request->integer('empresa_id'))
@@ -132,13 +136,14 @@ class ProductoController extends ApiController
         ]);
     }
 
-    public function destroy(Producto $producto): JsonResponse
+    /**
+     * "Eliminar" un producto es desactivarlo: se conserva para el historial de
+     * ventas, compras y movimientos. Si tiene existencias, solo se desactiva
+     * cuando se confirma descartarlas con un ajuste de inventario (salida).
+     */
+    public function destroy(Request $request, Producto $producto): JsonResponse
     {
-        if ($producto->existencias()->where('cantidad', '>', 0)->exists()) {
-            return $this->error('No se puede eliminar: el producto tiene existencias en inventario.', 409);
-        }
-        $producto->delete();
-        return $this->noContent('Producto eliminado.');
+        return $this->desactivar($request, collect([$producto]));
     }
 
     public function destroyMasivo(Request $request): JsonResponse
@@ -148,23 +153,59 @@ class ProductoController extends ApiController
             'ids.*' => ['integer', 'exists:productos,id'],
         ]);
 
-        $conStock = Producto::whereIn('id', $validated['ids'])
-            ->whereHas('existencias', fn($q) => $q->where('cantidad', '>', 0))
-            ->pluck('nombre');
+        return $this->desactivar($request, Producto::whereIn('id', $validated['ids'])->get());
+    }
 
-        if ($conStock->isNotEmpty()) {
+    private function desactivar(Request $request, Collection $productos): JsonResponse
+    {
+        $existencias = Existencia::whereIn('producto_id', $productos->pluck('id'))
+            ->where('cantidad', '>', 0)
+            ->get();
+
+        if ($existencias->isNotEmpty() && ! $request->boolean('descartar_existencias')) {
+            $nombres = $productos->whereIn('id', $existencias->pluck('producto_id'))->pluck('nombre');
             return $this->error(
-                'No se pueden eliminar los siguientes productos porque tienen stock: ' . $conStock->implode(', '),
+                'Los siguientes productos tienen existencias en inventario: ' . $nombres->implode(', ')
+                . '. Confirma el descarte de existencias para eliminarlos.',
                 409
             );
         }
 
-        $eliminados = Producto::whereIn('id', $validated['ids'])->delete();
+        try {
+            DB::transaction(function () use ($request, $productos, $existencias) {
+                $costos = $productos->pluck('costo', 'id');
 
-        return response()->json([
-            'success' => true,
-            'message' => "{$eliminados} producto(s) eliminado(s).",
-        ]);
+                // Un ajuste negativo por bodega con todo lo que se descarta
+                foreach ($existencias->groupBy(fn($e) => "{$e->empresa_id}-{$e->bodega_id}") as $grupo) {
+                    $this->inventario->registrarMovimiento(
+                        [
+                            'empresa_id'      => $grupo->first()->empresa_id,
+                            'bodega_id'       => $grupo->first()->bodega_id,
+                            'usuario_id'      => $request->user()->id,
+                            'tipo_movimiento' => 'ajuste_negativo',
+                            'tipo_referencia' => 'baja_producto',
+                            'fecha'           => now()->toDateString(),
+                            'observaciones'   => 'Descarte de existencias por eliminación de producto',
+                        ],
+                        $grupo->map(fn($e) => [
+                            'producto_id'       => $e->producto_id,
+                            'cantidad'          => (float) $e->cantidad,
+                            'costo_unitario'    => (float) ($costos[$e->producto_id] ?? 0),
+                            'lote'              => $e->lote,
+                            'fecha_vencimiento' => $e->fecha_vencimiento?->toDateString(),
+                            'numero_serie'      => $e->numero_serie,
+                        ])->all()
+                    );
+                }
+
+                Producto::whereIn('id', $productos->pluck('id'))->update(['activo' => false]);
+            });
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+
+        $total = $productos->count();
+        return $this->noContent($total === 1 ? 'Producto eliminado.' : "{$total} productos eliminados.");
     }
 
 }

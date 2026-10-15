@@ -3,7 +3,7 @@ import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
   Producto, Existencia, DashboardData, Movimiento, Compra, Venta, Cotizacion,
-  Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja, Requisicion, DatosFirma,
+  Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja, Requisicion, DatosFirma, MetodoPago,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -144,8 +144,10 @@ export const productosApi = {
     )
   },
   plantillaUrl: (empresaId: number) => `${client.defaults.baseURL}/productos/importar/plantilla?empresa_id=${empresaId}`,
-  eliminarMasivo: (ids: number[]) =>
-    client.post<ApiResponse<{ message: string }>>('/productos/eliminar-masivo', { ids }),
+  eliminar: (id: number, descartarExistencias: boolean) =>
+    client.delete<ApiResponse<null>>(`/productos/${id}`, { params: { descartar_existencias: descartarExistencias ? 1 : 0 } }),
+  eliminarMasivo: (ids: number[], descartarExistencias: boolean) =>
+    client.post<ApiResponse<{ message: string }>>('/productos/eliminar-masivo', { ids, descartar_existencias: descartarExistencias }),
 }
 
 // ── Existencias ────────────────────────────────────────────────────────────
@@ -196,7 +198,7 @@ export const cotizacionesApi = {
   cambiarEstado:    (id: number, estado: string) => client.post<ApiResponse<Cotizacion>>(`/cotizaciones/${id}/estado`, { estado }),
   autorizar:        (id: number, pin: string) => client.post<ApiResponse<Cotizacion>>(`/cotizaciones/${id}/autorizar`, { pin }),
   firma:            (id: number) => client.get<ApiResponse<DatosFirma | null>>(`/cotizaciones/${id}/firma`),
-  convertir:        (id: number, data: { bodega_id: number; fecha_venta?: string }) =>
+  convertir:        (id: number, data: { bodega_id: number; fecha_venta?: string; metodo_pago?: MetodoPago }) =>
     client.post<ApiResponse<Venta>>(`/cotizaciones/${id}/convertir`, data),
   siguienteNumero:  (empresaId: number) =>
     client.get<ApiResponse<{ numero_cotizacion: string }>>('/cotizaciones/siguiente-numero', { params: { empresa_id: empresaId } }),
