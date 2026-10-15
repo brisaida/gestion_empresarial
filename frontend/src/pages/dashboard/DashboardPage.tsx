@@ -212,8 +212,8 @@ export default function DashboardPage() {
               width={56}
             />
             <Tooltip
-              formatter={(value: number, name: string) => [
-                formatCurrency(value),
+              formatter={(value, name) => [
+                formatCurrency(Number(value)),
                 name === 'este_mes' ? mesActualNombre : mesAntNombre,
               ]}
               labelFormatter={dia => `Día ${dia}`}

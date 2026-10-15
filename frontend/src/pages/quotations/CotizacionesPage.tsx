@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import ComboBox from '@/components/ui/ComboBox'
-import { Plus, XCircle, Search, Minus, Trash2, FileText, User,
+import { Plus, XCircle, Search, Minus, Trash2, FileText,
          CalendarDays, Hash, CheckCircle2, Lock, AlignLeft, PenLine } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'

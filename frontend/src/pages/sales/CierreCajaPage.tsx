@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Banknote, CreditCard, ArrowLeftRight, Layers, Lock, TrendingUp,
-         CheckCircle2, XCircle, RefreshCw, Clock, User, AlertTriangle } from 'lucide-react'
+         CheckCircle2, RefreshCw, Clock, User, AlertTriangle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { sesionCajaApi } from '@/api/recursos'

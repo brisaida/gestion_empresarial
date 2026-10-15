@@ -8,13 +8,12 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { mesasApi, bodegasApi, productosApi, recetasApi, comandasApi } from '@/api/recursos'
 import { getAxiosError, formatCurrency } from '@/lib/utils'
-import type { Mesa, Comanda, Producto, Receta, Bodega, DetalleComanda } from '@/types'
+import type { Mesa, Comanda, Bodega, DetalleComanda, MetodoPago } from '@/types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
 
 type EstadoColor = { bg: string; border: string; text: string; dot: string }
 const estadoStyle: Record<Mesa['estado'], EstadoColor> = {
@@ -447,11 +446,10 @@ function CobrarModal({
 // ── MesaPanel ──────────────────────────────────────────────────────────────
 
 function MesaPanel({
-  mesa, comandas, loading, bodegaId, empresaId,
+  mesa, comandas, loading,
   onClose, onNuevaRonda, onCobrar,
 }: {
   mesa: Mesa; comandas: Comanda[]; loading: boolean
-  bodegaId: number; empresaId: number
   onClose: () => void; onNuevaRonda: () => void; onCobrar: () => void
 }) {
   const activas    = comandas.filter(c => c.estado !== 'cancelado')
@@ -705,8 +703,6 @@ export default function RestaurantePage() {
             mesa={selectedMesa}
             comandas={comandas}
             loading={loadingCom}
-            bodegaId={bodegaId}
-            empresaId={empresaId}
             onClose={handleClose}
             onNuevaRonda={() => setShowRonda(true)}
             onCobrar={() => setShowCobrar(true)}

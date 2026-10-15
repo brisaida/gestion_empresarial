@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import SearchBar from '@/components/ui/SearchBar'
 import { formatCurrency, getAxiosError } from '@/lib/utils'
-import type { Venta, EstadoVenta } from '@/types'
+import type { Venta, EstadoVenta, MetodoPago } from '@/types'
 
 function EstadoBadge({ estado }: { estado: EstadoVenta }) {
   return estado === 'completada'
@@ -18,7 +18,6 @@ function EstadoBadge({ estado }: { estado: EstadoVenta }) {
     : <Badge variant="red">Cancelada</Badge>
 }
 
-type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
 
 const metodoPagoInfo: Record<MetodoPago, { icon: React.ElementType; label: string; cls: string }> = {
   efectivo:      { icon: Banknote,       label: 'Efectivo',      cls: 'text-emerald-700 bg-emerald-50' },

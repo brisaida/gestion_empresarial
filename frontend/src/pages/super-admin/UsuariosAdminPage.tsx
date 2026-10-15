@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus, Pencil, ToggleLeft, ToggleRight, KeyRound, Trash2, Eye, EyeOff } from 'lucide-react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, type Resolver } from 'react-hook-form'
 import ComboBox from '@/components/ui/ComboBox'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -65,8 +65,8 @@ export default function UsuariosAdminPage() {
     enabled:  !!accesoUser || modal === 'create',
   })
 
-  const userForm = useForm<UserForm>({ resolver: zodResolver(userSchema) })
-  const accesoForm = useForm<AccesoForm>({ resolver: zodResolver(accesoSchema) })
+  const userForm = useForm<UserForm>({ resolver: zodResolver(userSchema) as Resolver<UserForm> })
+  const accesoForm = useForm<AccesoForm>({ resolver: zodResolver(accesoSchema) as Resolver<AccesoForm> })
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['sa-usuarios'] })
 

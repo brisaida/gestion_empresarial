@@ -9,7 +9,7 @@ import { ArrowLeft, ImagePlus, X, ScanBarcode, Camera, CameraOff, ChevronDown, C
 import { useAuth } from '@/stores/authStore'
 import { productosApi, categoriasApi, marcasApi, unidadesApi, bodegasApi, empresaApi } from '@/api/recursos'
 import { getAxiosError, formatCurrency } from '@/lib/utils'
-import { BrowserMultiFormatReader } from '@zxing/browser'
+import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import ComboBox from '@/components/ui/ComboBox'
@@ -72,7 +72,7 @@ export default function ProductoFormPage() {
   const [scannerError, setScannerError] = useState('')
   const [scannerReady, setScannerReady] = useState(false)
   const videoRef  = useRef<HTMLVideoElement>(null)
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null)
+  const controlsRef = useRef<IScannerControls | null>(null)
 
   const [apiError, setApiError] = useState('')
   const [pendiente, setPendiente] = useState<FormValues | null>(null)
@@ -201,9 +201,10 @@ export default function ProductoFormPage() {
   }, [])
 
   const stopScanner = useCallback(() => {
+    scannedRef.current = true
     stopTracks()
-    try { readerRef.current?.reset() } catch { /* ignore */ }
-    readerRef.current = null
+    try { controlsRef.current?.stop() } catch { /* ignore */ }
+    controlsRef.current = null
     setScannerOpen(false)
     setScannerReady(false)
     setScannerError('')
@@ -216,24 +217,25 @@ export default function ProductoFormPage() {
     setScannerReady(false)
     await new Promise(r => setTimeout(r, 80))
     const reader = new BrowserMultiFormatReader()
-    readerRef.current = reader
     try {
       const devices = await BrowserMultiFormatReader.listVideoInputDevices()
       const back = devices.find(d => /back|rear|environment/i.test(d.label)) ?? devices[0]
       if (!back) { setScannerError('No se encontró ninguna cámara.'); return }
       setScannerReady(true)
-      reader.decodeFromVideoDevice(back.deviceId, videoRef.current!, (result) => {
+      reader.decodeFromVideoDevice(back.deviceId, videoRef.current!, (result, _err, controls) => {
         if (result && !scannedRef.current) {
           scannedRef.current = true
           const code = result.getText()
           stopTracks()
-          const doneReader = readerRef.current
-          readerRef.current = null
-          try { doneReader?.reset() } catch { /* ignore */ }
+          controlsRef.current = null
+          try { controls.stop() } catch { /* ignore */ }
           flushSync(() => { setScannerOpen(false); setScannerReady(false) })
           setValue('codigo_barra', code, { shouldValidate: true })
         }
-      }).catch(() => { if (!scannedRef.current) setScannerError('Error al acceder a la cámara.') })
+      })
+        // Si ya se cerró o escaneó antes de que arrancara la cámara, apagarla de una vez
+        .then(controls => { if (scannedRef.current) controls.stop(); else controlsRef.current = controls })
+        .catch(() => { if (!scannedRef.current) setScannerError('Error al acceder a la cámara.') })
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       if (/permission|notallowed/i.test(msg)) setScannerError('Permiso de cámara denegado. Actívalo en la configuración del navegador.')

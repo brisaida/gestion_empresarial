@@ -30,7 +30,7 @@ const schema = z.object({
   correo:       z.string().email('Ingresa un correo electrónico válido').optional().or(z.literal('')),
   telefono:     z.string().max(30, 'El teléfono es demasiado largo').optional().or(z.literal('')),
   direccion:    z.string().max(500).optional().or(z.literal('')),
-  rubro:        z.string().optional(),
+  rubro:        z.enum(['tienda', 'distribuidora', 'farmacia', 'ferreteria', 'restaurante']).or(z.literal('')).optional(),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -60,7 +60,7 @@ export default function EmpresasAdminPage() {
   })
 
   const updateMut = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: FormValues }) => saEmpresasApi.update(id, data),
+    mutationFn: ({ id, data }: { id: number; data: Partial<EmpresaAdmin> }) => saEmpresasApi.update(id, data),
     onSuccess:  () => { invalidate(); closeModal() },
     onError:    (e) => setError(getAxiosError(e)),
   })
@@ -86,8 +86,9 @@ export default function EmpresasAdminPage() {
   const closeModal = () => { setModal(null); setSelected(null); setError('') }
 
   const onSubmit = async (values: FormValues) => {
-    if (modal === 'create') await createMut.mutateAsync(values)
-    else if (selected)      await updateMut.mutateAsync({ id: selected.id, data: values })
+    const data = { ...values, rubro: values.rubro || null }
+    if (modal === 'create') await createMut.mutateAsync(data)
+    else if (selected)      await updateMut.mutateAsync({ id: selected.id, data })
   }
 
   const columns: Column<EmpresaAdmin>[] = [

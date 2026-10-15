@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserMultiFormatReader } from '@zxing/browser'
+import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
 import { X, Camera, AlertCircle } from 'lucide-react'
 
 interface Props {
@@ -9,13 +9,14 @@ interface Props {
 
 export default function BarcodeScannerModal({ onScan, onClose }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null)
   const [error, setError] = useState('')
   const [scanning, setScanning] = useState(false)
 
   useEffect(() => {
     const reader = new BrowserMultiFormatReader()
-    readerRef.current = reader
+    // Los controles llegan cuando la cámara ya arrancó; si el modal se cerró antes, se apaga en ese momento
+    let controls: IScannerControls | null = null
+    let cancelled = false
 
     async function start() {
       try {
@@ -25,7 +26,7 @@ export default function BarcodeScannerModal({ onScan, onClose }: Props) {
         if (!back) { setError('No se encontró ninguna cámara.'); return }
 
         setScanning(true)
-        await reader.decodeFromVideoDevice(back.deviceId, videoRef.current!, (result, err) => {
+        controls = await reader.decodeFromVideoDevice(back.deviceId, videoRef.current!, (result, err) => {
           if (result) {
             onScan(result.getText())
             onClose()
@@ -34,6 +35,7 @@ export default function BarcodeScannerModal({ onScan, onClose }: Props) {
             console.warn('Scanner:', err)
           }
         })
+        if (cancelled) controls.stop()
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e)
         if (msg.includes('Permission') || msg.includes('permission') || msg.includes('NotAllowed')) {
@@ -46,7 +48,7 @@ export default function BarcodeScannerModal({ onScan, onClose }: Props) {
 
     start()
 
-    return () => { readerRef.current?.reset() }
+    return () => { cancelled = true; controls?.stop() }
   }, [onScan, onClose])
 
   return (

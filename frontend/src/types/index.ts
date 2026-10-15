@@ -10,6 +10,8 @@ export interface Usuario {
 
 export type Rubro = 'tienda' | 'distribuidora' | 'farmacia' | 'ferreteria' | 'restaurante'
 
+export type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
+
 export interface EmpresaResumen {
   id: number
   nombre: string

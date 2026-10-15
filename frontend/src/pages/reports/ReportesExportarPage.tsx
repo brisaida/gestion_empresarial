@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { dashboardApi, ventasApi, comprasApi, reportesApi, empresaApi } from '@/api/recursos'
 import { exportarExcel } from '@/lib/exportExcel'
-import { formatCurrency } from '@/lib/utils'
 import { Download, Loader2, CheckCircle2, FileSpreadsheet } from 'lucide-react'
 import type { Venta, Compra } from '@/types'
 

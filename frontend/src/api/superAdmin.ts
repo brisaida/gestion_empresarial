@@ -1,5 +1,5 @@
 import client from './client'
-import type { ApiResponse, PaginatedResponse, SaDashboardData, EmpresaAdmin, UsuarioAdmin, RolSimple, RolAdmin, UsuarioEmpresaItem } from '@/types'
+import type { ApiResponse, PaginatedResponse, SaDashboardData, EmpresaAdmin, UsuarioAdmin, RolAdmin, UsuarioEmpresaItem } from '@/types'
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
 export const saDashboardApi = {

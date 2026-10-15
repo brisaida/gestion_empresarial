@@ -13,7 +13,7 @@ import SearchBar from '@/components/ui/SearchBar'
 import AutorizarModal from '@/components/ui/AutorizarModal'
 import { usePermisos } from '@/lib/permisos'
 import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
-import type { Cotizacion, EstadoCotizacion, Producto } from '@/types'
+import type { Cotizacion, EstadoCotizacion, Producto, MetodoPago } from '@/types'
 
 /* ── Badge de estado ─────────────────────────────────────────── */
 const estadoConfig: Record<EstadoCotizacion, { label: string; cls: string }> = {
@@ -51,7 +51,6 @@ interface LineaCotEdit {
   precio_unitario: number
 }
 
-type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
 
 let editSeq = 0
 const nuevaKey = () => `e${++editSeq}`

@@ -8,7 +8,6 @@ import logoVilena from '@/assets/logo-vilena.jpg'
 import { useAuth } from '@/stores/authStore'
 import { authApi } from '@/api/auth'
 import { getAxiosError } from '@/lib/utils'
-import Input from '@/components/ui/Input'
 
 const schema = z.object({
   correo:   z.string().email('Correo inválido'),
