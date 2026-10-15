@@ -32,7 +32,7 @@ export default function ProductosPage() {
   const crud = useCrud<Producto>(productosApi, {
     queryKey: 'productos',
     empresaId,
-    extraParams: categoriaId ? { categoria_id: categoriaId } : undefined,
+    extraParams: { solo_activos: 1, ...(categoriaId ? { categoria_id: categoriaId } : {}) },
   })
 
   const [deleteId, setDeleteId]             = useState<number | null>(null)
