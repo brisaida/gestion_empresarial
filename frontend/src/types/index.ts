@@ -461,6 +461,14 @@ export interface DashboardData {
   }>
 }
 
+export interface ProductoPendiente {
+  id: number
+  codigo: string | null
+  nombre: string
+  pendientes: string[]
+  created_at: string | null
+}
+
 // ── Traslados ─────────────────────────────────────────────────────────────
 export type EstadoTraslado = 'pendiente' | 'completada' | 'cancelada'
 

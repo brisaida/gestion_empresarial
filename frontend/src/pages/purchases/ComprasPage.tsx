@@ -119,11 +119,16 @@ interface CrearProductoProps {
   empresaId: number
   nombreInicial: string
   costoInicial: string
+  productos: Producto[]
   onCreado: (p: Producto) => void
 }
 
-function CrearProductoModal({ open, onClose, empresaId, nombreInicial, costoInicial, onCreado }: CrearProductoProps) {
+const normalizar = (t: string) =>
+  t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
+
+function CrearProductoModal({ open, onClose, empresaId, nombreInicial, costoInicial, productos, onCreado }: CrearProductoProps) {
   const qc = useQueryClient()
+  const [codigo,       setCodigo]       = useState('')
   const [nombre,       setNombre]       = useState('')
   const [costo,        setCosto]        = useState('')
   const [precioVenta,  setPrecioVenta]  = useState('')
@@ -131,13 +136,22 @@ function CrearProductoModal({ open, onClose, empresaId, nombreInicial, costoInic
   const [error,        setError]        = useState('')
 
   useEffect(() => {
-    if (open) { setNombre(nombreInicial); setCosto(costoInicial); setPrecioVenta(''); setTasaIsv('15'); setError('') }
+    if (open) { setCodigo(''); setNombre(nombreInicial); setCosto(costoInicial); setPrecioVenta(''); setTasaIsv('15'); setError('') }
   }, [open, nombreInicial, costoInicial])
+
+  // Revisión de duplicados contra el catálogo activo
+  const codigoNorm = codigo.trim().toLowerCase()
+  const dupCodigo  = codigoNorm
+    ? productos.find(p => (p.codigo ?? '').trim().toLowerCase() === codigoNorm || (p.codigo_barra ?? '').trim().toLowerCase() === codigoNorm)
+    : undefined
+  const nombreNorm = normalizar(nombre)
+  const dupNombre  = nombreNorm ? productos.find(p => normalizar(p.nombre) === nombreNorm) : undefined
 
   const crear = useMutation({
     mutationFn: () => productosApi.create({
       empresa_id:        empresaId,
-      nombre,
+      codigo:            codigo.trim(),
+      nombre:            nombre.trim(),
       costo:             Number(costo),
       precio_venta:      Number(precioVenta),
       tasa_isv:          tasaIsv.trim() === '' ? null : Number(tasaIsv),
@@ -149,22 +163,43 @@ function CrearProductoModal({ open, onClose, empresaId, nombreInicial, costoInic
     }),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['productos-all', empresaId] })
+      qc.invalidateQueries({ queryKey: ['productos'] })
       onCreado(res.data.data)
       onClose()
     },
     onError: (err) => setError(getAxiosError(err)),
   })
 
+  const usarExistente = (p: Producto) => { onCreado(p); onClose() }
+
   return (
     <Modal open={open} onClose={onClose} title="Nuevo producto" size="sm">
       <div className="space-y-4">
-        <Input label="Nombre *" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Nombre del producto" autoFocus />
+        <div>
+          <Input label="Código *" value={codigo} onChange={e => setCodigo(e.target.value)} placeholder="Ej. E11183" autoFocus />
+          {dupCodigo && (
+            <div className="mt-1.5 rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
+              Ya existe <strong>{dupCodigo.nombre}</strong> con este código.{' '}
+              <button type="button" onClick={() => usarExistente(dupCodigo)} className="font-semibold underline">Usar ese producto</button>
+            </div>
+          )}
+        </div>
+        <div>
+          <Input label="Nombre *" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Nombre del producto" />
+          {dupNombre && !dupCodigo && (
+            <div className="mt-1.5 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs text-amber-800">
+              Ya existe un producto con este nombre{dupNombre.codigo ? ` (código ${dupNombre.codigo})` : ' (sin código)'}.{' '}
+              <button type="button" onClick={() => usarExistente(dupNombre)} className="font-semibold underline">Usar ese producto</button>
+              {' '}o cambia el nombre si es otro producto.
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <Input label="Costo *" type="number" step="0.01" min="0" value={costo} onChange={e => setCosto(e.target.value)} placeholder="0.00" />
           <Input label="Precio de venta *" type="number" step="0.01" min="0" value={precioVenta} onChange={e => setPrecioVenta(e.target.value)} placeholder="0.00" />
         </div>
         <Input label="Tasa ISV (%)" type="number" step="0.01" min="0" value={tasaIsv} onChange={e => setTasaIsv(e.target.value)} placeholder="15" />
-        <p className="text-xs text-[#5F6B7A]">Puedes completar el resto de los campos (categoría, código, etc.) desde el catálogo de productos.</p>
+        <p className="text-xs text-[#5F6B7A]">Puedes completar el resto de los campos (categoría, marca, etc.) desde el catálogo de productos.</p>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2 pt-1">
           <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Cancelar</Button>
@@ -172,7 +207,7 @@ function CrearProductoModal({ open, onClose, empresaId, nombreInicial, costoInic
             type="button"
             onClick={() => crear.mutate()}
             loading={crear.isPending}
-            disabled={!nombre.trim() || !costo || !precioVenta}
+            disabled={!codigo.trim() || !nombre.trim() || !costo || !precioVenta || !!dupCodigo || !!dupNombre || crear.isPending}
             className="flex-1"
           >
             Crear producto
@@ -686,6 +721,7 @@ export default function ComprasPage() {
           empresaId={empresaId}
           nombreInicial={modalProd.nombre}
           costoInicial={modalProd.costo}
+          productos={productos}
           onCreado={p => {
             setLinea(modalProd.idx, 'producto_id', String(p.id))
             setModalProd(null)

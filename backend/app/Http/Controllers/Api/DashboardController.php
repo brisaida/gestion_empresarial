@@ -9,6 +9,7 @@ use App\Models\Venta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DashboardController extends ApiController
 {
@@ -129,5 +130,42 @@ class DashboardController extends ApiController
                 'top_productos'  => $topProductos,
             ],
         ]);
+    }
+
+    /**
+     * Productos activos con información pendiente: sin código (o sin letras/números), sin categoría,
+     * sin costo, sin precio de venta (excepto ingredientes) o nombre duplicado.
+     */
+    public function productosPendientes(Request $request): JsonResponse
+    {
+        $empresaId = $request->integer('empresa_id');
+
+        $productos = Producto::where('empresa_id', $empresaId)
+            ->where('activo', true)
+            ->withCount('categorias')
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre', 'costo', 'precio_venta', 'tipo', 'created_at']);
+
+        $normalizar = fn(string $t) => preg_replace('/[^a-z0-9]/', '', mb_strtolower(Str::ascii($t)));
+        $repetidos  = $productos->countBy(fn($p) => $normalizar($p->nombre))->filter(fn($n) => $n > 1);
+
+        $data = $productos->map(function ($p) use ($normalizar, $repetidos) {
+            $pendientes = [];
+            if (! preg_match('/[a-z0-9]/i', (string) $p->codigo))            $pendientes[] = 'Sin código';
+            if ($p->categorias_count === 0)                                  $pendientes[] = 'Sin categoría';
+            if ((float) $p->costo <= 0)                                      $pendientes[] = 'Sin costo';
+            if ($p->tipo !== 'ingrediente' && (float) $p->precio_venta <= 0) $pendientes[] = 'Sin precio de venta';
+            if ($repetidos->has($normalizar($p->nombre)))                    $pendientes[] = 'Nombre duplicado';
+
+            return [
+                'id'         => $p->id,
+                'codigo'     => $p->codigo,
+                'nombre'     => $p->nombre,
+                'pendientes' => $pendientes,
+                'created_at' => $p->created_at?->toDateString(),
+            ];
+        })->filter(fn($p) => count($p['pendientes']) > 0)->values();
+
+        return $this->success($data);
     }
 }

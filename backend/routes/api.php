@@ -58,6 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::middleware('permiso:dashboard')->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index']);
+        Route::get('dashboard/productos-pendientes', [DashboardController::class, 'productosPendientes']);
     });
 
     // Catálogos

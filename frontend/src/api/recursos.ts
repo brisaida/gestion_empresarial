@@ -2,7 +2,7 @@ import client from './client'
 import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
-  Producto, Existencia, DashboardData, Movimiento, Compra, Venta, Cotizacion,
+  Producto, Existencia, DashboardData, ProductoPendiente, Movimiento, Compra, Venta, Cotizacion,
   Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja, Requisicion, DatosFirma, MetodoPago,
 } from '@/types'
 
@@ -57,6 +57,8 @@ export const empresaApi = {
 export const dashboardApi = {
   get: (empresaId: number) =>
     client.get<ApiResponse<DashboardData>>('/dashboard', { params: { empresa_id: empresaId } }),
+  productosPendientes: (empresaId: number) =>
+    client.get<ApiResponse<ProductoPendiente[]>>('/dashboard/productos-pendientes', { params: { empresa_id: empresaId } }),
 }
 
 // ── Categorías ─────────────────────────────────────────────────────────────
