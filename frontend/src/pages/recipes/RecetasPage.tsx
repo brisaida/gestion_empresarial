@@ -39,7 +39,7 @@ function RecetaFormModal({ open, onClose, empresaId, editando }: RecetaFormProps
 
   const { data: productos = [] } = useQuery({
     queryKey: ['productos-all', empresaId],
-    queryFn:  () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then(r => r.data.data),
+    queryFn:  () => productosApi.list({ empresa_id: empresaId, per_page: 500, solo_activos: true }).then(r => r.data.data),
     enabled:  empresaId > 0,
   })
 

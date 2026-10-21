@@ -13,7 +13,8 @@ class ExistenciaController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $query = Existencia::with(['producto', 'bodega'])
-            ->where('empresa_id', $request->integer('empresa_id'));
+            ->where('empresa_id', $request->integer('empresa_id'))
+            ->whereHas('producto', fn($q) => $q->where('activo', true));
 
         if ($request->boolean('sin_bodega', false)) {
             $query->whereNull('bodega_id');
@@ -139,6 +140,7 @@ class ExistenciaController extends ApiController
         $resumen = Existencia::query()
             ->selectRaw('producto_id, SUM(cantidad) as total, SUM(cantidad_reservada) as reservada')
             ->where('empresa_id', $empresaId)
+            ->whereHas('producto', fn($q) => $q->where('activo', true))
             ->groupBy('producto_id')
             ->with('producto:id,nombre,codigo,stock_minimo')
             ->get()

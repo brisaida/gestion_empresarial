@@ -340,7 +340,7 @@ export default function ComprasPage() {
     const pred = bodegas.find(b => b.predeterminada)
     if (pred) setForm(f => f.bodega_id ? f : { ...f, bodega_id: String(pred.id) })
   }, [bodegas])
-  const { data: productos = [] }   = useQuery({ queryKey: ['productos-all', empresaId],   queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then(r => r.data.data), enabled: empresaId > 0 })
+  const { data: productos = [] }   = useQuery({ queryKey: ['productos-all', empresaId],   queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, solo_activos: true }).then(r => r.data.data), enabled: empresaId > 0 })
 
   const crear = useMutation({
     mutationFn: (payload: unknown) => comprasApi.create(payload),

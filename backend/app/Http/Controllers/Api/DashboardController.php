@@ -23,6 +23,7 @@ class DashboardController extends ApiController
         $productosStockBajo = Existencia::query()
             ->selectRaw('producto_id, SUM(cantidad) as total')
             ->where('empresa_id', $empresaId)
+            ->whereHas('producto', fn($q) => $q->where('activo', true))
             ->groupBy('producto_id')
             ->havingRaw('SUM(cantidad) <= (SELECT stock_minimo FROM productos WHERE id = existencias.producto_id AND stock_minimo > 0)')
             ->count();
@@ -71,6 +72,7 @@ class DashboardController extends ApiController
         $valorInventario = DB::table('existencias as e')
             ->join('productos as p', 'e.producto_id', '=', 'p.id')
             ->where('p.empresa_id', $empresaId)
+            ->where('p.activo', true)
             ->sum(DB::raw('e.cantidad * p.costo'));
 
         // Compras pendientes

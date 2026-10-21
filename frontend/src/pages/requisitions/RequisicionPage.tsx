@@ -59,7 +59,7 @@ export default function RequisicionPage() {
     enabled:  empresaId > 0,
     staleTime: 5 * 60_000,
   })
-  const { data: productos }   = useQuery({ queryKey: ['productos-all', empresaId],   queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, activo: true }).then(r => r.data.data), enabled: empresaId > 0 })
+  const { data: productos }   = useQuery({ queryKey: ['productos-all', empresaId],   queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, solo_activos: true }).then(r => r.data.data), enabled: empresaId > 0 })
 
   const { data: numData, refetch: refetchNum } = useQuery({
     queryKey: ['req-siguiente-num', empresaId],

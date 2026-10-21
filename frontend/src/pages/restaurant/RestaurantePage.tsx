@@ -176,7 +176,7 @@ function NuevaRondaModal({
 
   const { data: prods }   = useQuery({
     queryKey: ['productos', empresaId, 'venta'],
-    queryFn:  () => productosApi.list({ empresa_id: empresaId, tipo: 'venta', per_page: 200, activo: 1 })
+    queryFn:  () => productosApi.list({ empresa_id: empresaId, tipo: 'venta', per_page: 200, solo_activos: true })
       .then(r => r.data.data),
   })
 

@@ -100,6 +100,7 @@ class ReporteController extends ApiController
             ->join('productos as p', 'e.producto_id', '=', 'p.id')
             ->leftJoin('categorias as c', 'p.categoria_id', '=', 'c.id')
             ->where('p.empresa_id', $empresaId)
+            ->where('p.activo', true)
             ->selectRaw('p.id, p.nombre, p.codigo, p.costo, COALESCE(c.nombre,\'\') as categoria, SUM(e.cantidad) as stock_total, SUM(e.cantidad * p.costo) as valor_total')
             ->groupBy('p.id', 'p.nombre', 'p.codigo', 'p.costo', 'c.nombre')
             ->having(DB::raw('SUM(e.cantidad)'), '>', 0)

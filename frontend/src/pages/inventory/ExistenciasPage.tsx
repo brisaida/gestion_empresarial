@@ -61,10 +61,9 @@ export default function ExistenciasPage() {
     enabled:  empresaId > 0,
   })
 
-  // Sin filtro solo_activos: productos inactivos pueden seguir teniendo stock sin asignar
   const { data: productos } = useQuery({
-    queryKey: ['productos-all-incl-inactivos', empresaId],
-    queryFn:  () => productosApi.list({ empresa_id: empresaId, per_page: 500 }).then(r => r.data.data),
+    queryKey: ['productos-activos', empresaId],
+    queryFn:  () => productosApi.list({ empresa_id: empresaId, per_page: 500, solo_activos: true }).then(r => r.data.data),
     enabled:  empresaId > 0,
   })
 
