@@ -82,7 +82,7 @@ export async function printCotizacion(c: Cotizacion, empresa: PrintEmpresa, logo
 
   // Alto vacío para que el cuadro de productos llene la página (aprox. en mm)
   const altoFila = mostrarFoto ? 19 : mostrarDesc ? 9 : 5.6
-  const relleno = Math.max(6, 128 - detalles.length * altoFila - (c.observaciones ? 14 : 0) - (firma ? 28 : 0))
+  const relleno = Math.max(6, 128 - detalles.length * altoFila - (c.observaciones ? 14 : 0) - (firma ? 31 : 0))
 
   /* ── Empresa ────────────────────────────────────────────── */
   const datosEmpresa = [

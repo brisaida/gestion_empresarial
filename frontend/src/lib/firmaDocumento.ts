@@ -15,9 +15,9 @@ export function bloqueFirma(firma: DatosFirma | null | undefined, etiqueta: stri
   }
 
   return `
-    <div style="position:relative;height:90px">
+    <div style="position:relative;height:100px">
       ${firma.sello ? `<img src="${firma.sello}" alt="Sello" style="position:absolute;left:50%;bottom:-6px;transform:translateX(-10%);height:88px;max-width:130px;object-fit:contain;opacity:.9">` : ''}
-      ${firma.firma ? `<img src="${firma.firma}" alt="Firma" style="position:absolute;left:50%;bottom:0;transform:translateX(-60%);height:70px;max-width:180px;object-fit:contain">` : ''}
+      ${firma.firma ? `<img src="${firma.firma}" alt="Firma" style="position:absolute;left:50%;bottom:-16px;transform:translateX(-60%);height:100px;max-width:250px;object-fit:contain">` : ''}
     </div>
     <div style="border-top:1px solid #999;padding-top:6px;font-size:10.5px;color:#555">${etiqueta}</div>
     <div style="font-size:10.5px;font-weight:700;color:#333;margin-top:2px">${escapeHtml(firma.autorizado_por ?? '')}</div>

@@ -203,7 +203,7 @@ export async function printRequisicion(r: Requisicion, empresa: PrintEmpresa, lo
   <div class="firmas">
     <div>
       <!-- Mismo alto que el área de firma/sello de la derecha para que las líneas queden parejas -->
-      <div style="height:${firma?.firma || firma?.sello ? 90 : 70}px"></div>
+      <div style="height:${firma?.firma || firma?.sello ? 100 : 70}px"></div>
       <div class="linea-firma">ELABORADO POR</div>
       <div style="font-weight:700;color:#333;margin-top:2px">${esc(r.realizado_por?.toUpperCase())}</div>
     </div>
