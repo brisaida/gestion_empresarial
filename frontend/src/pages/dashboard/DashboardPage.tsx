@@ -315,7 +315,7 @@ export default function DashboardPage() {
                         </span>
                         <p className="text-sm text-[var(--cs)] font-medium">{p.nombre}</p>
                       </div>
-                      <span className="text-sm font-semibold text-[#5F6B7A]">{p.total_vendido} uds</span>
+                      <span className="text-sm font-semibold text-[#5F6B7A]">{Math.round(Number(p.total_vendido)).toLocaleString('es-HN')} uds</span>
                     </div>
                   ))
             }
