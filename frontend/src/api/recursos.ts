@@ -148,6 +148,8 @@ export const productosApi = {
   plantillaUrl: (empresaId: number) => `${client.defaults.baseURL}/productos/importar/plantilla?empresa_id=${empresaId}`,
   eliminar: (id: number, descartarExistencias: boolean) =>
     client.delete<ApiResponse<null>>(`/productos/${id}`, { params: { descartar_existencias: descartarExistencias ? 1 : 0 } }),
+  unir: (origenId: number, destinoId: number) =>
+    client.post<ApiResponse<{ unidades_pasadas: number; costo_final: number }>>(`/productos/${origenId}/unir`, { destino_id: destinoId }),
   eliminarMasivo: (ids: number[], descartarExistencias: boolean) =>
     client.post<ApiResponse<{ message: string }>>('/productos/eliminar-masivo', { ids, descartar_existencias: descartarExistencias }),
 }

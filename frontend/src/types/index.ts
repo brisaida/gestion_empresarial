@@ -466,6 +466,9 @@ export interface ProductoPendiente {
   codigo: string | null
   nombre: string
   pendientes: string[]
+  stock: number
+  costo: number
+  grupo: string | null
   created_at: string | null
 }
 

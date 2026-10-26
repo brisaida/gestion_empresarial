@@ -102,11 +102,15 @@ class ProductoController extends ApiController
     public function update(UpdateProductoRequest $request, Producto $producto): JsonResponse
     {
         $data = $request->validated();
-        $categoriaIds = $data['categoria_ids'] ?? [];
+        // Solo tocar categorías si vienen en la petición (permite actualizaciones parciales)
+        $syncCategorias = array_key_exists('categoria_ids', $data);
+        $categoriaIds   = $data['categoria_ids'] ?? [];
         unset($data['categoria_ids']);
 
         $producto->update($data);
-        $producto->categorias()->sync($categoriaIds);
+        if ($syncCategorias) {
+            $producto->categorias()->sync($categoriaIds);
+        }
         $producto->load(['categorias', 'marca', 'unidadMedida']);
         return response()->json([
             'success' => true,
@@ -144,6 +148,26 @@ class ProductoController extends ApiController
     public function destroy(Request $request, Producto $producto): JsonResponse
     {
         return $this->desactivar($request, collect([$producto]));
+    }
+
+    /**
+     * Une este producto (duplicado) en otro que se conserva: pasa el stock,
+     * promedia el costo, completa datos faltantes y desactiva este.
+     */
+    public function unir(Request $request, Producto $producto): JsonResponse
+    {
+        $validated = $request->validate([
+            'destino_id' => ['required', 'integer', 'exists:productos,id'],
+        ]);
+        $destino = Producto::findOrFail($validated['destino_id']);
+
+        try {
+            $resultado = $this->inventario->unirProductos($producto, $destino, $request->user()->id);
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+
+        return $this->success($resultado, "{$producto->nombre} se unió en {$destino->nombre}.");
     }
 
     public function destroyMasivo(Request $request): JsonResponse

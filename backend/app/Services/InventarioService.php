@@ -294,4 +294,111 @@ class InventarioService
             'observaciones'   => "Transferencia entrada #{$transferencia->id}",
         ]), $detalles);
     }
+
+    /**
+     * Costo resultante al unir dos productos: promedio ponderado por stock.
+     * Si uno no tiene costo se toma el del otro.
+     */
+    public static function costoUnion(float $stockOrigen, float $costoOrigen, float $stockDestino, float $costoDestino): float
+    {
+        if ($costoOrigen <= 0) return $costoDestino;
+        if ($costoDestino <= 0) return $costoOrigen;
+        $stockTotal = $stockOrigen + $stockDestino;
+        if ($stockTotal <= 0) return $costoDestino;
+
+        return round((($stockOrigen * $costoOrigen) + ($stockDestino * $costoDestino)) / $stockTotal, 4);
+    }
+
+    /**
+     * Une un producto duplicado ($origen) en el que se conserva ($destino):
+     * pasa las existencias por bodega con ajustes (quedan en el kárdex),
+     * recalcula el costo promedio, completa los datos vacíos del destino y
+     * desactiva el origen. El historial de documentos no se modifica.
+     */
+    public function unirProductos(Producto $origen, Producto $destino, int $usuarioId): array
+    {
+        if ($origen->id === $destino->id) {
+            throw new \DomainException('No se puede unir un producto consigo mismo.');
+        }
+        if ($origen->empresa_id !== $destino->empresa_id) {
+            throw new \DomainException('Los productos pertenecen a empresas distintas.');
+        }
+        if (! $origen->activo || ! $destino->activo) {
+            throw new \DomainException('Ambos productos deben estar activos.');
+        }
+
+        return DB::transaction(function () use ($origen, $destino, $usuarioId) {
+            $existencias = Existencia::where('producto_id', $origen->id)
+                ->where('cantidad', '>', 0)
+                ->lockForUpdate()
+                ->get();
+
+            if ($existencias->sum('cantidad_reservada') > 0) {
+                throw new \DomainException("{$origen->nombre} tiene unidades reservadas; libéralas antes de unir.");
+            }
+
+            $stockOrigen  = (float) $existencias->sum('cantidad');
+            $stockDestino = (float) Existencia::where('producto_id', $destino->id)->sum('cantidad');
+            $costoOrigen  = (float) $origen->costo;
+            $costoFinal   = self::costoUnion($stockOrigen, $costoOrigen, $stockDestino, (float) $destino->costo);
+
+            $nombreOrigen  = $origen->nombre . ($origen->codigo ? " ({$origen->codigo})" : '');
+            $nombreDestino = $destino->nombre . ($destino->codigo ? " ({$destino->codigo})" : '');
+            $nota = "Unión de producto duplicado: {$nombreOrigen} → {$nombreDestino}";
+
+            foreach ($existencias->groupBy(fn($e) => (string) $e->bodega_id) as $grupo) {
+                $base = [
+                    'empresa_id'      => $origen->empresa_id,
+                    'bodega_id'       => $grupo->first()->bodega_id,
+                    'usuario_id'      => $usuarioId,
+                    'tipo_referencia' => 'union_producto',
+                    'referencia_id'   => $destino->id,
+                    'fecha'           => now()->toDateString(),
+                    'observaciones'   => $nota,
+                ];
+                $lineas = fn(int $productoId) => $grupo->map(fn($e) => [
+                    'producto_id'       => $productoId,
+                    'cantidad'          => (float) $e->cantidad,
+                    'costo_unitario'    => $costoOrigen,
+                    'lote'              => $e->lote,
+                    'fecha_vencimiento' => $e->fecha_vencimiento?->toDateString(),
+                    'numero_serie'      => $e->numero_serie,
+                ])->all();
+
+                $this->registrarMovimiento($base + ['tipo_movimiento' => 'ajuste_negativo'], $lineas($origen->id));
+                $this->registrarMovimiento($base + ['tipo_movimiento' => 'ajuste_positivo'], $lineas($destino->id));
+            }
+
+            // Completar en el destino los datos que le falten, tomados del origen
+            $cambios = ['costo' => $costoFinal];
+            $tieneCodigo = fn($c) => (bool) preg_match('/[a-z0-9]/i', (string) $c);
+            $liberarCodigo = false;
+            if (! $tieneCodigo($destino->codigo) && $tieneCodigo($origen->codigo)) {
+                $cambios['codigo'] = $origen->codigo;
+                $liberarCodigo = true; // el código es único por empresa: se libera del origen
+            }
+            foreach (['codigo_barra', 'descripcion', 'marca_id', 'unidad_medida_id', 'imagen'] as $campo) {
+                if (blank($destino->{$campo}) && filled($origen->{$campo})) {
+                    $cambios[$campo] = $origen->{$campo};
+                }
+            }
+            foreach (['precio_venta', 'stock_minimo'] as $campo) {
+                if ((float) $destino->{$campo} <= 0 && (float) $origen->{$campo} > 0) {
+                    $cambios[$campo] = $origen->{$campo};
+                }
+            }
+
+            $origen->update(['activo' => false] + ($liberarCodigo ? ['codigo' => null] : []));
+            $destino->update($cambios);
+
+            if ($destino->categorias()->count() === 0) {
+                $destino->categorias()->sync($origen->categorias()->pluck('categorias.id'));
+            }
+
+            return [
+                'unidades_pasadas' => $stockOrigen,
+                'costo_final'      => $costoFinal,
+            ];
+        });
+    }
 }

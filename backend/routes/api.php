@@ -76,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('productos',       ProductoController::class);
         Route::post('productos/{producto}/imagen',  [ProductoController::class, 'uploadImagen']);
         Route::post('productos/eliminar-masivo',    [ProductoController::class, 'destroyMasivo']);
+        Route::post('productos/{producto}/unir',    [ProductoController::class, 'unir']);
         Route::get('productos/importar/plantilla',  [ImportarProductosController::class, 'plantilla']);
         Route::post('productos/importar',           [ImportarProductosController::class, 'importar']);
     });

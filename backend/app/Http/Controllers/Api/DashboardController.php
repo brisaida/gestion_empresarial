@@ -143,6 +143,7 @@ class DashboardController extends ApiController
         $productos = Producto::where('empresa_id', $empresaId)
             ->where('activo', true)
             ->withCount('categorias')
+            ->withSum('existencias', 'cantidad')
             ->orderBy('nombre')
             ->get(['id', 'codigo', 'nombre', 'costo', 'precio_venta', 'tipo', 'created_at']);
 
@@ -162,6 +163,9 @@ class DashboardController extends ApiController
                 'codigo'     => $p->codigo,
                 'nombre'     => $p->nombre,
                 'pendientes' => $pendientes,
+                'stock'      => (float) ($p->existencias_sum_cantidad ?? 0),
+                'costo'      => (float) $p->costo,
+                'grupo'      => $repetidos->has($normalizar($p->nombre)) ? $normalizar($p->nombre) : null,
                 'created_at' => $p->created_at?->toDateString(),
             ];
         })->filter(fn($p) => count($p['pendientes']) > 0)->values();

@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   Package, Truck, AlertTriangle, TrendingUp, ArrowRight,
-  TrendingDown, Boxes, ShoppingCart, BarChart2, ClipboardList,
+  TrendingDown, Boxes, ShoppingCart, BarChart2,
 } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { dashboardApi, reportesApi } from '@/api/recursos'
 import { MetricCard } from '@/components/ui/Card'
+import ProductosPendientesPanel from './ProductosPendientesPanel'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 import {
@@ -36,12 +37,6 @@ export default function DashboardPage() {
 
   const r = data?.resumen
 
-  const { data: pendientes = [], isLoading: loadingPend } = useQuery({
-    queryKey: ['productos-pendientes', empresaId],
-    queryFn:  () => dashboardApi.productosPendientes(empresaId).then(r => r.data.data ?? []),
-    enabled:  empresaId > 0,
-  })
-
   // ── Datos para el gráfico de comparación mensual ──────────────────
   const localISO = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
@@ -57,7 +52,7 @@ export default function DashboardPage() {
   const { data: filasActual } = useQuery<FilaIngreso[]>({
     queryKey: ['chart-mes-actual', empresaId],
     queryFn: () => reportesApi.ingresos({ empresa_id: empresaId, fecha_desde: inicioMes, fecha_hasta: hoyStr, agrupacion: 'dia' })
-      .then(r => (r as unknown as RespIngresos).data.filas ?? []),
+      .then(r => (r.data as RespIngresos).data.filas ?? []),
     enabled: empresaId > 0,
     staleTime: 5 * 60_000,
   })
@@ -65,7 +60,7 @@ export default function DashboardPage() {
   const { data: filasAnt } = useQuery<FilaIngreso[]>({
     queryKey: ['chart-mes-anterior', empresaId],
     queryFn: () => reportesApi.ingresos({ empresa_id: empresaId, fecha_desde: inicioMesAnt, fecha_hasta: finMesAnt, agrupacion: 'dia' })
-      .then(r => (r as unknown as RespIngresos).data.filas ?? []),
+      .then(r => (r.data as RespIngresos).data.filas ?? []),
     enabled: empresaId > 0,
     staleTime: 5 * 60_000,
   })
@@ -188,43 +183,6 @@ export default function DashboardPage() {
           color="cyan"
         />
       </div>
-
-      {/* ── Productos con información pendiente ─────────────────────── */}
-      {(loadingPend || pendientes.length > 0) && (
-        <div className="bg-white rounded-xl border border-amber-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <ClipboardList size={16} className="text-amber-600" />
-              <h2 className="text-sm font-semibold text-[var(--cs)]">Productos pendientes</h2>
-              {!loadingPend && (
-                <span className="text-xs font-semibold text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">{pendientes.length}</span>
-              )}
-            </div>
-            <p className="text-xs text-[#5F6B7A] hidden sm:block">Sin código, categoría, costo o precio, o con nombre repetido</p>
-          </div>
-          <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
-            {loadingPend
-              ? Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="px-6 py-3"><div className="h-4 bg-gray-100 rounded-lg w-48 animate-pulse" /></div>
-                ))
-              : pendientes.map(p => (
-                  <Link key={p.id} to={`/productos/${p.id}/editar`}
-                    className="px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 hover:bg-[#F4F7FA] transition-colors">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[var(--cs)] truncate">{p.nombre}</p>
-                      <p className="text-xs text-[#5F6B7A]">{p.codigo || 'Sin código'}{p.created_at ? ` · creado ${formatDate(p.created_at)}` : ''}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-1 sm:justify-end shrink-0">
-                      {p.pendientes.map(m => (
-                        <span key={m} className="text-[10px] font-semibold text-amber-700 bg-amber-50 ring-1 ring-amber-600/20 rounded-full px-2 py-0.5">{m}</span>
-                      ))}
-                    </div>
-                  </Link>
-                ))
-            }
-          </div>
-        </div>
-      )}
 
       {/* ── Gráfico comparativo mensual ─────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -364,6 +322,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Productos con información pendiente ─────────────────────── */}
+      <ProductosPendientesPanel empresaId={empresaId} />
     </div>
   )
 }
