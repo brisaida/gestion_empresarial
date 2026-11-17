@@ -23,6 +23,7 @@ class ExistenciaResource extends JsonResource
                 'id'           => $this->producto->id,
                 'codigo'       => $this->producto->codigo,
                 'nombre'       => $this->producto->nombre,
+                'imagen_url'   => $this->producto->imagen ? '/storage/' . $this->producto->imagen : null,
                 'stock_minimo' => (float) $this->producto->stock_minimo,
                 'stock_bajo'   => (float) $this->cantidad <= (float) $this->producto->stock_minimo,
             ]),

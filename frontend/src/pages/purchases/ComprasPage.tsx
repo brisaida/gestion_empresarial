@@ -133,10 +133,11 @@ function CrearProductoModal({ open, onClose, empresaId, nombreInicial, costoInic
   const [costo,        setCosto]        = useState('')
   const [precioVenta,  setPrecioVenta]  = useState('')
   const [tasaIsv,      setTasaIsv]      = useState('15')
+  const [incluyeIsv,   setIncluyeIsv]   = useState(true)
   const [error,        setError]        = useState('')
 
   useEffect(() => {
-    if (open) { setCodigo(''); setNombre(nombreInicial); setCosto(costoInicial); setPrecioVenta(''); setTasaIsv('15'); setError('') }
+    if (open) { setCodigo(''); setNombre(nombreInicial); setCosto(costoInicial); setPrecioVenta(''); setTasaIsv('15'); setIncluyeIsv(true); setError('') }
   }, [open, nombreInicial, costoInicial])
 
   // Revisión de duplicados contra el catálogo activo
@@ -155,6 +156,7 @@ function CrearProductoModal({ open, onClose, empresaId, nombreInicial, costoInic
       costo:             Number(costo),
       precio_venta:      Number(precioVenta),
       tasa_isv:          tasaIsv.trim() === '' ? null : Number(tasaIsv),
+      precio_incluye_isv: incluyeIsv,
       stock_minimo:      0,
       maneja_lote:       false,
       maneja_vencimiento: false,
@@ -199,6 +201,13 @@ function CrearProductoModal({ open, onClose, empresaId, nombreInicial, costoInic
           <Input label="Precio de venta *" type="number" step="0.01" min="0" value={precioVenta} onChange={e => setPrecioVenta(e.target.value)} placeholder="0.00" />
         </div>
         <Input label="Tasa ISV (%)" type="number" step="0.01" min="0" value={tasaIsv} onChange={e => setTasaIsv(e.target.value)} placeholder="15" />
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input type="checkbox" checked={incluyeIsv} onChange={e => setIncluyeIsv(e.target.checked)} className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[var(--cp)] cursor-pointer shrink-0" />
+          <div>
+            <span className="text-sm font-medium text-[var(--cs)]">El precio de venta ya incluye ISV</span>
+            <p className="text-[11px] text-[#5F6B7A] mt-0.5">Al vender o cotizar, el ISV se extrae del precio en lugar de sumarse encima.</p>
+          </div>
+        </label>
         <p className="text-xs text-[#5F6B7A]">Puedes completar el resto de los campos (categoría, marca, etc.) desde el catálogo de productos.</p>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2 pt-1">

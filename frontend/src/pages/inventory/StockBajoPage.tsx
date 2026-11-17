@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ImageOff, RefreshCw } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { existenciasApi } from '@/api/recursos'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import SearchBar from '@/components/ui/SearchBar'
-import { formatNumber } from '@/lib/utils'
+import { formatNumber, imgUrl } from '@/lib/utils'
 import type { Existencia } from '@/types'
 
 function NivelBar({ cantidad, minimo }: { cantidad: number; minimo: number }) {
@@ -53,6 +53,16 @@ export default function StockBajoPage() {
   })
 
   const columns: Column<Existencia>[] = [
+    {
+      key: 'imagen' as keyof Existencia, header: '', width: '48px',
+      cell: r => imgUrl(r.producto?.imagen_url) ? (
+        <img src={imgUrl(r.producto?.imagen_url)!} alt={r.producto?.nombre ?? ''} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shadow-sm" />
+      ) : (
+        <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center">
+          <ImageOff size={14} className="text-gray-300" />
+        </div>
+      ),
+    },
     {
       key: 'producto', header: 'Producto',
       cell: r => (

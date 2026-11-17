@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, ArrowRightLeft, CheckCircle, Download, Loader2 } from 'lucide-react'
+import { AlertTriangle, ArrowRightLeft, CheckCircle, Download, ImageOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { empresaApi, existenciasApi, bodegasApi, categoriasApi, productosApi, movimientosApi } from '@/api/recursos'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
@@ -9,7 +9,7 @@ import SearchBar from '@/components/ui/SearchBar'
 import ComboBox from '@/components/ui/ComboBox'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
-import { formatNumber } from '@/lib/utils'
+import { formatNumber, imgUrl } from '@/lib/utils'
 import { exportarExcel } from '@/lib/exportExcel'
 import type { Existencia } from '@/types'
 
@@ -176,6 +176,16 @@ export default function ExistenciasPage() {
   }
 
   const columns: Column<Existencia>[] = [
+    {
+      key: 'imagen' as keyof Existencia, header: '', width: '48px',
+      cell: r => imgUrl(r.producto?.imagen_url) ? (
+        <img src={imgUrl(r.producto?.imagen_url)!} alt={r.producto?.nombre ?? ''} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shadow-sm" />
+      ) : (
+        <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center">
+          <ImageOff size={14} className="text-gray-300" />
+        </div>
+      ),
+    },
     {
       key: 'producto', header: 'Producto',
       cell: r => (

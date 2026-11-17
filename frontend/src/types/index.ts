@@ -180,6 +180,7 @@ export interface Existencia {
     id: number
     codigo?: string
     nombre: string
+    imagen_url?: string | null
     stock_minimo: number
     stock_bajo: boolean
   }

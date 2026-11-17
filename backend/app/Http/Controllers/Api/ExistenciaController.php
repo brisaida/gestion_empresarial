@@ -112,6 +112,7 @@ class ExistenciaController extends ApiController
                     'id'           => $p->id,
                     'nombre'       => $p->nombre,
                     'codigo'       => $p->codigo,
+                    'imagen_url'   => $p->imagen ? '/storage/' . $p->imagen : null,
                     'stock_minimo' => (float) $p->stock_minimo,
                     'stock_bajo'   => true,
                 ],
