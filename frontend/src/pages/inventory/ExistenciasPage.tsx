@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button'
 import { formatNumber, imgUrl } from '@/lib/utils'
 import { exportarExcel } from '@/lib/exportExcel'
 import type { Existencia } from '@/types'
+import ProductoDetalleModal from './ProductoDetalleModal'
 
 export default function ExistenciasPage() {
   const { state } = useAuth()
@@ -25,6 +26,7 @@ export default function ExistenciasPage() {
   const [productoId, setProductoId] = useState('')
   const [soloStockBajo, setSoloStockBajo] = useState(false)
   const [exporting, setExporting]   = useState(false)
+  const [detalleId, setDetalleId] = useState<number | null>(null)
 
   const { data: empresaConfig } = useQuery({
     queryKey: ['empresa', empresaId],
@@ -178,21 +180,25 @@ export default function ExistenciasPage() {
   const columns: Column<Existencia>[] = [
     {
       key: 'imagen' as keyof Existencia, header: '', width: '48px',
-      cell: r => imgUrl(r.producto?.imagen_url) ? (
-        <img src={imgUrl(r.producto?.imagen_url)!} alt={r.producto?.nombre ?? ''} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shadow-sm" />
-      ) : (
-        <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center">
-          <ImageOff size={14} className="text-gray-300" />
-        </div>
+      cell: r => (
+        <button type="button" onClick={() => setDetalleId(r.producto_id)} title="Ver producto" className="block rounded-lg hover:ring-2 hover:ring-[var(--cp)]/40 transition">
+          {imgUrl(r.producto?.imagen_url) ? (
+            <img src={imgUrl(r.producto?.imagen_url)!} alt={r.producto?.nombre ?? ''} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shadow-sm" />
+          ) : (
+            <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center">
+              <ImageOff size={14} className="text-gray-300" />
+            </div>
+          )}
+        </button>
       ),
     },
     {
       key: 'producto', header: 'Producto',
       cell: r => (
-        <div>
-          <p className="font-semibold text-[var(--cs)]">{r.producto?.nombre ?? '—'}</p>
+        <button type="button" onClick={() => setDetalleId(r.producto_id)} className="text-left group">
+          <p className="font-semibold text-[var(--cs)] group-hover:text-[var(--cp)] group-hover:underline">{r.producto?.nombre ?? '—'}</p>
           {r.producto?.codigo && <p className="text-xs text-[#5F6B7A] font-mono">{r.producto.codigo}</p>}
-        </div>
+        </button>
       ),
     },
     {
@@ -397,6 +403,7 @@ export default function ExistenciasPage() {
         )}
       </div>
 
+      <ProductoDetalleModal productoId={detalleId} empresaId={empresaId} onClose={() => setDetalleId(null)} />
       {/* Modal traslado */}
       <Modal
         open={!!trasladoItem}

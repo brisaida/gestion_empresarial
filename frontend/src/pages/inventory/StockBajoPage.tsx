@@ -7,6 +7,7 @@ import { Table, Pagination, type Column } from '@/components/ui/Table'
 import SearchBar from '@/components/ui/SearchBar'
 import { formatNumber, imgUrl } from '@/lib/utils'
 import type { Existencia } from '@/types'
+import ProductoDetalleModal from './ProductoDetalleModal'
 
 function NivelBar({ cantidad, minimo }: { cantidad: number; minimo: number }) {
   if (cantidad === 0) {
@@ -38,6 +39,7 @@ export default function StockBajoPage() {
 
   const [page, setPage]     = useState(1)
   const [search, setSearch] = useState('')
+  const [detalleId, setDetalleId] = useState<number | null>(null)
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['existencias-stock-bajo', empresaId, page, search],
@@ -55,21 +57,25 @@ export default function StockBajoPage() {
   const columns: Column<Existencia>[] = [
     {
       key: 'imagen' as keyof Existencia, header: '', width: '48px',
-      cell: r => imgUrl(r.producto?.imagen_url) ? (
-        <img src={imgUrl(r.producto?.imagen_url)!} alt={r.producto?.nombre ?? ''} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shadow-sm" />
-      ) : (
-        <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center">
-          <ImageOff size={14} className="text-gray-300" />
-        </div>
+      cell: r => (
+        <button type="button" onClick={() => setDetalleId(r.producto_id)} title="Ver producto" className="block rounded-lg hover:ring-2 hover:ring-[var(--cp)]/40 transition">
+          {imgUrl(r.producto?.imagen_url) ? (
+            <img src={imgUrl(r.producto?.imagen_url)!} alt={r.producto?.nombre ?? ''} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shadow-sm" />
+          ) : (
+            <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center">
+              <ImageOff size={14} className="text-gray-300" />
+            </div>
+          )}
+        </button>
       ),
     },
     {
       key: 'producto', header: 'Producto',
       cell: r => (
-        <div>
-          <p className="font-semibold text-[var(--cs)]">{r.producto?.nombre ?? `#${r.producto_id}`}</p>
+        <button type="button" onClick={() => setDetalleId(r.producto_id)} className="text-left group">
+          <p className="font-semibold text-[var(--cs)] group-hover:text-[var(--cp)] group-hover:underline">{r.producto?.nombre ?? `#${r.producto_id}`}</p>
           {r.producto?.codigo && <p className="text-xs text-[#5F6B7A] font-mono">{r.producto.codigo}</p>}
-        </div>
+        </button>
       ),
     },
     {
@@ -164,6 +170,7 @@ export default function StockBajoPage() {
           )}
         </div>
       )}
+      <ProductoDetalleModal productoId={detalleId} empresaId={empresaId} onClose={() => setDetalleId(null)} />
     </div>
   )
 }
