@@ -73,6 +73,7 @@ class ProductoController extends ApiController
         unset($data['categoria_ids'], $data['stock_inicial'], $data['bodega_id']);
 
         $producto = DB::transaction(function () use ($data, $categoriaIds, $stockInicial, $bodegaId) {
+            $this->liberarCodigoDeEliminados($data['empresa_id'], $data['codigo'] ?? null);
             $producto = Producto::create($data);
             $producto->categorias()->sync($categoriaIds);
 
@@ -107,10 +108,15 @@ class ProductoController extends ApiController
         $categoriaIds   = $data['categoria_ids'] ?? [];
         unset($data['categoria_ids']);
 
-        $producto->update($data);
-        if ($syncCategorias) {
-            $producto->categorias()->sync($categoriaIds);
-        }
+        DB::transaction(function () use ($producto, $data, $syncCategorias, $categoriaIds) {
+            if (array_key_exists('codigo', $data)) {
+                $this->liberarCodigoDeEliminados($producto->empresa_id, $data['codigo'], $producto->id);
+            }
+            $producto->update($data);
+            if ($syncCategorias) {
+                $producto->categorias()->sync($categoriaIds);
+            }
+        });
         $producto->load(['categorias', 'marca', 'unidadMedida']);
         return response()->json([
             'success' => true,
@@ -232,4 +238,18 @@ class ProductoController extends ApiController
         return $this->noContent($total === 1 ? 'Producto eliminado.' : "{$total} productos eliminados.");
     }
 
+    /**
+     * Un producto eliminado (inactivo) conserva su código; si alguien lo vuelve a usar
+     * en otro producto, se le quita al eliminado para que el código quede libre.
+     */
+    private function liberarCodigoDeEliminados(int $empresaId, ?string $codigo, ?int $exceptoId = null): void
+    {
+        if ($codigo === null || trim($codigo) === '') return;
+
+        Producto::where('empresa_id', $empresaId)
+            ->where('codigo', $codigo)
+            ->where('activo', false)
+            ->when($exceptoId, fn($q) => $q->where('id', '!=', $exceptoId))
+            ->update(['codigo' => null]);
+    }
 }

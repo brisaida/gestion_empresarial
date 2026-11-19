@@ -24,7 +24,7 @@ class UpdateProductoRequest extends FormRequest
             'categoria_ids.*'    => ['integer', 'exists:categorias,id'],
             'marca_id'           => ['nullable', 'integer', 'exists:marcas,id'],
             'unidad_medida_id'   => ['nullable', 'integer', 'exists:unidades_medida,id'],
-            'codigo'             => ['nullable', 'string', 'max:60', Rule::unique('productos')->where('empresa_id', $this->route('producto')->empresa_id)->ignore($this->route('producto'))],
+            'codigo'             => ['nullable', 'string', 'max:60', Rule::unique('productos')->where('empresa_id', $this->route('producto')->empresa_id)->where('activo', true)->ignore($this->route('producto'))],
             'codigo_barra'       => ['nullable', 'string', 'max:100'],
             'nombre'             => ['sometimes', 'required', 'string', 'max:200'],
             'descripcion'        => ['nullable', 'string'],
