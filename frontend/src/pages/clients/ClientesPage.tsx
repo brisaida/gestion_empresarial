@@ -4,7 +4,9 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/stores/authStore'
-import { clientesApi } from '@/api/recursos'
+import { useQuery } from '@tanstack/react-query'
+import { clientesApi, empresaApi } from '@/api/recursos'
+import { formatCurrency } from '@/lib/utils'
 import { useCrud } from '@/hooks/useCrud'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import { StatusBadge } from '@/components/ui/Badge'
@@ -24,6 +26,9 @@ const schema = z.object({
   departamento: z.string().optional(),
   municipio:    z.string().optional(),
   activo:       z.boolean().optional(),
+  // Vacío = sin límite / usa los días de la empresa
+  limite_credito: z.string().optional().refine(v => !v || Number(v) >= 0, 'Monto inválido'),
+  dias_credito:   z.string().optional().refine(v => !v || (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 365), 'Entre 0 y 365'),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -31,6 +36,13 @@ export default function ClientesPage() {
   const { state } = useAuth()
   const empresaId = state.empresaActiva?.id ?? 0
   const crud = useCrud(clientesApi, { queryKey: 'clientes', empresaId })
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn:  () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
+  const diasEmpresa = empresaConfig?.dias_credito ?? 30
 
   const [modal, setModal] = useState<'create' | 'edit' | null>(null)
   const [selected, setSelected] = useState<Cliente | null>(null)
@@ -46,12 +58,18 @@ export default function ClientesPage() {
   const openCreate = () => { reset({ nombre: '', activo: true }); setModal('create') }
   const openEdit   = (c: Cliente) => {
     setSelected(c)
-    reset({ nombre: c.nombre, rtn: c.rtn ?? '', correo: c.correo ?? '', telefono: c.telefono ?? '', direccion: c.direccion ?? '', departamento: c.departamento ?? '', municipio: c.municipio ?? '', activo: c.activo })
+    reset({ nombre: c.nombre, rtn: c.rtn ?? '', correo: c.correo ?? '', telefono: c.telefono ?? '', direccion: c.direccion ?? '', departamento: c.departamento ?? '', municipio: c.municipio ?? '', activo: c.activo,
+      limite_credito: c.limite_credito != null ? String(c.limite_credito) : '', dias_credito: c.dias_credito != null ? String(c.dias_credito) : '' })
     setModal('edit')
   }
   const closeModal = () => { setModal(null); setSelected(null); crud.setError('') }
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (form: FormValues) => {
+    const values = {
+      ...form,
+      limite_credito: form.limite_credito ? Number(form.limite_credito) : null,
+      dias_credito:   form.dias_credito   ? Number(form.dias_credito)   : null,
+    }
     if (modal === 'create') await crud.create.mutateAsync({ ...values, empresa_id: empresaId })
     else if (selected) await crud.update.mutateAsync({ id: selected.id, data: values })
     closeModal()
@@ -62,6 +80,19 @@ export default function ClientesPage() {
     { key: 'rtn',      header: 'RTN',       cell: (r) => <span className="text-[#5F6B7A] font-mono text-xs">{r.rtn ?? '—'}</span> },
     { key: 'correo',   header: 'Correo',    cell: (r) => <span className="text-[#5F6B7A]">{r.correo ?? '—'}</span> },
     { key: 'telefono', header: 'Teléfono',  cell: (r) => <span className="text-[#5F6B7A]">{r.telefono ?? '—'}</span> },
+    {
+      key: 'saldo', header: 'Saldo crédito', align: 'right', width: '150px',
+      cell: (r) => {
+        const saldo = r.saldo_pendiente ?? 0
+        const limite = r.limite_credito
+        return (
+          <div className="text-right leading-tight">
+            <span className={saldo > 0 ? 'font-semibold text-[var(--cs)]' : 'text-gray-300'}>{saldo > 0 ? formatCurrency(saldo) : '—'}</span>
+            {limite != null && <p className="text-[10px] text-[#5F6B7A]">Límite {formatCurrency(limite)}</p>}
+          </div>
+        )
+      },
+    },
     { key: 'activo',   header: 'Estado',    cell: (r) => <StatusBadge activo={r.activo} />, align: 'center', width: '90px' },
     {
       key: 'acciones', header: '', align: 'right', width: '80px',
@@ -123,6 +154,16 @@ export default function ClientesPage() {
                 {municipios.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide mb-3">Crédito</p>
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="Límite de crédito (L)" type="number" step="0.01" min="0" placeholder="Sin límite"
+                error={errors.limite_credito?.message} {...register('limite_credito')} />
+              <Input label="Días de crédito" type="number" step="1" min="0" placeholder={`${diasEmpresa} (de la empresa)`}
+                error={errors.dias_credito?.message} {...register('dias_credito')} />
+            </div>
+            <p className="text-[11px] text-[#5F6B7A] mt-1.5">Si dejas los días vacíos se usan los de la empresa ({diasEmpresa} días). Sin límite, el cliente puede deber cualquier monto.</p>
           </div>
           <label className="flex items-center gap-2 text-sm text-[#5F6B7A] cursor-pointer">
             <input type="checkbox" {...register('activo')} className="rounded accent-[var(--cp)]" />

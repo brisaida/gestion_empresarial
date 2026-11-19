@@ -11,6 +11,7 @@ use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Models\Producto;
 use App\Services\AutorizacionService;
+use App\Services\CreditoService;
 use App\Services\InventarioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -253,6 +254,8 @@ class CotizacionController extends ApiController
             'bodega_id'   => ['required', 'integer', 'exists:bodegas,id'],
             'fecha_venta' => ['nullable', 'date'],
             'metodo_pago' => ['nullable', 'string', 'in:efectivo,tarjeta,transferencia,mixto'],
+            'condicion'   => ['nullable', 'string', 'in:contado,credito'],
+            'dias_credito' => ['nullable', 'integer', 'min:0', 'max:365'],
         ]);
 
         $cotizacion->load('detalles');
@@ -271,13 +274,20 @@ class CotizacionController extends ApiController
                 $productoIds = $cotizacion->detalles->pluck('producto_id')->filter()->unique();
                 $costos      = Producto::whereIn('id', $productoIds)->pluck('costo', 'id');
 
+                $fechaVenta = $request->input('fecha_venta', today()->toDateString());
+                $credito    = app(CreditoService::class)->datosVenta(
+                    $cotizacion->empresa_id, $cotizacion->cliente_id, (float) $cotizacion->total, $fechaVenta,
+                    $request->input('condicion', 'contado'), $request->filled('dias_credito') ? $request->integer('dias_credito') : null,
+                );
+
                 $venta = Venta::create([
+                    ...$credito,
                     'empresa_id'     => $cotizacion->empresa_id,
                     'cliente_id'     => $cotizacion->cliente_id,
                     'bodega_id'      => $request->integer('bodega_id'),
                     'usuario_id'     => $request->user()->id,
                     'numero_factura' => $numero,
-                    'fecha_venta'    => $request->input('fecha_venta', today()->toDateString()),
+                    'fecha_venta'    => $fechaVenta,
                     'subtotal'       => $cotizacion->subtotal,
                     'descuento'      => $cotizacion->descuento,
                     'impuesto'       => $cotizacion->impuesto,

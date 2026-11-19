@@ -14,11 +14,12 @@ class Cliente extends Model
     protected $fillable = [
         'empresa_id', 'nombre', 'rtn', 'correo',
         'telefono', 'direccion', 'departamento', 'municipio', 'activo',
+        'limite_credito', 'dias_credito',
     ];
 
     protected function casts(): array
     {
-        return ['activo' => 'boolean'];
+        return ['activo' => 'boolean', 'limite_credito' => 'decimal:2'];
     }
 
     public function empresa()
@@ -29,5 +30,16 @@ class Cliente extends Model
     public function ventas()
     {
         return $this->hasMany(Venta::class);
+    }
+
+    public function abonos()
+    {
+        return $this->hasMany(AbonoVenta::class);
+    }
+
+    /** Saldo total que el cliente debe en ventas al crédito. */
+    public function saldoPendiente(): float
+    {
+        return (float) $this->ventas()->creditoPendiente()->sum('saldo_pendiente');
     }
 }

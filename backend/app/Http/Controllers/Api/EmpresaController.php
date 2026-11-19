@@ -43,7 +43,12 @@ class EmpresaController extends ApiController
             'color_primario'        => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'color_secundario'      => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'timeout_inactividad'   => ['nullable', 'integer', 'min:5', 'max:480'],
+            'dias_credito'          => ['nullable', 'integer', 'min:0', 'max:365'],
         ]);
+
+        if (array_key_exists('dias_credito', $validated) && $validated['dias_credito'] === null) {
+            unset($validated['dias_credito']);
+        }
 
         $empresa->update($validated);
 
@@ -172,6 +177,7 @@ class EmpresaController extends ApiController
             'color_primario'       => $e->color_primario      ?? '#0E78D8',
             'color_secundario'     => $e->color_secundario    ?? '#072B5A',
             'timeout_inactividad'  => (int) ($e->timeout_inactividad ?? 30),
+            'dias_credito'         => (int) ($e->dias_credito ?? 30),
             'tiene_firma'          => (bool) $e->firma_imagen,
             'tiene_sello'          => (bool) $e->sello_imagen,
         ];

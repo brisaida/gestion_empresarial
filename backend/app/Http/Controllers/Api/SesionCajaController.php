@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\AbonoVenta;
 use App\Models\SesionCaja;
 use App\Models\Venta;
 use Illuminate\Http\JsonResponse;
@@ -75,7 +76,7 @@ class SesionCajaController extends ApiController
         ]);
 
         $resumen      = $this->calcularResumen($sesion);
-        $efectivoEsperado = $sesion->monto_inicial + $resumen['por_metodo']['efectivo'];
+        $efectivoEsperado = $resumen['efectivo_esperado'];
         $diferencia   = $validated['monto_cierre'] - $efectivoEsperado;
 
         $sesion->update([
@@ -87,6 +88,9 @@ class SesionCajaController extends ApiController
             'total_transferencia' => $resumen['por_metodo']['transferencia'],
             'total_mixto'        => $resumen['por_metodo']['mixto'],
             'cantidad_ventas'    => $resumen['cantidad_ventas'],
+            'total_credito'      => $resumen['credito']['total'],
+            'total_abonos'       => $resumen['abonos']['total'],
+            'total_abonos_efectivo' => $resumen['abonos']['por_metodo']['efectivo'],
             'estado'             => 'cerrada',
             'fecha_cierre'       => now(),
             'observaciones'      => $validated['observaciones'] ?? null,
@@ -130,11 +134,30 @@ class SesionCajaController extends ApiController
     /* ── Helpers ── */
     private function calcularResumen(SesionCaja $sesion): array
     {
+        $enSesion = fn($q) => $q->where('created_at', '>=', $sesion->fecha_apertura)
+            ->when($sesion->fecha_cierre, fn($q) => $q->where('created_at', '<=', $sesion->fecha_cierre));
+
+        // Solo las ventas de contado entran a caja; las de crédito se cobran con abonos
         $ventas = Venta::where('empresa_id', $sesion->empresa_id)
             ->where('estado', 'completada')
-            ->where('created_at', '>=', $sesion->fecha_apertura)
-            ->when($sesion->fecha_cierre, fn($q) => $q->where('created_at', '<=', $sesion->fecha_cierre))
+            ->where('condicion', '!=', 'credito')
+            ->tap($enSesion)
             ->selectRaw('metodo_pago, SUM(total) as total, COUNT(*) as cantidad')
+            ->groupBy('metodo_pago')
+            ->get()
+            ->keyBy('metodo_pago');
+
+        $credito = Venta::where('empresa_id', $sesion->empresa_id)
+            ->where('estado', 'completada')
+            ->where('condicion', 'credito')
+            ->tap($enSesion)
+            ->selectRaw('COALESCE(SUM(total), 0) as total, COUNT(*) as cantidad')
+            ->first();
+
+        $abonos = AbonoVenta::where('empresa_id', $sesion->empresa_id)
+            ->where('anulado', false)
+            ->tap($enSesion)
+            ->selectRaw('metodo_pago, SUM(monto) as total, COUNT(*) as cantidad')
             ->groupBy('metodo_pago')
             ->get()
             ->keyBy('metodo_pago');
@@ -146,6 +169,13 @@ class SesionCajaController extends ApiController
             'mixto'         => (float) ($ventas['mixto']->total         ?? 0),
         ];
 
+        $abonosPorMetodo = [
+            'efectivo'      => (float) ($abonos['efectivo']->total      ?? 0),
+            'tarjeta'       => (float) ($abonos['tarjeta']->total       ?? 0),
+            'transferencia' => (float) ($abonos['transferencia']->total ?? 0),
+            'cheque'        => (float) ($abonos['cheque']->total        ?? 0),
+        ];
+
         $totalVentas   = array_sum($por_metodo);
         $cantidadTotal = $ventas->sum('cantidad');
 
@@ -153,7 +183,13 @@ class SesionCajaController extends ApiController
             'total_ventas'      => $totalVentas,
             'cantidad_ventas'   => (int) $cantidadTotal,
             'por_metodo'        => $por_metodo,
-            'efectivo_esperado' => (float) $sesion->monto_inicial + $por_metodo['efectivo'],
+            'credito'           => ['total' => (float) ($credito->total ?? 0), 'cantidad' => (int) ($credito->cantidad ?? 0)],
+            'abonos'            => [
+                'total'      => array_sum($abonosPorMetodo),
+                'cantidad'   => (int) $abonos->sum('cantidad'),
+                'por_metodo' => $abonosPorMetodo,
+            ],
+            'efectivo_esperado' => (float) $sesion->monto_inicial + $por_metodo['efectivo'] + $abonosPorMetodo['efectivo'],
         ];
     }
 
@@ -172,6 +208,9 @@ class SesionCajaController extends ApiController
             'total_transferencia' => $s->total_transferencia !== null ? (float) $s->total_transferencia : null,
             'total_mixto'         => $s->total_mixto !== null ? (float) $s->total_mixto : null,
             'cantidad_ventas'     => $s->cantidad_ventas,
+            'total_credito'       => $s->total_credito !== null ? (float) $s->total_credito : null,
+            'total_abonos'        => $s->total_abonos !== null ? (float) $s->total_abonos : null,
+            'total_abonos_efectivo' => $s->total_abonos_efectivo !== null ? (float) $s->total_abonos_efectivo : null,
             'estado'              => $s->estado,
             'fecha_apertura'      => $s->fecha_apertura?->toDateTimeString(),
             'fecha_cierre'        => $s->fecha_cierre?->toDateTimeString(),

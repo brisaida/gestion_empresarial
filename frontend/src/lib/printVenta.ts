@@ -136,7 +136,9 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
     .fac h1 { font-size: 18px; letter-spacing: 1px; text-align: right; }
     .fac .no { font-size: 22px; white-space: nowrap; }
     .fac .no small { font-size: 11px; font-weight: 700; }
-    .fac .fecha { font-size: 11px; margin-top: 14px; text-align: left; display: flex; gap: 6px; align-items: flex-end; }
+    .fac .fechas { margin-top: 14px; }
+    .fac .fecha + .fecha { margin-top: 6px; }
+    .fac .fecha { font-size: 11px; text-align: left; display: flex; gap: 6px; align-items: flex-end; }
     .fac .fecha span { flex: 1; border-bottom: 1px solid #999; padding: 0 4px 1px; font-size: 12px; }
 
     .cliente { margin-top: 12px; display: flex; align-items: stretch; border: 1px solid #999; border-radius: 6px; overflow: hidden; }
@@ -209,7 +211,11 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
         <h1>FACTURA</h1>
         <div class="no"><small>No.</small> ${esc(formatoNumeroFactura(v.numero_factura))}</div>
       </div>
+      <div class="fechas">
       <div class="fecha">FECHA: <span>${fecha(v.fecha_venta)}</span></div>
+      <div class="fecha">CONDICIÓN: <span>${v.condicion === 'credito' ? `CRÉDITO ${v.dias_credito ?? ''} DÍAS` : 'CONTADO'}</span></div>
+      ${v.condicion === 'credito' && v.fecha_vencimiento ? `<div class="fecha">VENCE: <span>${fecha(v.fecha_vencimiento)}</span></div>` : ''}
+      </div>
     </div>
   </div>
 

@@ -9,6 +9,7 @@ use App\Models\Producto;
 use App\Models\Receta;
 use App\Models\Venta;
 use App\Models\DetalleVenta;
+use App\Services\CreditoService;
 use App\Services\InventarioService;
 use App\Services\NumeracionFacturaService;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +18,10 @@ use Illuminate\Support\Facades\DB;
 
 class VentaController extends ApiController
 {
-    public function __construct(private readonly InventarioService $inventario) {}
+    public function __construct(
+        private readonly InventarioService $inventario,
+        private readonly CreditoService $credito,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -35,6 +39,23 @@ class VentaController extends ApiController
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
+
+        if ($request->filled('condicion')) {
+            $query->where('condicion', $request->condicion);
+        }
+
+        if ($request->filled('cliente_id')) {
+            $query->where('cliente_id', $request->integer('cliente_id'));
+        }
+
+        // Estado de pago de ventas al crédito: pendiente (al día), vencida, pagada
+        match ($request->input('estado_pago')) {
+            'pendiente' => $query->creditoPendiente()->whereDate('fecha_vencimiento', '>=', today()),
+            'vencida'   => $query->creditoPendiente()->whereDate('fecha_vencimiento', '<', today()),
+            'por_cobrar' => $query->creditoPendiente(),
+            'pagada'    => $query->where('condicion', 'credito')->where('estado', '!=', 'cancelada')->where('saldo_pendiente', '<=', 0.004),
+            default     => null,
+        };
 
         if ($request->filled('fecha_desde')) {
             $query->whereDate('fecha_venta', '>=', $request->fecha_desde);
@@ -75,6 +96,12 @@ class VentaController extends ApiController
                 // Una venta exonerada no cobra ISV
                 $impuesto    = $exonerado ? 0 : ($validated['impuesto'] ?? 0);
 
+                $total = $subtotal - $descuento + $costoEnvio + $impuesto;
+                $credito = $this->credito->datosVenta(
+                    $validated['empresa_id'], $validated['cliente_id'] ?? null, $total,
+                    $validated['fecha_venta'], $validated['condicion'] ?? 'contado', $validated['dias_credito'] ?? null,
+                );
+
                 // El número y los datos del CAI siempre los asigna el servidor (rango SAR)
                 $fiscal = NumeracionFacturaService::asignar($validated['empresa_id']);
 
@@ -89,8 +116,9 @@ class VentaController extends ApiController
                     'descuento'      => $descuento,
                     'costo_envio'    => $costoEnvio,
                     'impuesto'       => $impuesto,
-                    'total'          => $subtotal - $descuento + $costoEnvio + $impuesto,
+                    'total'          => $total,
                     'metodo_pago'    => $validated['metodo_pago'] ?? 'efectivo',
+                    ...$credito,
                     'exonerado'            => $exonerado,
                     'orden_compra_exenta'  => $exonerado ? ($validated['orden_compra_exenta'] ?? null) : null,
                     'constancia_exonerado' => $exonerado ? ($validated['constancia_exonerado'] ?? null) : null,
@@ -159,16 +187,34 @@ class VentaController extends ApiController
 
     public function show(Venta $venta): JsonResponse
     {
-        $venta->load(['cliente', 'bodega', 'usuario', 'detalles.producto.unidadMedida']);
+        $venta->load(['cliente', 'bodega', 'usuario', 'detalles.producto.unidadMedida', 'abonos.usuario']);
         return response()->json(['success' => true, 'data' => new VentaResource($venta)]);
     }
 
-    public function cancelar(Venta $venta): JsonResponse
+    public function cancelar(Request $request, Venta $venta): JsonResponse
     {
+        abort_unless($request->user()->tienePermiso($venta->empresa_id, 'ventas'), 404);
+
         if ($venta->estado === 'cancelada') {
             return $this->error('La venta ya está cancelada.', 409);
         }
-        $venta->update(['estado' => 'cancelada']);
-        return response()->json(['success' => true, 'message' => 'Venta cancelada.', 'data' => new VentaResource($venta)]);
+        try {
+            DB::transaction(function () use ($venta, $request) {
+                $venta = Venta::lockForUpdate()->findOrFail($venta->id);
+                if ($venta->estado === 'cancelada') {
+                    throw new \DomainException('La venta ya está cancelada.');
+                }
+                $this->credito->alCancelarVenta($venta);
+                $venta->estado = 'cancelada';
+                $venta->save();
+
+                // Lo vendido vuelve a la bodega de donde salió
+                $this->inventario->revertirVenta($venta, $request->user()->id);
+            });
+            $venta->refresh();
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+        return response()->json(['success' => true, 'message' => 'Venta cancelada. El stock volvió a la bodega.', 'data' => new VentaResource($venta)]);
     }
 }

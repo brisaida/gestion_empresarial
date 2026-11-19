@@ -205,18 +205,36 @@ export default function CierreCajaPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-[#5F6B7A]">Total ventas</span>
+                        <span className="text-[#5F6B7A]">Ventas de contado</span>
                         <span className="font-bold text-[var(--cs)]">{formatCurrency(resumen.total_ventas)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-[#5F6B7A]">Fondo inicial</span>
                         <span className="font-medium text-[var(--cs)]">{formatCurrency(sesion.monto_inicial)}</span>
                       </div>
+                      {(resumen.abonos?.total ?? 0) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#5F6B7A]">Abonos recibidos ({resumen.abonos.cantidad})</span>
+                          <span className="font-medium text-emerald-600">{formatCurrency(resumen.abonos.total)}</span>
+                        </div>
+                      )}
+                      {(resumen.abonos?.por_metodo.efectivo ?? 0) > 0 && (
+                        <div className="flex justify-between text-xs pl-3">
+                          <span className="text-[#5F6B7A]">en efectivo</span>
+                          <span className="text-[#5F6B7A]">{formatCurrency(resumen.abonos.por_metodo.efectivo)}</span>
+                        </div>
+                      )}
+                      {(resumen.credito?.total ?? 0) > 0 && (
+                        <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
+                          <span className="text-[#5F6B7A]">Vendido al crédito ({resumen.credito.cantidad})</span>
+                          <span className="font-medium text-orange-600">{formatCurrency(resumen.credito.total)}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="pl-4 border-l border-gray-100">
                       <p className="text-xs text-[#5F6B7A] mb-1">Efectivo esperado en caja</p>
                       <p className="text-xl font-bold text-[var(--cs)]">{formatCurrency(resumen.efectivo_esperado)}</p>
-                      <p className="text-xs text-[#5F6B7A] mt-1">Fondo + ventas en efectivo</p>
+                      <p className="text-xs text-[#5F6B7A] mt-1">Fondo + ventas en efectivo + abonos en efectivo. Las ventas al crédito no entran.</p>
                     </div>
                   </div>
                 </div>
@@ -315,6 +333,13 @@ export default function CierreCajaPage() {
                           <p className="text-sm font-bold text-[var(--cs)]">{formatCurrency(s.total_ventas ?? 0)}</p>
                           <p className="text-xs text-[#5F6B7A]">{s.cantidad_ventas ?? 0} registros</p>
                         </div>
+                        {((s.total_abonos ?? 0) > 0 || (s.total_credito ?? 0) > 0) && (
+                          <div>
+                            <p className="text-xs text-[#5F6B7A]">Crédito / abonos</p>
+                            <p className="text-sm font-bold text-orange-600">{formatCurrency(s.total_credito ?? 0)}</p>
+                            <p className="text-xs text-emerald-600">+{formatCurrency(s.total_abonos ?? 0)} abonos</p>
+                          </div>
+                        )}
                         {s.estado === 'cerrada' && (
                           <div>
                             <p className="text-xs text-[#5F6B7A]">Diferencia</p>

@@ -191,6 +191,54 @@ class InventarioService
         ], $detalles);
     }
 
+    /**
+     * Devuelve al inventario lo que despachó una venta (al cancelarla).
+     * Repite exactamente las salidas registradas: misma bodega, producto, lote y serie,
+     * incluidos los ingredientes de recetas. Si ya se devolvió, no hace nada.
+     *
+     * @return float unidades devueltas (0 si no había nada que devolver)
+     */
+    public function revertirVenta(\App\Models\Venta $venta, int $usuarioId): float
+    {
+        $yaDevuelta = MovimientoInventario::where('tipo_referencia', 'cancelacion_venta')
+            ->where('referencia_id', $venta->id)->exists();
+        if ($yaDevuelta) return 0;
+
+        $salidas = MovimientoInventario::with('detalles')
+            ->where('tipo_referencia', 'venta')
+            ->where('referencia_id', $venta->id)
+            ->where('tipo_movimiento', 'salida')
+            ->get();
+
+        $total = 0.0;
+        foreach ($salidas as $mov) {
+            if ($mov->detalles->isEmpty()) continue;
+
+            $this->registrarMovimiento([
+                'empresa_id'       => $mov->empresa_id,
+                'bodega_id'        => $mov->bodega_id,
+                'usuario_id'       => $usuarioId,
+                'tipo_movimiento'  => 'entrada',
+                'tipo_referencia'  => 'cancelacion_venta',
+                'referencia_id'    => $venta->id,
+                'numero_documento' => $venta->numero_factura,
+                'fecha'            => today()->toDateString(),
+                'observaciones'    => "Devolución por cancelación de la venta {$venta->numero_factura}",
+            ], $mov->detalles->map(fn($d) => [
+                'producto_id'       => $d->producto_id,
+                'cantidad'          => (float) $d->cantidad,
+                'costo_unitario'    => (float) $d->costo_unitario,
+                'lote'              => $d->lote,
+                'fecha_vencimiento' => $d->fecha_vencimiento,
+                'numero_serie'      => $d->numero_serie,
+            ])->all());
+
+            $total += (float) $mov->detalles->sum('cantidad');
+        }
+
+        return $total;
+    }
+
     private function validarStockDisponible(int $empresaId, int $bodegaId, array $requeridos): void
     {
         if (empty($requeridos)) return;

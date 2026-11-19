@@ -17,6 +17,7 @@ class Empresa extends Model
         'cai', 'factura_rango_desde', 'factura_rango_hasta', 'factura_fecha_limite',
         'color_primario', 'color_secundario',
         'timeout_inactividad',
+        'dias_credito',
     ];
 
     // Imágenes de firma y sello: solo se entregan al imprimir documentos autorizados

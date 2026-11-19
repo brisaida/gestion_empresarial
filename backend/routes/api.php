@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\ProveedorController;
 use App\Http\Controllers\Api\TransferenciaController;
 use App\Http\Controllers\Api\UnidadMedidaController;
 use App\Http\Controllers\Api\CotizacionController;
+use App\Http\Controllers\Api\CuentasPorCobrarController;
 use App\Http\Controllers\Api\ComandaController;
 use App\Http\Controllers\Api\MesaController;
 use App\Http\Controllers\Api\EmpresaController;
@@ -124,6 +125,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('ventas/siguiente-numero', [VentaController::class, 'siguienteNumero']);
         Route::apiResource('ventas', VentaController::class)->only(['index', 'store', 'show']);
         Route::post('ventas/{venta}/cancelar', [VentaController::class, 'cancelar']);
+
+        // Ventas al crédito: cuentas por cobrar y abonos
+        Route::get('cuentas-por-cobrar',                    [CuentasPorCobrarController::class, 'resumen']);
+        Route::get('cuentas-por-cobrar/clientes/{cliente}', [CuentasPorCobrarController::class, 'estadoCuenta']);
+        Route::post('cuentas-por-cobrar/clientes/{cliente}/abonos', [CuentasPorCobrarController::class, 'abonarCliente']);
+        Route::get('abonos',                                [CuentasPorCobrarController::class, 'abonos']);
+        Route::post('ventas/{venta}/abonos',                [CuentasPorCobrarController::class, 'abonar']);
+        Route::post('abonos/{abono}/anular',                [CuentasPorCobrarController::class, 'anular']);
 
         Route::get('comandas/siguiente-numero',                      [ComandaController::class, 'siguienteNumero']);
         Route::get('comandas',                                        [ComandaController::class, 'index']);

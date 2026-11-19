@@ -25,6 +25,13 @@ export function formatDate(value: string | null | undefined): string {
   return new Date(value + 'T00:00:00').toLocaleDateString('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+/** Suma días a una fecha YYYY-MM-DD y devuelve YYYY-MM-DD. */
+export function addDaysISO(fecha: string, dias: number): string {
+  const d = new Date(fecha + 'T00:00:00')
+  d.setDate(d.getDate() + dias)
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
 export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ')
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type React from 'react'
-import { XCircle, Download, Loader2, Banknote, CreditCard, ArrowLeftRight, Layers } from 'lucide-react'
+import { XCircle, Download, Loader2, Banknote, CreditCard, ArrowLeftRight, Layers, Clock, HandCoins } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { ventasApi, empresaApi } from '@/api/recursos'
@@ -9,7 +9,10 @@ import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import SearchBar from '@/components/ui/SearchBar'
-import { formatCurrency, getAxiosError } from '@/lib/utils'
+import { formatCurrency, getAxiosError, cn } from '@/lib/utils'
+import AbonoModal, { type AbonoDestino } from '@/components/credito/AbonoModal'
+import EstadoPagoBadge from '@/components/credito/EstadoPagoBadge'
+import { formatoNumeroFactura } from '@/lib/printVenta'
 import type { Venta, EstadoVenta, MetodoPago } from '@/types'
 
 function EstadoBadge({ estado }: { estado: EstadoVenta }) {
@@ -48,10 +51,12 @@ export default function HistorialVentasPage() {
   const [actionError, setActionError] = useState('')
   const [loadingPdf, setLoadingPdf]   = useState<number | null>(null)
   const [pdfError, setPdfError]       = useState('')
+  const [condicion, setCondicion]     = useState<'' | 'contado' | 'credito'>('')
+  const [abono, setAbono]             = useState<AbonoDestino | null>(null)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['ventas', empresaId, page, search],
-    queryFn:  () => ventasApi.list({ empresa_id: empresaId, page, per_page: 15, search: search || undefined }).then(r => r.data),
+    queryKey: ['ventas', empresaId, page, search, condicion],
+    queryFn:  () => ventasApi.list({ empresa_id: empresaId, page, per_page: 15, search: search || undefined, condicion: condicion || undefined }).then(r => r.data),
     enabled:  empresaId > 0,
     placeholderData: p => p,
   })
@@ -60,6 +65,10 @@ export default function HistorialVentasPage() {
     mutationFn: (id: number) => ventasApi.cancelar(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ventas'] })
+      qc.invalidateQueries({ queryKey: ['cxc'] })
+      qc.invalidateQueries({ queryKey: ['existencias'] })
+      qc.invalidateQueries({ queryKey: ['productos'] })
+      qc.invalidateQueries({ queryKey: ['productos-all'] })
       setCancelarId(null)
       setActionError('')
     },
@@ -115,12 +124,26 @@ export default function HistorialVentasPage() {
     },
     {
       key: 'metodo_pago', header: 'Pago',
-      cell: r => <MetodoPagoBadge metodo={r.metodo_pago} />,
+      cell: r => r.condicion === 'credito' ? (
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full text-orange-700 bg-orange-50">
+            <Clock size={11} /> Crédito
+          </span>
+          {r.estado === 'completada' && <EstadoPagoBadge venta={r} />}
+        </div>
+      ) : <MetodoPagoBadge metodo={r.metodo_pago} />,
       align: 'center', width: '130px',
     },
     {
       key: 'total', header: 'Total',
-      cell: r => <span className="font-bold text-emerald-600">{formatCurrency(r.total)}</span>,
+      cell: r => (
+        <div className="text-right leading-tight">
+          <span className="font-bold text-emerald-600">{formatCurrency(r.total)}</span>
+          {r.condicion === 'credito' && r.estado === 'completada' && (r.saldo_pendiente ?? 0) > 0 && (
+            <p className="text-[11px] text-[#5F6B7A]">Saldo {formatCurrency(r.saldo_pendiente ?? 0)}</p>
+          )}
+        </div>
+      ),
       align: 'right',
     },
     {
@@ -129,9 +152,21 @@ export default function HistorialVentasPage() {
       align: 'center', width: '110px',
     },
     {
-      key: 'acciones', header: '', align: 'right', width: '100px',
+      key: 'acciones', header: '', align: 'right', width: '130px',
       cell: r => (
         <div className="flex items-center justify-end gap-1">
+          {r.condicion === 'credito' && r.estado === 'completada' && (r.saldo_pendiente ?? 0) > 0 && (
+            <button
+              onClick={() => setAbono({
+                ventaId: r.id, saldo: r.saldo_pendiente ?? 0, vence: r.fecha_vencimiento,
+                titulo: `Factura ${formatoNumeroFactura(r.numero_factura)}${r.cliente ? ` · ${r.cliente.nombre}` : ''}`,
+              })}
+              className="p-1.5 rounded text-[var(--cp)] hover:bg-[var(--cp)]/10 transition-colors"
+              title="Registrar abono"
+            >
+              <HandCoins size={15} />
+            </button>
+          )}
           {/* Botón PDF */}
           <button
             onClick={() => handlePdf(r)}
@@ -176,13 +211,22 @@ export default function HistorialVentasPage() {
       )}
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3">
           <SearchBar
             value={search}
             onChange={v => { setSearch(v); setPage(1) }}
             placeholder="Buscar por N° factura, cliente..."
-            className="max-w-sm"
+            className="max-w-sm w-full"
           />
+          <div className="flex items-center gap-1 bg-[#F4F7FA] border border-gray-200 rounded-lg p-1 w-fit">
+            {([['', 'Todas'], ['contado', 'Contado'], ['credito', 'Crédito']] as const).map(([k, l]) => (
+              <button key={k} onClick={() => { setCondicion(k); setPage(1) }}
+                className={cn('px-3 py-1 rounded-md text-sm font-semibold transition-all',
+                  condicion === k ? 'bg-white text-[var(--cp)] shadow-sm' : 'text-[#5F6B7A] hover:text-[var(--cs)]')}>
+                {l}
+              </button>
+            ))}
+          </div>
         </div>
         <Table columns={columns} data={data?.data ?? []} loading={isLoading} error={isError ? 'Error al cargar el historial de ventas.' : undefined} emptyMessage="No hay ventas registradas." />
         {data?.meta && (
@@ -195,11 +239,16 @@ export default function HistorialVentasPage() {
         )}
       </div>
 
+      <AbonoModal destino={abono} empresaId={empresaId} onClose={() => setAbono(null)} />
+
       {/* Confirmar cancelar */}
       <Modal open={cancelarId !== null} onClose={() => setCancelarId(null)} title="Cancelar venta" size="sm">
         <p className="text-sm text-[#5F6B7A] mb-4">
-          ¿Cancelar esta venta? El stock <strong>no</strong> se revertirá automáticamente — registra un movimiento de entrada si es necesario.
+          ¿Cancelar esta venta? Los productos vuelven al stock de la bodega de donde salieron.
         </p>
+        {data?.data.find(v => v.id === cancelarId)?.condicion === 'credito' && (
+          <p className="text-sm text-[#5F6B7A] mb-4">Es una venta al crédito: su saldo deja de contar en cuentas por cobrar. Si tiene abonos, anúlalos primero.</p>
+        )}
         {actionError && <p className="mb-4 text-sm text-red-600">{actionError}</p>}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setCancelarId(null)}>Volver</Button>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ComboBox from '@/components/ui/ComboBox'
 import { Plus, XCircle, Search, Minus, Trash2, Receipt, User, Warehouse,
-         CalendarDays, Hash, Lock, ChefHat, Package, LayoutGrid, List, UtensilsCrossed, TableProperties, Banknote, AlertTriangle } from 'lucide-react'
+         CalendarDays, Hash, Lock, ChefHat, Package, LayoutGrid, List, UtensilsCrossed, TableProperties, Banknote, AlertTriangle, Clock } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi, recetasApi, comandasApi, sesionCajaApi } from '@/api/recursos'
@@ -11,7 +11,7 @@ import Button from '@/components/ui/Button'
 import CantidadInput from '@/components/ui/CantidadInput'
 import Modal from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
-import { formatCurrency, getAxiosError, todayISO, imgUrl } from '@/lib/utils'
+import { formatCurrency, formatDate, getAxiosError, todayISO, imgUrl, addDaysISO } from '@/lib/utils'
 import type { Producto } from '@/types'
 import { useNavigate } from 'react-router-dom'
 
@@ -51,6 +51,8 @@ export default function VentasPage() {
   const [lineas, setLineas]         = useState<LineaVenta[]>([])
 
   const [metodoPago, setMetodoPago] = useState<'efectivo'|'tarjeta'|'transferencia'|'mixto'>('efectivo')
+  const [condicion, setCondicion]   = useState<'contado'|'credito'>('contado')
+  const [diasManual, setDiasManual] = useState<string | null>(null)   // null = plazo del cliente/empresa
 
   const [search, setSearch]         = useState('')
   const [showDrop, setShowDrop]     = useState(false)
@@ -82,6 +84,16 @@ export default function VentasPage() {
     queryFn:  () => bodegasApi.list({ empresa_id: empresaId, per_page: 100 }).then(r => r.data.data),
     enabled:  empresaId > 0,
   })
+  // ── Crédito: plazo propuesto (cliente → empresa → 30) y cupo disponible ──
+  const clienteSel   = clientes?.find(c => String(c.id) === clienteId)
+  const diasDefecto  = clienteSel?.dias_credito ?? empresaConfig?.dias_credito ?? 30
+  const diasCredito  = diasManual ?? String(diasDefecto)
+  const esCredito    = condicion === 'credito'
+  const diasNum      = diasCredito === '' ? diasDefecto : Math.max(0, Math.round(Number(diasCredito) || 0))
+  const vence        = addDaysISO(fecha || todayISO(), diasNum)
+  const saldoCliente = clienteSel?.saldo_pendiente ?? 0
+  const limiteCliente = clienteSel?.limite_credito ?? null
+
   useEffect(() => {
     const pred = bodegas?.find(b => b.predeterminada)
     if (pred && !bodegaId) setBodegaId(String(pred.id))
@@ -104,6 +116,8 @@ export default function VentasPage() {
       qc.invalidateQueries({ queryKey: ['existencias'] })
       qc.invalidateQueries({ queryKey: ['productos'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['clientes-all'] })
+      qc.invalidateQueries({ queryKey: ['cxc'] })
       const venta = (res.data as { data: Venta }).data
       resetForm(); refetchNum()
       toast.success(`Factura ${venta.numero_factura} registrada correctamente.`)
@@ -184,6 +198,8 @@ export default function VentasPage() {
     : 0
   const envio = cobraEnvio ? costoEnvio : 0
   const total = subtotal - descuento + envio + isv
+  const disponible   = limiteCliente != null ? Math.max(0, limiteCliente - saldoCliente) : null
+  const pasaLimite   = esCredito && disponible != null && total > disponible + 0.004
 
   const enviarCocina = useMutation({
     mutationFn: async () => {
@@ -217,7 +233,7 @@ export default function VentasPage() {
     setClienteId(''); setBodegaId(''); setFecha(todayISO())
     setDescuento(0); setCobraEnvio(false); setCostoEnvio(0); setAplicarISV(true); setLineas([])
     setExonerado(false); setExoneracion({ orden_compra_exenta: '', constancia_exonerado: '', registro_sag: '' })
-    setMetodoPago('efectivo'); setSearch('')
+    setMetodoPago('efectivo'); setCondicion('contado'); setDiasManual(null); setSearch('')
   }
 
   const addProduct = (p: Producto) => {
@@ -259,7 +275,9 @@ export default function VentasPage() {
     descuento,
     costo_envio:    cobraEnvio ? costoEnvio : 0,
     impuesto:       Math.round(isv * 10000) / 10000,
-    metodo_pago:    metodoPago,
+    metodo_pago:    esCredito ? null : metodoPago,
+    condicion,
+    dias_credito:   esCredito ? diasNum : null,
     exonerado,
     orden_compra_exenta:  exonerado ? exoneracion.orden_compra_exenta.trim() || null : null,
     constancia_exonerado: exonerado ? exoneracion.constancia_exonerado.trim() || null : null,
@@ -281,6 +299,8 @@ export default function VentasPage() {
     e.preventDefault()
     if (!bodegaId) { toast.warning('Selecciona una bodega.'); return }
     if (lineas.length === 0) { toast.warning('Agrega al menos un producto.'); return }
+    if (esCredito && !clienteId) { toast.warning('Para vender al crédito selecciona un cliente.'); return }
+    if (pasaLimite) { toast.warning(`La venta pasa el límite de crédito del cliente. Disponible: ${formatCurrency(disponible ?? 0)}.`); return }
     await crear.mutateAsync(buildPayload(bodegaId))
   }
 
@@ -366,6 +386,16 @@ export default function VentasPage() {
         <span className="text-lg tracking-tight">{formatCurrency(total)}</span>
       </div>
 
+      {esCredito && (
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold ${
+          pasaLimite ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+          <Clock size={13} className="shrink-0" />
+          {pasaLimite
+            ? <span>Pasa el límite · disponible {formatCurrency(disponible ?? 0)}</span>
+            : <span>Al crédito · vence {formatDate(vence)}</span>}
+        </div>
+      )}
+
 
       {esRestaurante && (
         <div>
@@ -405,7 +435,7 @@ export default function VentasPage() {
         ) : (
           <Button type="submit" loading={crear.isPending} icon={<Receipt size={15} />}
             disabled={lineas.length === 0 || sinSesion} className="w-full justify-center">
-            Registrar venta
+            {esCredito ? 'Registrar venta al crédito' : 'Registrar venta'}
           </Button>
         )}
         <button type="button" onClick={resetForm}
@@ -537,7 +567,7 @@ export default function VentasPage() {
               <ComboBox
                 placeholder="— Consumidor final —"
                 value={clienteId}
-                onChange={v => setClienteId(v)}
+                onChange={v => { setClienteId(v); setDiasManual(null) }}
                 options={clientes?.map(c => ({ value: c.id, label: c.nombre })) ?? []}
               />
             </div>
@@ -563,19 +593,79 @@ export default function VentasPage() {
 
             <div>
               <label className={labelCls}>
-                <span className="flex items-center gap-1.5"><Banknote size={11} /> Método de pago</span>
+                <span className="flex items-center gap-1.5"><Banknote size={11} /> Condición de pago</span>
               </label>
-              <ComboBox
-                value={metodoPago}
-                onChange={v => setMetodoPago(v as typeof metodoPago)}
-                options={[
-                  { value: 'efectivo',      label: 'Efectivo' },
-                  { value: 'tarjeta',       label: 'Tarjeta' },
-                  { value: 'transferencia', label: 'Transferencia' },
-                  { value: 'mixto',         label: 'Mixto' },
-                ]}
-              />
+              <div className="grid grid-cols-2 gap-1 p-1 bg-[#F4F7FA] border border-gray-200 rounded-lg">
+                {(['contado', 'credito'] as const).map(c => (
+                  <button key={c} type="button" onClick={() => setCondicion(c)}
+                    className={`py-1.5 rounded-md text-sm font-semibold transition-all ${
+                      condicion === c ? 'bg-white text-[var(--cp)] shadow-sm' : 'text-[#5F6B7A] hover:text-[var(--cs)]'}`}>
+                    {c === 'contado' ? 'Contado' : 'Crédito'}
+                  </button>
+                ))}
+              </div>
             </div>
+          </div>
+
+          {/* Contado: método de pago · Crédito: plazo, vencimiento y cupo del cliente */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            {!esCredito ? (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div>
+                  <label className={labelCls}>Método de pago</label>
+                  <ComboBox
+                    value={metodoPago}
+                    onChange={v => setMetodoPago(v as typeof metodoPago)}
+                    options={[
+                      { value: 'efectivo',      label: 'Efectivo' },
+                      { value: 'tarjeta',       label: 'Tarjeta' },
+                      { value: 'transferencia', label: 'Transferencia' },
+                      { value: 'mixto',         label: 'Mixto' },
+                    ]}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-start">
+                <div>
+                  <label className={labelCls}>Días de crédito</label>
+                  <input type="number" min="0" max="365" step="1" value={diasCredito}
+                    onChange={e => setDiasManual(e.target.value)} className={selectCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Vence el</label>
+                  <div className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm font-semibold text-[var(--cs)] bg-[#F4F7FA]">
+                    {formatDate(vence)}
+                  </div>
+                </div>
+                {!clienteId ? (
+                  <div className="col-span-2 md:col-span-3 flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm md:mt-[22px]">
+                    <AlertTriangle size={15} className="shrink-0 text-amber-500" />
+                    Selecciona el cliente al que le vendes al crédito.
+                  </div>
+                ) : (
+                  <div className="col-span-2 md:col-span-3 grid grid-cols-3 gap-2 md:mt-[22px]">
+                    <div className="px-3 py-1.5 rounded-lg bg-[#F4F7FA] border border-gray-100">
+                      <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide">Debe</p>
+                      <p className="text-sm font-bold text-[var(--cs)]">{formatCurrency(saldoCliente)}</p>
+                    </div>
+                    <div className="px-3 py-1.5 rounded-lg bg-[#F4F7FA] border border-gray-100">
+                      <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide">Límite</p>
+                      <p className="text-sm font-bold text-[var(--cs)]">{limiteCliente != null ? formatCurrency(limiteCliente) : 'Sin límite'}</p>
+                    </div>
+                    <div className={`px-3 py-1.5 rounded-lg border ${pasaLimite ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-100'}`}>
+                      <p className={`text-[10px] font-semibold uppercase tracking-wide ${pasaLimite ? 'text-red-600' : 'text-emerald-700'}`}>Disponible</p>
+                      <p className={`text-sm font-bold ${pasaLimite ? 'text-red-700' : 'text-emerald-700'}`}>{disponible != null ? formatCurrency(disponible) : '—'}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {pasaLimite && (
+              <p className="mt-2 text-xs font-medium text-red-600">
+                Esta venta ({formatCurrency(total)}) pasa el cupo disponible del cliente. Reduce el monto, registra un abono o sube su límite en Clientes.
+              </p>
+            )}
           </div>
 
           {/* Venta exonerada (SAR) */}

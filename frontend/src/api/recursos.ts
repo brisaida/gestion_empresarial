@@ -4,6 +4,7 @@ import type {
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
   Producto, Existencia, DashboardData, ProductoPendiente, Movimiento, Compra, Venta, Cotizacion,
   Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja, Requisicion, DatosFirma, MetodoPago,
+  CondicionVenta, AbonoVenta, ResumenCxC, EstadoCuenta, NuevoAbono,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -202,7 +203,7 @@ export const cotizacionesApi = {
   cambiarEstado:    (id: number, estado: string) => client.post<ApiResponse<Cotizacion>>(`/cotizaciones/${id}/estado`, { estado }),
   autorizar:        (id: number, pin: string) => client.post<ApiResponse<Cotizacion>>(`/cotizaciones/${id}/autorizar`, { pin }),
   firma:            (id: number) => client.get<ApiResponse<DatosFirma | null>>(`/cotizaciones/${id}/firma`),
-  convertir:        (id: number, data: { bodega_id: number; fecha_venta?: string; metodo_pago?: MetodoPago }) =>
+  convertir:        (id: number, data: { bodega_id: number; fecha_venta?: string; metodo_pago?: MetodoPago; condicion?: CondicionVenta; dias_credito?: number | null }) =>
     client.post<ApiResponse<Venta>>(`/cotizaciones/${id}/convertir`, data),
   siguienteNumero:  (empresaId: number) =>
     client.get<ApiResponse<{ numero_cotizacion: string }>>('/cotizaciones/siguiente-numero', { params: { empresa_id: empresaId } }),
@@ -251,6 +252,21 @@ export const ventasApi = {
   cancelar:         (id: number) => client.post<ApiResponse<Venta>>(`/ventas/${id}/cancelar`),
   siguienteNumero:  (empresaId: number) =>
     client.get<ApiResponse<{ numero_factura: string | null; aviso: string | null; bloqueado: boolean }>>('/ventas/siguiente-numero', { params: { empresa_id: empresaId } }),
+}
+
+// ── Cuentas por cobrar (ventas al crédito) ──────────────────────────────────
+export const cxcApi = {
+  resumen:      (params: Record<string, unknown>) =>
+    client.get<ApiResponse<ResumenCxC>>('/cuentas-por-cobrar', { params }),
+  estadoCuenta: (clienteId: number) =>
+    client.get<ApiResponse<EstadoCuenta>>(`/cuentas-por-cobrar/clientes/${clienteId}`),
+  abonarCliente: (clienteId: number, data: NuevoAbono) =>
+    client.post<ApiResponse<AbonoVenta[]>>(`/cuentas-por-cobrar/clientes/${clienteId}/abonos`, data),
+  abonar:       (ventaId: number, data: NuevoAbono) =>
+    client.post<ApiResponse<AbonoVenta>>(`/ventas/${ventaId}/abonos`, data),
+  anular:       (abonoId: number) =>
+    client.post<ApiResponse<AbonoVenta>>(`/abonos/${abonoId}/anular`),
+  abonos:       (params: Record<string, unknown>) => list<AbonoVenta>('/abonos', params),
 }
 
 // ── Comandas ───────────────────────────────────────────────────────────────

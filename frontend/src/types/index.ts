@@ -48,6 +48,7 @@ export interface EmpresaConfig {
   tiene_firma?: boolean
   tiene_sello?: boolean
   timeout_inactividad?: number
+  dias_credito?: number   // plazo por defecto de las ventas al crédito
 }
 
 export interface AuthState {
@@ -118,6 +119,9 @@ export interface Cliente {
   departamento?: string
   municipio?: string
   activo: boolean
+  limite_credito?: number | null   // null = sin límite
+  dias_credito?: number | null     // null = usa el de la empresa
+  saldo_pendiente?: number
 }
 
 export interface Bodega {
@@ -422,15 +426,88 @@ export interface Venta {
   total: number
   estado: EstadoVenta
   metodo_pago?: 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto' | null
+  condicion?: CondicionVenta
+  dias_credito?: number | null
+  fecha_vencimiento?: string | null
+  saldo_pendiente?: number
+  total_abonado?: number
+  estado_pago?: EstadoPago | null
+  dias_vencida?: number
+  abonos?: AbonoVenta[]
   costo_envio?: number
   exonerado?: boolean
   orden_compra_exenta?: string | null
   constancia_exonerado?: string | null
   registro_sag?: string | null
   vendedor?: string | null
-  cliente?: { id: number; nombre: string; rtn?: string | null; direccion?: string | null } | null
+  cliente?: { id: number; nombre: string; rtn?: string | null; direccion?: string | null; telefono?: string | null } | null
   bodega?: { id: number; nombre: string }
   detalles?: DetalleVenta[]
+}
+
+// ── Ventas al crédito ─────────────────────────────────────────────────────
+export type CondicionVenta = 'contado' | 'credito'
+export type EstadoPago = 'pendiente' | 'vencida' | 'pagada' | 'cancelada'
+export type MetodoAbono = 'efectivo' | 'tarjeta' | 'transferencia' | 'cheque'
+
+export interface AbonoVenta {
+  id: number
+  venta_id: number
+  cliente_id?: number | null
+  fecha: string
+  monto: number
+  metodo_pago: MetodoAbono
+  referencia?: string | null
+  observaciones?: string | null
+  anulado: boolean
+  anulado_at?: string | null
+  usuario?: string | null
+  numero_factura?: string | null
+  cliente?: string | null
+  created_at?: string
+}
+
+export interface AntiguedadSaldos {
+  saldo: number
+  al_dia: number
+  vencido: number
+  d1_30: number
+  d31_60: number
+  d61_90: number
+  d90_mas: number
+}
+
+export interface CuentaCliente extends AntiguedadSaldos {
+  cliente_id: number | null
+  nombre: string
+  rtn?: string | null
+  telefono?: string | null
+  limite_credito: number | null
+  facturas: number
+  vence_primero: string | null
+}
+
+export interface ResumenCxC {
+  totales: AntiguedadSaldos & { clientes: number; facturas: number }
+  clientes: CuentaCliente[]
+}
+
+export interface EstadoCuenta {
+  cliente: {
+    id: number; nombre: string; rtn?: string | null; telefono?: string | null; correo?: string | null
+    direccion?: string | null; limite_credito: number | null; dias_credito: number
+  }
+  resumen: AntiguedadSaldos & { facturas: number }
+  facturas: Venta[]
+  abonos: AbonoVenta[]
+}
+
+export interface NuevoAbono {
+  monto: number
+  fecha?: string
+  metodo_pago: MetodoAbono
+  referencia?: string | null
+  observaciones?: string | null
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
@@ -587,6 +664,9 @@ export interface SesionCaja {
   total_transferencia?: number | null
   total_mixto?: number | null
   cantidad_ventas?: number | null
+  total_credito?: number | null
+  total_abonos?: number | null
+  total_abonos_efectivo?: number | null
   estado: 'abierta' | 'cerrada'
   fecha_apertura: string
   fecha_cierre?: string | null
@@ -595,6 +675,8 @@ export interface SesionCaja {
     total_ventas: number
     cantidad_ventas: number
     por_metodo: { efectivo: number; tarjeta: number; transferencia: number; mixto: number }
+    credito: { total: number; cantidad: number }
+    abonos: { total: number; cantidad: number; por_metodo: Record<MetodoAbono, number> }
     efectivo_esperado: number
   }
 }

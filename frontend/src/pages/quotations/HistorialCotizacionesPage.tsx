@@ -77,7 +77,7 @@ export default function HistorialCotizacionesPage() {
   /* ── Modal convertir ── */
   const [convertirCot, setConvertirCot]     = useState<Cotizacion | null>(null)
   const [bodegaId, setBodegaId]             = useState('')
-  const [metodoPago, setMetodoPago]         = useState<MetodoPago>('efectivo')
+  const [metodoPago, setMetodoPago]         = useState<MetodoPago | 'credito'>('efectivo')
   const [convertirError, setConvertirError] = useState('')
 
   /* ── Modal editar borrador ── */
@@ -146,10 +146,13 @@ export default function HistorialCotizacionesPage() {
   })
 
   const convertir = useMutation({
-    mutationFn: ({ id, bodega_id, metodo_pago }: { id: number; bodega_id: number; metodo_pago: MetodoPago }) =>
-      cotizacionesApi.convertir(id, { bodega_id, fecha_venta: todayISO(), metodo_pago }),
+    mutationFn: ({ id, bodega_id, metodo_pago }: { id: number; bodega_id: number; metodo_pago: MetodoPago | 'credito' }) =>
+      cotizacionesApi.convertir(id, metodo_pago === 'credito'
+        ? { bodega_id, fecha_venta: todayISO(), condicion: 'credito' }
+        : { bodega_id, fecha_venta: todayISO(), metodo_pago }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['cotizaciones'] })
+      qc.invalidateQueries({ queryKey: ['cxc'] })
       qc.invalidateQueries({ queryKey: ['ventas'] })
       qc.invalidateQueries({ queryKey: ['existencias'] })
       setConvertirCot(null); setBodegaId(''); setMetodoPago('efectivo'); setConvertirError('')
@@ -441,20 +444,28 @@ export default function HistorialCotizacionesPage() {
             <label className={labelCls}><span className="flex items-center gap-1.5"><Banknote size={11} /> Método de pago</span></label>
             <ComboBox
               value={metodoPago}
-              onChange={v => setMetodoPago(v as MetodoPago)}
+              onChange={v => setMetodoPago(v as MetodoPago | 'credito')}
               options={[
                 { value: 'efectivo',      label: 'Efectivo' },
                 { value: 'tarjeta',       label: 'Tarjeta' },
                 { value: 'transferencia', label: 'Transferencia' },
                 { value: 'mixto',         label: 'Mixto' },
+                { value: 'credito',       label: 'Al crédito' },
               ]}
             />
+            {metodoPago === 'credito' && (
+              <p className={`mt-1.5 text-xs ${convertirCot?.cliente_id ? 'text-[#5F6B7A]' : 'text-red-600'}`}>
+                {convertirCot?.cliente_id
+                  ? 'Se usa el plazo de crédito del cliente (o el de la empresa).'
+                  : 'Esta cotización no tiene cliente: no se puede vender al crédito.'}
+              </p>
+            )}
           </div>
         </div>
         {convertirError && <p className="mb-4 text-sm text-red-600">{convertirError}</p>}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setConvertirCot(null)}>Cancelar</Button>
-          <Button loading={convertir.isPending} disabled={!bodegaId} icon={<ArrowRightCircle size={15} />}
+          <Button loading={convertir.isPending} disabled={!bodegaId || (metodoPago === 'credito' && !convertirCot?.cliente_id)} icon={<ArrowRightCircle size={15} />}
             onClick={() => convertirCot && convertir.mutate({ id: convertirCot.id, bodega_id: Number(bodegaId), metodo_pago: metodoPago })}>
             Convertir a venta
           </Button>

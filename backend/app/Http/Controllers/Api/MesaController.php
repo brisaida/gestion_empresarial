@@ -8,6 +8,7 @@ use App\Models\Mesa;
 use App\Models\Producto;
 use App\Models\Receta;
 use App\Models\Venta;
+use App\Services\CreditoService;
 use App\Services\InventarioService;
 use App\Services\NumeracionFacturaService;
 use Illuminate\Http\JsonResponse;
@@ -106,7 +107,9 @@ class MesaController extends ApiController
     {
         $validated = $request->validate([
             'bodega_id'   => ['required', 'integer', 'exists:bodegas,id'],
-            'metodo_pago' => ['required', 'in:efectivo,tarjeta,transferencia,mixto'],
+            'metodo_pago' => ['required_unless:condicion,credito', 'nullable', 'in:efectivo,tarjeta,transferencia,mixto'],
+            'condicion'   => ['nullable', 'string', 'in:contado,credito'],
+            'dias_credito' => ['nullable', 'integer', 'min:0', 'max:365'],
             'cliente_id'  => ['nullable', 'integer', 'exists:clientes,id'],
             'descuento'   => ['nullable', 'numeric', 'min:0'],
             'impuesto'    => ['nullable', 'numeric', 'min:0'],
@@ -133,6 +136,11 @@ class MesaController extends ApiController
                 $subtotal = $comandasListas->flatMap(fn($c) => $c->detalles)
                     ->sum(fn($d) => (float) $d->cantidad * (float) $d->precio_unitario);
 
+                $credito = app(CreditoService::class)->datosVenta(
+                    $mesa->empresa_id, $validated['cliente_id'] ?? null, $subtotal - $descuento + $impuesto,
+                    now()->toDateString(), $validated['condicion'] ?? 'contado', $validated['dias_credito'] ?? null,
+                );
+
                 $venta = Venta::create([
                     'empresa_id'     => $mesa->empresa_id,
                     'bodega_id'      => $validated['bodega_id'],
@@ -145,7 +153,8 @@ class MesaController extends ApiController
                     'impuesto'       => $impuesto,
                     'total'          => $subtotal - $descuento + $impuesto,
                     'estado'         => 'completada',
-                    'metodo_pago'    => $validated['metodo_pago'],
+                    'metodo_pago'    => $validated['metodo_pago'] ?? 'efectivo',
+                    ...$credito,
                 ]);
 
                 // Pre-cargar costos

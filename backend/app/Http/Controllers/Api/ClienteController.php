@@ -11,7 +11,8 @@ class ClienteController extends ApiController
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Cliente::where('empresa_id', $request->integer('empresa_id'));
+        $query = Cliente::where('empresa_id', $request->integer('empresa_id'))
+            ->withSum(['ventas as saldo_credito' => fn($q) => $q->creditoPendiente()], 'saldo_pendiente');
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -41,6 +42,8 @@ class ClienteController extends ApiController
             'departamento' => ['nullable', 'string', 'max:100'],
             'municipio'    => ['nullable', 'string', 'max:100'],
             'activo'       => ['boolean'],
+            'limite_credito' => ['nullable', 'numeric', 'min:0'],
+            'dias_credito'   => ['nullable', 'integer', 'min:0', 'max:365'],
         ]);
         $cliente = Cliente::create($data);
         return $this->created(new ClienteResource($cliente));
@@ -48,6 +51,7 @@ class ClienteController extends ApiController
 
     public function show(Cliente $cliente): JsonResponse
     {
+        $cliente->loadSum(['ventas as saldo_credito' => fn($q) => $q->creditoPendiente()], 'saldo_pendiente');
         return response()->json(['success' => true, 'data' => new ClienteResource($cliente)]);
     }
 
@@ -62,6 +66,8 @@ class ClienteController extends ApiController
             'departamento' => ['nullable', 'string', 'max:100'],
             'municipio'    => ['nullable', 'string', 'max:100'],
             'activo'       => ['boolean'],
+            'limite_credito' => ['nullable', 'numeric', 'min:0'],
+            'dias_credito'   => ['nullable', 'integer', 'min:0', 'max:365'],
         ]);
         $cliente->update($data);
         return response()->json(['success' => true, 'message' => 'Cliente actualizado.', 'data' => new ClienteResource($cliente)]);

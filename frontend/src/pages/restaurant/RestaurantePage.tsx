@@ -2,11 +2,12 @@ import { useState, useCallback, useEffect } from 'react'
 import {
   UtensilsCrossed, Plus, Users, RefreshCw, X, ChefHat,
   CreditCard, Banknote, ArrowLeftRight, Layers, CheckCircle2,
-  Pencil, Trash2, Search,
+  Pencil, Trash2, Search, Clock,
 } from 'lucide-react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { mesasApi, bodegasApi, productosApi, recetasApi, comandasApi } from '@/api/recursos'
+import { mesasApi, bodegasApi, productosApi, recetasApi, comandasApi, clientesApi } from '@/api/recursos'
+import ComboBox from '@/components/ui/ComboBox'
 import { getAxiosError, formatCurrency } from '@/lib/utils'
 import type { Mesa, Comanda, Bodega, DetalleComanda, MetodoPago } from '@/types'
 import Button from '@/components/ui/Button'
@@ -348,11 +349,12 @@ function NuevaRondaModal({
 
 // ── CobrarModal ────────────────────────────────────────────────────────────
 
-const metodoPagoOpts: { key: MetodoPago; label: string; icon: typeof Banknote }[] = [
+const metodoPagoOpts: { key: MetodoPago | 'credito'; label: string; icon: typeof Banknote }[] = [
   { key: 'efectivo',     label: 'Efectivo',      icon: Banknote         },
   { key: 'tarjeta',      label: 'Tarjeta',       icon: CreditCard       },
   { key: 'transferencia',label: 'Transferencia', icon: ArrowLeftRight   },
   { key: 'mixto',        label: 'Mixto',         icon: Layers           },
+  { key: 'credito',      label: 'Crédito',       icon: Clock            },
 ]
 
 function CobrarModal({
@@ -361,8 +363,20 @@ function CobrarModal({
   mesa: Mesa; comandas: Comanda[]; bodegaId: number
   onClose: () => void; onDone: () => void
 }) {
-  const [metodo, setMetodo] = useState<MetodoPago>('efectivo')
-  const [error, setError]   = useState('')
+  const { state } = useAuth()
+  const empresaId = state.empresaActiva?.id ?? 0
+  const qc = useQueryClient()
+  const [metodo, setMetodo]       = useState<MetodoPago | 'credito'>('efectivo')
+  const [clienteId, setClienteId] = useState('')
+  const [error, setError]         = useState('')
+  const esCredito = metodo === 'credito'
+
+  const { data: clientes } = useQuery({
+    queryKey: ['clientes-all', empresaId],
+    queryFn:  () => clientesApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => r.data.data),
+    enabled:  empresaId > 0 && esCredito,
+  })
+  const clienteSel = clientes?.find(c => String(c.id) === clienteId)
 
   const todasListas   = comandas.filter(c => c.estado === 'listo')
   const tieneActivas  = comandas.some(c => c.estado !== 'listo')
@@ -370,9 +384,17 @@ function CobrarModal({
   const total         = allDetalles.reduce((s, d) => s + d.cantidad * d.precio_unitario, 0)
 
   const cobrar = useMutation({
-    mutationFn: () => mesasApi.facturar(mesa.id, { bodega_id: bodegaId, metodo_pago: metodo }),
-    onSuccess:  onDone,
-    onError:    (e) => setError(getAxiosError(e)),
+    mutationFn: () => {
+      if (esCredito && !clienteId) throw new Error('Selecciona el cliente al que le vendes al crédito.')
+      return mesasApi.facturar(mesa.id, esCredito
+        ? { bodega_id: bodegaId, condicion: 'credito', cliente_id: Number(clienteId) }
+        : { bodega_id: bodegaId, metodo_pago: metodo })
+    },
+    onSuccess:  () => {
+      if (esCredito) { qc.invalidateQueries({ queryKey: ['cxc'] }); qc.invalidateQueries({ queryKey: ['clientes-all'] }) }
+      onDone()
+    },
+    onError:    (e) => setError(e instanceof Error && !('response' in e) ? e.message : getAxiosError(e)),
   })
 
   return (
@@ -424,6 +446,20 @@ function CobrarModal({
           </div>
         </div>
 
+        {esCredito && (
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-[var(--cs)]">Cliente *</p>
+            <ComboBox placeholder="Seleccionar cliente" value={clienteId} onChange={setClienteId}
+              options={clientes?.map(c => ({ value: c.id, label: c.nombre })) ?? []} />
+            {clienteSel && (
+              <p className="text-xs text-[#5F6B7A]">
+                Debe {formatCurrency(clienteSel.saldo_pendiente ?? 0)}
+                {clienteSel.limite_credito != null && <> · Límite {formatCurrency(clienteSel.limite_credito)}</>}
+              </p>
+            )}
+          </div>
+        )}
+
         {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
 
         <div className="flex gap-2">
@@ -435,7 +471,7 @@ function CobrarModal({
             onClick={() => cobrar.mutate()}
             className="flex-1"
           >
-            Cobrar {formatCurrency(total)}
+            {esCredito ? 'Cargar al crédito' : `Cobrar ${formatCurrency(total)}`}
           </Button>
         </div>
       </div>

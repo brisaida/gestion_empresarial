@@ -25,6 +25,7 @@ import HistorialCotizacionesPage from '@/pages/quotations/HistorialCotizacionesP
 import VentasPage               from '@/pages/sales/VentasPage'
 import HistorialVentasPage      from '@/pages/sales/HistorialVentasPage'
 import CierreCajaPage           from '@/pages/sales/CierreCajaPage'
+import CuentasPorCobrarPage     from '@/pages/sales/CuentasPorCobrarPage'
 import TrasladosPage             from '@/pages/transfers/TrasladosPage'
 import HistorialTrasladosPage   from '@/pages/transfers/HistorialTrasladosPage'
 import ConfiguracionPage         from '@/pages/settings/ConfiguracionPage'
@@ -96,6 +97,7 @@ export default function App() {
               <Route path="ventas"                 element={<Guard perm="ventas"><VentasPage /></Guard>} />
               <Route path="ventas/historial"       element={<Guard perm="ventas"><HistorialVentasPage /></Guard>} />
               <Route path="caja"                   element={<Guard perm="ventas"><CierreCajaPage /></Guard>} />
+              <Route path="cuentas-por-cobrar"     element={<Guard perm="ventas"><CuentasPorCobrarPage /></Guard>} />
               <Route path="restaurante"             element={<Guard perm="ventas"><RestaurantePage /></Guard>} />
               <Route path="recetas"                element={<Guard perm="ventas"><RecetasPage /></Guard>} />
               <Route path="cocina"                 element={<Guard perm="ventas"><CocinaPage /></Guard>} />

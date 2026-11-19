@@ -36,6 +36,7 @@ export default function ConfiguracionPage() {
   const [colorPrimario,      setColorPrimario]      = useState('#0E78D8')
   const [colorSecundario,    setColorSecundario]    = useState('#072B5A')
   const [timeoutInactividad, setTimeoutInactividad] = useState(30)
+  const [diasCredito,        setDiasCredito]        = useState('30')
   const [fiscal, setFiscal] = useState({ cai: '', factura_rango_desde: '', factura_rango_hasta: '', factura_fecha_limite: '' })
 
   // Inicializar form cuando llegan los datos
@@ -60,6 +61,7 @@ export default function ConfiguracionPage() {
     setColorPrimario(empresa.color_primario   ?? '#0E78D8')
     setColorSecundario(empresa.color_secundario ?? '#072B5A')
     setTimeoutInactividad(empresa.timeout_inactividad ?? 30)
+    setDiasCredito(String(empresa.dias_credito ?? 30))
     setFiscal({
       cai:                  empresa.cai                  ?? '',
       factura_rango_desde:  empresa.factura_rango_desde  ?? '',
@@ -100,6 +102,7 @@ export default function ConfiguracionPage() {
       factura_rango_desde:  fiscal.factura_rango_desde.trim() || null,
       factura_rango_hasta:  fiscal.factura_rango_hasta.trim() || null,
       factura_fecha_limite: fiscal.factura_fecha_limite || null,
+      dias_credito: diasCredito === '' ? 30 : Math.max(0, Math.min(365, Math.round(Number(diasCredito) || 0))),
     }),
     onSuccess: () => {
       setFacturacionOk(true); setFacturacionError('')
@@ -397,8 +400,17 @@ export default function ConfiguracionPage() {
           </div>
         </div>
 
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <p className="text-xs font-bold text-[var(--cs)] uppercase tracking-wide mb-1">Ventas al crédito</p>
+          <p className="text-xs text-[#5F6B7A] mb-4">Plazo que se propone al vender al crédito. Cada cliente puede tener su propio plazo, y en la venta se puede cambiar.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Días de crédito por defecto" type="number" min="0" max="365" step="1"
+              value={diasCredito} onChange={e => setDiasCredito(e.target.value)} />
+          </div>
+        </div>
+
         {facturacionError && <p className="mt-3 text-sm text-red-600">{facturacionError}</p>}
-        {facturacionOk    && <p className="mt-3 text-sm text-emerald-600">Formato guardado correctamente.</p>}
+        {facturacionOk    && <p className="mt-3 text-sm text-emerald-600">Cambios guardados correctamente.</p>}
 
         <div className="mt-5 flex justify-end">
           <Button
@@ -406,7 +418,7 @@ export default function ConfiguracionPage() {
             loading={guardarFacturacion.isPending}
             onClick={() => guardarFacturacion.mutate(tipoFacturacion)}
           >
-            Guardar formato
+            Guardar
           </Button>
         </div>
       </div>
