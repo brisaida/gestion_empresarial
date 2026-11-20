@@ -6,6 +6,7 @@ import type {
   Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja, Requisicion, DatosFirma, MetodoPago,
   CondicionVenta, AbonoVenta, ResumenCxC, EstadoCuenta, NuevoAbono,
   MetodoPagoCompra, PagoCompra, ResumenCxP, EstadoCuentaProveedor, NuevoPagoCompra,
+  DevolucionVenta, DevolucionCompra, NuevaDevolucion,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -176,7 +177,8 @@ export const comprasApi = {
   get:      (id: number) => get<Compra>(`/compras/${id}`),
   create:   (data: unknown) => create<Compra>('/compras', data),
   recibir:  (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/recibir`),
-  cancelar: (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/cancelar`),
+  cancelar: (id: number, motivo: string) => client.post<ApiResponse<Compra>>(`/compras/${id}/cancelar`, { motivo }),
+  devolver: (id: number, data: NuevaDevolucion) => client.post<ApiResponse<DevolucionCompra>>(`/compras/${id}/devoluciones`, data),
   cambiarCondicion: (id: number, data: { condicion: CondicionVenta; metodo_pago?: MetodoPagoCompra | null; dias_credito?: number | null }) =>
     client.patch<ApiResponse<Compra>>(`/compras/${id}/condicion`, data),
   escanear: (imagen: string, media_type: string) =>
@@ -252,7 +254,8 @@ export const ventasApi = {
   list:             (params: Record<string, unknown>) => list<Venta>('/ventas', params),
   get:              (id: number) => get<Venta>(`/ventas/${id}`),
   create:           (data: unknown) => create<Venta>('/ventas', data),
-  cancelar:         (id: number) => client.post<ApiResponse<Venta>>(`/ventas/${id}/cancelar`),
+  cancelar:         (id: number, motivo: string) => client.post<ApiResponse<Venta>>(`/ventas/${id}/cancelar`, { motivo }),
+  devolver:         (id: number, data: NuevaDevolucion) => client.post<ApiResponse<DevolucionVenta>>(`/ventas/${id}/devoluciones`, data),
   siguienteNumero:  (empresaId: number) =>
     client.get<ApiResponse<{ numero_factura: string | null; aviso: string | null; bloqueado: boolean }>>('/ventas/siguiente-numero', { params: { empresa_id: empresaId } }),
 }
@@ -285,6 +288,14 @@ export const cxpApi = {
   anular:         (pagoId: number) =>
     client.post<ApiResponse<PagoCompra>>(`/pagos-compra/${pagoId}/anular`),
   pagos:          (params: Record<string, unknown>) => list<PagoCompra>('/pagos-compra', params),
+}
+
+// ── Devoluciones ──────────────────────────────────────────────────────────
+export const devolucionesApi = {
+  ventas:      (params: Record<string, unknown>) => list<DevolucionVenta>('/devoluciones-venta', params),
+  venta:       (id: number) => get<DevolucionVenta>(`/devoluciones-venta/${id}`),
+  compras:     (params: Record<string, unknown>) => list<DevolucionCompra>('/devoluciones-compra', params),
+  compra:      (id: number) => get<DevolucionCompra>(`/devoluciones-compra/${id}`),
 }
 
 // ── Comandas ───────────────────────────────────────────────────────────────

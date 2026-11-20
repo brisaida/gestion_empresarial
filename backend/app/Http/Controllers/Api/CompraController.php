@@ -80,8 +80,10 @@ class CompraController extends ApiController
             $subtotal = collect($validated['detalles'])->sum(fn($d) => $d['cantidad'] * $d['costo_unitario']);
             $descuento = $validated['descuento'] ?? 0;
             $impuesto  = $validated['impuesto'] ?? 0;
+            $envio     = $validated['costo_envio'] ?? 0;
+            $total     = $subtotal - $descuento + $impuesto + $envio;
             $condicion = $this->cxp->datosCompra(
-                $validated['empresa_id'], $validated['proveedor_id'], $subtotal - $descuento + $impuesto,
+                $validated['empresa_id'], $validated['proveedor_id'], $total,
                 $validated['fecha_compra'], $validated['condicion'] ?? 'contado',
                 $validated['dias_credito'] ?? null, $validated['metodo_pago'] ?? null,
             );
@@ -96,7 +98,8 @@ class CompraController extends ApiController
                 'subtotal'       => $subtotal,
                 'descuento'      => $descuento,
                 'impuesto'       => $impuesto,
-                'total'          => $subtotal - $descuento + $impuesto,
+                'costo_envio'    => $envio,
+                'total'          => $total,
                 'estado'         => 'pendiente',
                 ...$condicion,
             ]);
@@ -125,7 +128,12 @@ class CompraController extends ApiController
 
     public function show(Compra $compra): JsonResponse
     {
-        $compra->load(['proveedor', 'bodega', 'detalles.producto', 'pagos.usuario']);
+        $compra->load([
+            'proveedor', 'bodega', 'canceladaPor', 'pagos.usuario',
+            'detalles' => fn($q) => $q->withSum('devueltos as cantidad_devuelta', 'cantidad'),
+            'detalles.producto',
+            'devoluciones' => fn($q) => $q->orderBy('id'), 'devoluciones.usuario',
+        ]);
         return response()->json(['success' => true, 'data' => new CompraResource($compra)]);
     }
 
@@ -152,15 +160,23 @@ class CompraController extends ApiController
         return response()->json(['success' => true, 'message' => 'Compra recibida y stock actualizado.', 'data' => new CompraResource($compra)]);
     }
 
-    public function cancelar(Compra $compra): JsonResponse
+    public function cancelar(Request $request, Compra $compra): JsonResponse
     {
+        $motivo = $request->validate(
+            ['motivo' => ['required', 'string', 'min:3', 'max:500']],
+            ['motivo.required' => 'Escribe el motivo de la cancelación.'],
+        )['motivo'];
+
         if ($compra->estado !== 'pendiente') {
             return $this->error("Solo se pueden cancelar compras pendientes.", 409);
         }
         if ($compra->pagos()->where('anulado', false)->exists()) {
             return $this->error('La compra tiene pagos registrados. Anúlalos antes de cancelarla.', 422);
         }
-        $compra->update(['estado' => 'cancelada', 'saldo_pendiente' => 0]);
+        $compra->update([
+            'estado' => 'cancelada', 'saldo_pendiente' => 0,
+            'cancelada_por' => $request->user()->id, 'cancelada_at' => now(), 'motivo_cancelacion' => $motivo,
+        ]);
         return response()->json(['success' => true, 'message' => 'Compra cancelada.', 'data' => new CompraResource($compra)]);
     }
 

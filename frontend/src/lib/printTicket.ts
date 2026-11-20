@@ -119,6 +119,9 @@ export function printTicket(v: Venta, empresa: PrintEmpresa): void {
     : v.impuesto > 0
       ? `<div class="sub-row"><span>ISV (${isvPct}%)</span><span>${fmt(v.impuesto)}</span></div>`
       : ''}
+  ${Number(v.costo_envio ?? 0) > 0
+    ? `<div class="sub-row"><span>Envío</span><span>${fmt(Number(v.costo_envio))}</span></div>`
+    : ''}
   <div class="sep center">${line('=')}</div>
   <div class="total-row"><span>TOTAL</span><span>${fmt(v.total)}</span></div>
   <div class="sep center">${line('=')}</div>

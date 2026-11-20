@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { CheckCircle, XCircle, ChevronDown, ChevronRight, Package, Clock, Banknote, Pencil } from 'lucide-react'
+import { CheckCircle, XCircle, ChevronDown, ChevronRight, Package, Clock, Banknote, Pencil, Undo2, Printer } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { comprasApi } from '@/api/recursos'
+import { comprasApi, empresaApi, devolucionesApi } from '@/api/recursos'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -12,6 +12,9 @@ import type { Compra, EstadoCompra, MetodoPagoCompra } from '@/types'
 import PagoProveedorModal, { type PagoDestino } from '@/components/credito/PagoProveedorModal'
 import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
 import EstadoPagoBadge from '@/components/credito/EstadoPagoBadge'
+import DevolucionModal, { type DevolucionDestino } from '@/components/credito/DevolucionModal'
+import { printDevolucion } from '@/lib/printCredito'
+
 
 const estadoMap: Record<EstadoCompra, { label: string; cls: string }> = {
   pendiente: { label: 'Pendiente', cls: 'bg-amber-50 text-amber-700' },
@@ -32,11 +35,19 @@ const FILTROS: { key: Filtro; label: string }[] = [
   { key: 'cancelada', label: 'Cancelada' },
 ]
 
-function DetalleFila({ id }: { id: number }) {
+async function imprimirDevolucion(id: number, empresaId: number) {
+  try {
+    const [dev, emp, logo] = await Promise.all([
+      devolucionesApi.compra(id), empresaApi.get(empresaId), empresaApi.logoBase64(empresaId),
+    ])
+    printDevolucion(dev.data.data, 'proveedor', emp.data.data, logo.data.data.logo_base64 ?? undefined)
+  } catch { /* el comprobante es opcional */ }
+}
+
+function DetalleFila({ id, empresaId }: { id: number; empresaId: number }) {
   const { data, isLoading } = useQuery({
-    queryKey: ['compra-detalle', id],
+    queryKey: ['compras', 'detalle', id],
     queryFn:  () => comprasApi.get(id).then(r => r.data.data),
-    staleTime: 60_000,
   })
 
   if (isLoading) return <p className="text-xs text-[#5F6B7A] py-3 px-4">Cargando...</p>
@@ -55,13 +66,39 @@ function DetalleFila({ id }: { id: number }) {
               {d.fecha_vencimiento && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">Vence: {d.fecha_vencimiento}</span>}
             </div>
             <div className="flex items-center gap-6 shrink-0 text-right">
+              {(d.cantidad_devuelta ?? 0) > 0 && <span className="text-[11px] font-semibold text-purple-700">devuelto {d.cantidad_devuelta}</span>}
               <span className="text-[#5F6B7A] w-24">× {d.cantidad} u.</span>
               <span className="text-[#5F6B7A] w-28">@ {formatCurrency(d.costo_unitario)}</span>
               <span className="font-semibold text-[var(--cs)] w-28">{formatCurrency(d.subtotal)}</span>
             </div>
           </div>
         ))}
+        {(data?.costo_envio ?? 0) > 0 && (
+          <div className="flex items-center justify-between text-sm py-1.5">
+            <span className="font-medium text-[#5F6B7A]">Envío / flete</span>
+            <span className="font-semibold text-[var(--cs)] w-28 text-right">{formatCurrency(data!.costo_envio!)}</span>
+          </div>
+        )}
       </div>
+      {data?.motivo_cancelacion && (
+        <p className="mt-3 text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2">
+          Cancelada{data.cancelada_por ? ` por ${data.cancelada_por}` : ''}: {data.motivo_cancelacion}
+        </p>
+      )}
+      {(data?.devoluciones?.length ?? 0) > 0 && (
+        <div className="mt-3">
+          <p className="text-[10px] font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5 flex items-center gap-1.5"><Undo2 size={11} /> Devoluciones al proveedor</p>
+          {data!.devoluciones!.map(dv => (
+            <div key={dv.id} className="flex items-center justify-between text-sm py-1 border-b border-gray-100 last:border-0">
+              <span className="text-[#5F6B7A]"><span className="font-mono font-semibold text-purple-700">{dv.numero}</span> · {formatDate(dv.fecha)} · {dv.motivo}</span>
+              <span className="flex items-center gap-2">
+                <span className="font-semibold text-[var(--cs)]">− {formatCurrency(dv.total)}</span>
+                <button onClick={() => imprimirDevolucion(dv.id, empresaId)} title="Imprimir comprobante" className="p-1 rounded text-gray-400 hover:text-[var(--cp)]"><Printer size={13} /></button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -81,6 +118,8 @@ export default function HistorialComprasPage() {
   const [condicionFiltro, setCondicionFiltro] = useState<'' | 'contado' | 'credito'>('')
   const [pago, setPago]           = useState<PagoDestino | null>(null)
   const [editCond, setEditCond]   = useState<Compra | null>(null)
+  const [devolucion, setDevolucion] = useState<DevolucionDestino | null>(null)
+  const [motivo, setMotivo]       = useState('')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['compras', empresaId, page, filtro, search, condicionFiltro],
@@ -107,7 +146,7 @@ export default function HistorialComprasPage() {
   })
 
   const cancelar = useMutation({
-    mutationFn: (id: number) => comprasApi.cancelar(id),
+    mutationFn: (id: number) => comprasApi.cancelar(id, motivo.trim()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['compras'] })
       setCancelarId(null); setActionError('')
@@ -174,8 +213,15 @@ export default function HistorialComprasPage() {
     },
     {
       key: 'estado', header: 'Estado',
-      cell: r => <EstadoBadge estado={r.estado} />,
-      align: 'center', width: '110px',
+      cell: r => (
+        <div className="flex flex-col items-center gap-0.5" title={r.motivo_cancelacion ? `Motivo: ${r.motivo_cancelacion}` : undefined}>
+          <EstadoBadge estado={r.estado} />
+          {(r.monto_devuelto ?? 0) > 0 && (
+            <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-1.5 rounded-full">Devolución {formatCurrency(r.monto_devuelto ?? 0)}</span>
+          )}
+        </div>
+      ),
+      align: 'center', width: '130px',
     },
     {
       key: 'acciones', header: '', align: 'right', width: '200px',
@@ -190,6 +236,13 @@ export default function HistorialComprasPage() {
               className="flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold text-[var(--cp)] hover:bg-[var(--cp)]/10 transition-colors"
               title="Registrar pago">
               <Banknote size={13} /> Pagar
+            </button>
+          )}
+          {r.estado === 'recibida' && (
+            <button onClick={() => setDevolucion({ tipo: 'compra', id: r.id })}
+              className="p-1.5 rounded text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+              title="Devolver al proveedor">
+              <Undo2 size={13} />
             </button>
           )}
           {r.estado !== 'cancelada' && (
@@ -207,7 +260,7 @@ export default function HistorialComprasPage() {
             <CheckCircle size={13} /> Recibir
           </button>
           <button
-            onClick={() => { setCancelarId(r.id); setActionError('') }}
+            onClick={() => { setCancelarId(r.id); setActionError(''); setMotivo('') }}
             className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-red-500 hover:bg-red-50 transition-colors"
             title="Cancelar orden">
             <XCircle size={13} /> Cancelar
@@ -265,7 +318,7 @@ export default function HistorialComprasPage() {
           loading={isLoading}
           error={isError ? 'Error al cargar las compras.' : undefined}
           emptyMessage="No hay órdenes de compra registradas."
-          expandedRow={expanded !== null ? { id: expanded, content: <DetalleFila id={expanded} /> } : undefined}
+          expandedRow={expanded !== null ? { id: expanded, content: <DetalleFila id={expanded} empresaId={empresaId} /> } : undefined}
         />
         {data?.meta && (
           <Pagination currentPage={data.meta.current_page} lastPage={data.meta.last_page} total={data.meta.total} onPage={setPage} />
@@ -274,6 +327,7 @@ export default function HistorialComprasPage() {
 
       <PagoProveedorModal destino={pago} onClose={() => setPago(null)} />
       <CondicionModal compra={editCond} onClose={() => setEditCond(null)} />
+      <DevolucionModal destino={devolucion} empresaId={empresaId} onClose={() => setDevolucion(null)} />
 
       {/* Confirmar recibir */}
       <Modal open={recibirId !== null} onClose={() => setRecibirId(null)} title="Recibir orden de compra" size="sm">
@@ -295,10 +349,13 @@ export default function HistorialComprasPage() {
         <p className="text-sm text-[#5F6B7A] mb-4">
           ¿Cancelar esta orden? El stock no será afectado ya que no fue recibida.
         </p>
+        <label className="block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5">Motivo *</label>
+        <textarea rows={2} value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Pedido duplicado, el proveedor no tenía…"
+          className="w-full mb-4 rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30" />
         {actionError && <p className="mb-4 text-sm text-red-600">{actionError}</p>}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setCancelarId(null)}>Volver</Button>
-          <Button variant="danger" loading={cancelar.isPending}
+          <Button variant="danger" loading={cancelar.isPending} disabled={motivo.trim().length < 3}
             onClick={() => cancelar.mutate(cancelarId!)}>
             Cancelar orden
           </Button>

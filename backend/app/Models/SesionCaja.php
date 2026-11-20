@@ -13,6 +13,8 @@ class SesionCaja extends Model
         'diferencia', 'total_ventas', 'total_efectivo', 'total_tarjeta',
         'total_transferencia', 'total_mixto', 'cantidad_ventas',
         'estado', 'fecha_apertura', 'fecha_cierre', 'observaciones',
+        'total_credito', 'total_abonos', 'total_abonos_efectivo', 'total_pagos_proveedores',
+        'total_reembolsos_clientes', 'total_reembolsos_proveedores',
     ];
 
     protected $casts = [

@@ -32,7 +32,12 @@ class VentaResource extends JsonResource
             'fecha_vencimiento' => $this->fecha_vencimiento?->toDateString(),
             'saldo_pendiente'   => (float) $this->saldo_pendiente,
             'total_abonado'     => $this->condicion === 'credito' && $this->estado !== 'cancelada'
-                ? round((float) $this->total - (float) $this->saldo_pendiente, 2) : 0,
+                ? round((float) $this->total - (float) $this->saldo_pendiente - (float) $this->devuelto_a_saldo, 2) : 0,
+            'monto_devuelto'    => (float) $this->monto_devuelto,
+            'motivo_cancelacion' => $this->motivo_cancelacion,
+            'cancelada_at'      => $this->cancelada_at?->toDateTimeString(),
+            'cancelada_por'     => $this->whenLoaded('canceladaPor', fn() => $this->canceladaPor?->nombre),
+            'devoluciones'      => $this->whenLoaded('devoluciones', fn() => DevolucionVentaResource::collection($this->devoluciones)),
             'estado_pago'       => $this->resource->estadoPago(),
             'dias_vencida'      => $this->resource->estadoPago() === 'vencida'
                 ? (int) $this->fecha_vencimiento->diffInDays(today()) : 0,
@@ -60,6 +65,7 @@ class VentaResource extends JsonResource
                 'cantidad'        => (float) $d->cantidad,
                 'precio_unitario' => (float) $d->precio_unitario,
                 'subtotal'        => (float) $d->subtotal,
+                'cantidad_devuelta' => (float) ($d->cantidad_devuelta ?? 0),
             ])),
             'created_at' => $this->created_at?->toDateTimeString(),
         ];

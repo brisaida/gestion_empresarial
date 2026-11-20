@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\AbonoVenta;
+use App\Models\DevolucionCompra;
+use App\Models\DevolucionVenta;
 use App\Models\PagoCompra;
 use App\Models\SesionCaja;
 use App\Models\Venta;
@@ -93,6 +95,8 @@ class SesionCajaController extends ApiController
             'total_abonos'       => $resumen['abonos']['total'],
             'total_abonos_efectivo' => $resumen['abonos']['por_metodo']['efectivo'],
             'total_pagos_proveedores' => $resumen['pagos_proveedores']['total'],
+            'total_reembolsos_clientes'    => $resumen['reembolsos']['clientes'],
+            'total_reembolsos_proveedores' => $resumen['reembolsos']['proveedores'],
             'estado'             => 'cerrada',
             'fecha_cierre'       => now(),
             'observaciones'      => $validated['observaciones'] ?? null,
@@ -173,6 +177,12 @@ class SesionCajaController extends ApiController
             ->first();
         $pagosProvTotal = (float) ($pagosProv->total ?? 0);
 
+        // Reembolsos en efectivo por devoluciones: a clientes sale de caja, de proveedores entra
+        $reembClientes = (float) DevolucionVenta::where('empresa_id', $sesion->empresa_id)
+            ->where('desde_caja', true)->tap($enSesion)->sum('reembolsado');
+        $reembProveedores = (float) DevolucionCompra::where('empresa_id', $sesion->empresa_id)
+            ->where('desde_caja', true)->tap($enSesion)->sum('reembolsado');
+
         $por_metodo = [
             'efectivo'      => (float) ($ventas['efectivo']->total      ?? 0),
             'tarjeta'       => (float) ($ventas['tarjeta']->total       ?? 0),
@@ -201,7 +211,9 @@ class SesionCajaController extends ApiController
                 'por_metodo' => $abonosPorMetodo,
             ],
             'pagos_proveedores' => ['total' => $pagosProvTotal, 'cantidad' => (int) ($pagosProv->cantidad ?? 0)],
-            'efectivo_esperado' => (float) $sesion->monto_inicial + $por_metodo['efectivo'] + $abonosPorMetodo['efectivo'] - $pagosProvTotal,
+            'reembolsos'        => ['clientes' => round($reembClientes, 2), 'proveedores' => round($reembProveedores, 2)],
+            'efectivo_esperado' => (float) $sesion->monto_inicial + $por_metodo['efectivo'] + $abonosPorMetodo['efectivo']
+                - $pagosProvTotal - $reembClientes + $reembProveedores,
         ];
     }
 
@@ -224,6 +236,8 @@ class SesionCajaController extends ApiController
             'total_abonos'        => $s->total_abonos !== null ? (float) $s->total_abonos : null,
             'total_abonos_efectivo' => $s->total_abonos_efectivo !== null ? (float) $s->total_abonos_efectivo : null,
             'total_pagos_proveedores' => $s->total_pagos_proveedores !== null ? (float) $s->total_pagos_proveedores : null,
+            'total_reembolsos_clientes'    => $s->total_reembolsos_clientes !== null ? (float) $s->total_reembolsos_clientes : null,
+            'total_reembolsos_proveedores' => $s->total_reembolsos_proveedores !== null ? (float) $s->total_reembolsos_proveedores : null,
             'estado'              => $s->estado,
             'fecha_apertura'      => $s->fecha_apertura?->toDateTimeString(),
             'fecha_cierre'        => $s->fecha_cierre?->toDateTimeString(),

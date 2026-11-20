@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\CategoriaController;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\CompraController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DevolucionController;
 use App\Http\Controllers\Api\ExistenciaController;
 use App\Http\Controllers\Api\MarcaController;
 use App\Http\Controllers\Api\MovimientoController;
@@ -100,6 +101,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('compras/{compra}/cancelar', [CompraController::class, 'cancelar']);
         Route::patch('compras/{compra}/condicion', [CompraController::class, 'cambiarCondicion']);
 
+        // Devoluciones a proveedores
+        Route::post('compras/{compra}/devoluciones',        [DevolucionController::class, 'devolverCompra']);
+        Route::get('devoluciones-compra',                   [DevolucionController::class, 'indexCompra']);
+        Route::get('devoluciones-compra/{devolucion}',      [DevolucionController::class, 'showCompra']);
+
         // Compras al crédito: cuentas por pagar y pagos a proveedores
         Route::get('cuentas-por-pagar',                          [CuentasPorPagarController::class, 'resumen']);
         Route::get('cuentas-por-pagar/proveedores/{proveedor}',  [CuentasPorPagarController::class, 'estadoCuenta']);
@@ -135,6 +141,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('ventas/siguiente-numero', [VentaController::class, 'siguienteNumero']);
         Route::apiResource('ventas', VentaController::class)->only(['index', 'store', 'show']);
         Route::post('ventas/{venta}/cancelar', [VentaController::class, 'cancelar']);
+
+        // Devoluciones de clientes
+        Route::post('ventas/{venta}/devoluciones',          [DevolucionController::class, 'devolverVenta']);
+        Route::get('devoluciones-venta',                    [DevolucionController::class, 'indexVenta']);
+        Route::get('devoluciones-venta/{devolucion}',       [DevolucionController::class, 'showVenta']);
 
         // Ventas al crédito: cuentas por cobrar y abonos
         Route::get('cuentas-por-cobrar',                    [CuentasPorCobrarController::class, 'resumen']);

@@ -27,6 +27,7 @@ import VentasPage               from '@/pages/sales/VentasPage'
 import HistorialVentasPage      from '@/pages/sales/HistorialVentasPage'
 import CierreCajaPage           from '@/pages/sales/CierreCajaPage'
 import CuentasPorCobrarPage     from '@/pages/sales/CuentasPorCobrarPage'
+import DevolucionesPage         from '@/pages/sales/DevolucionesPage'
 import TrasladosPage             from '@/pages/transfers/TrasladosPage'
 import HistorialTrasladosPage   from '@/pages/transfers/HistorialTrasladosPage'
 import ConfiguracionPage         from '@/pages/settings/ConfiguracionPage'
@@ -89,6 +90,7 @@ export default function App() {
               <Route path="compras"            element={<Guard perm="compras"><ComprasPage /></Guard>} />
               <Route path="compras/historial" element={<Guard perm="compras"><HistorialComprasPage /></Guard>} />
               <Route path="cuentas-por-pagar" element={<Guard perm="compras"><CuentasPorPagarPage /></Guard>} />
+              <Route path="compras/devoluciones" element={<Guard perm="compras"><DevolucionesPage key="proveedores" tipo="proveedores" /></Guard>} />
               <Route path="requisiciones"              element={<Guard perm="compras"><RequisicionPage /></Guard>} />
               <Route path="requisiciones/historial"    element={<Guard perm="compras"><HistorialRequisicionesPage /></Guard>} />
               <Route path="requisiciones/:id/editar"   element={<Guard perm="compras"><RequisicionPage key="editar" /></Guard>} />
@@ -100,6 +102,7 @@ export default function App() {
               <Route path="ventas/historial"       element={<Guard perm="ventas"><HistorialVentasPage /></Guard>} />
               <Route path="caja"                   element={<Guard perm="ventas"><CierreCajaPage /></Guard>} />
               <Route path="cuentas-por-cobrar"     element={<Guard perm="ventas"><CuentasPorCobrarPage /></Guard>} />
+              <Route path="ventas/devoluciones"    element={<Guard perm="ventas"><DevolucionesPage key="clientes" tipo="clientes" /></Guard>} />
               <Route path="restaurante"             element={<Guard perm="ventas"><RestaurantePage /></Guard>} />
               <Route path="recetas"                element={<Guard perm="ventas"><RecetasPage /></Guard>} />
               <Route path="cocina"                 element={<Guard perm="ventas"><CocinaPage /></Guard>} />

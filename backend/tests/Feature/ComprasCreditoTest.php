@@ -101,4 +101,13 @@ class ComprasCreditoTest extends TestCase
         $this->assertEquals(300, $resumen['pagos_proveedores']['total']);
         $this->assertEquals(1700, $resumen['efectivo_esperado']);
     }
+
+    public function test_el_envio_se_suma_al_total_y_al_saldo_de_la_compra(): void
+    {
+        $this->comprar(['condicion' => 'credito', 'costo_envio' => 150, 'impuesto' => 150])
+            ->assertCreated()
+            ->assertJsonPath('data.costo_envio', 150)
+            ->assertJsonPath('data.total', 1300)
+            ->assertJsonPath('data.saldo_pendiente', 1300);
+    }
 }

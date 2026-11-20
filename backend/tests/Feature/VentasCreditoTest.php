@@ -91,7 +91,7 @@ class VentasCreditoTest extends TestCase
         $this->assertEquals(600, (float) DB::table('ventas')->where('id', $ventaId)->value('saldo_pendiente'));
 
         // No se puede cancelar con abonos vigentes
-        $this->postJson("/api/ventas/{$ventaId}/cancelar")->assertStatus(422);
+        $this->postJson("/api/ventas/{$ventaId}/cancelar", ["motivo" => "Prueba"])->assertStatus(422);
 
         $this->postJson("/api/abonos/{$abonoId}/anular")->assertOk();
         $this->postJson("/api/abonos/{$abonoId}/anular")->assertStatus(422);
@@ -142,11 +142,11 @@ class VentasCreditoTest extends TestCase
         $ventaId = $this->vender(['condicion' => 'contado'], 19)->json('data.id');
         $this->assertEquals(81, $stock());
 
-        $this->postJson("/api/ventas/{$ventaId}/cancelar")->assertOk();
+        $this->postJson("/api/ventas/{$ventaId}/cancelar", ["motivo" => "Prueba"])->assertOk();
         $this->assertEquals(100, $stock());
 
         // Cancelar otra vez no vuelve a sumar
-        $this->postJson("/api/ventas/{$ventaId}/cancelar")->assertStatus(409);
+        $this->postJson("/api/ventas/{$ventaId}/cancelar", ["motivo" => "Prueba"])->assertStatus(409);
         $this->assertEquals(100, $stock());
 
         // Se puede volver a vender lo devuelto

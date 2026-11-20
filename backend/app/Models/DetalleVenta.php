@@ -37,4 +37,9 @@ class DetalleVenta extends Model
     {
         return $this->belongsTo(Receta::class);
     }
+
+    public function devueltos()
+    {
+        return $this->hasMany(DetalleDevolucionVenta::class, 'detalle_venta_id');
+    }
 }

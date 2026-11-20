@@ -1,4 +1,4 @@
-import type { AbonoVenta, EstadoCuenta } from '@/types'
+import type { AbonoVenta, EstadoCuenta, DevolucionVenta, DevolucionCompra } from '@/types'
 import { coloresDocumento, formatoNumeroFactura, type PrintEmpresa } from './printVenta'
 import { numeroALetras } from './numeroALetras'
 
@@ -155,5 +155,53 @@ export function printEstadoCuenta(ec: EstadoCuenta, empresa: PrintEmpresa, logo?
     </table>
     ${abonos ? `<h3 style="margin-top:14px;font-size:12px">Últimos abonos</h3>
     <table><thead><tr><th>Fecha</th><th>Factura</th><th>Forma de pago</th><th class="r">Monto</th></tr></thead><tbody>${abonos}</tbody></table>` : ''}
+  </div></body></html>`)
+}
+
+const REEMBOLSO: Record<string, string> = {
+  efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', cambio: 'Cambio por otro producto / saldo a favor',
+}
+
+/** Comprobante interno de devolución: de un cliente (DEV-) o a un proveedor (DPV-). */
+export function printDevolucion(d: DevolucionVenta | DevolucionCompra, tipo: 'cliente' | 'proveedor', empresa: PrintEmpresa, logo?: string) {
+  const esCliente = tipo === 'cliente'
+  const parte = esCliente ? (d as DevolucionVenta).cliente : (d as DevolucionCompra).proveedor
+  const doc   = esCliente ? formatoNumeroFactura(d.numero_factura) : (d.numero_factura ?? '')
+
+  const filas = (d.detalles ?? []).map(x => `
+    <tr>
+      <td>${x.codigo ? `<span style="color:#666">${esc(x.codigo)}</span> ` : ''}${esc(x.nombre ?? 'Producto')}${esCliente && x.regresa_a_stock === false ? ' <i style="color:#888">(no regresa a inventario)</i>' : ''}</td>
+      <td class="c">${Number(x.cantidad).toString()}</td>
+      <td class="r">L ${num(x.precio)}</td>
+      <td class="r">L ${num(x.subtotal)}</td>
+    </tr>`).join('')
+
+  const liquidacion = [
+    d.aplicado_a_saldo > 0 ? `<div class="row"><b>${esCliente ? 'Descontado del saldo:' : 'Descontado de lo que se debe:'}</b> L ${num(d.aplicado_a_saldo)}</div>` : '',
+    d.reembolsado > 0 ? `<div class="row"><b>${esCliente ? 'Reembolso al cliente:' : 'Reembolso del proveedor:'}</b> L ${num(d.reembolsado)} · ${REEMBOLSO[d.reembolso_metodo ?? ''] ?? ''}</div>` : '',
+  ].join('')
+
+  abrir(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Devolución ${esc(d.numero)}</title>
+  <style>${estilos(empresa)}</style></head><body>${boton}
+  <div class="page">
+    ${encabezado(empresa, logo, esCliente ? 'DEVOLUCIÓN DE CLIENTE' : 'DEVOLUCIÓN A PROVEEDOR', `No. <b>${esc(d.numero)}</b><br>Fecha: ${fecha(d.fecha)}`)}
+    <div class="box">
+      <div class="row"><b>${esCliente ? 'Cliente:' : 'Proveedor:'}</b> <span style="font-weight:700">${esc(parte?.nombre ?? (esCliente ? 'Consumidor final' : ''))}</span>${parte?.rtn ? ` · RTN ${esc(parte.rtn)}` : ''}</div>
+      <div class="row"><b>${esCliente ? 'Factura:' : 'Factura del proveedor:'}</b> ${esc(doc)}</div>
+      <div class="row"><b>Motivo:</b> ${esc(d.motivo)}</div>
+      ${d.bodega ? `<div class="row"><b>Bodega:</b> ${esc(d.bodega)}</div>` : ''}
+    </div>
+    <table>
+      <thead><tr><th>Producto</th><th class="c">Cantidad</th><th class="r">${esCliente ? 'Precio' : 'Costo'}</th><th class="r">Subtotal</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>
+    <table style="width:auto;margin-left:auto;margin-top:8px">
+      <tr><td>Subtotal (con descuento)</td><td class="r">L ${num(d.subtotal)}</td></tr>
+      <tr><td>ISV</td><td class="r">L ${num(d.impuesto)}</td></tr>
+      <tr><td><b>Total devuelto</b></td><td class="r"><b>L ${num(d.total)}</b></td></tr>
+    </table>
+    <div class="box">${liquidacion || '<div class="row">Sin movimiento de dinero.</div>'}</div>
+    <p style="margin-top:8px;font-size:10px;color:#666">Documento interno. No sustituye una nota de crédito fiscal.</p>
+    <div class="firma"><div>Entregado por${d.usuario ? `<br>${esc(d.usuario)}` : ''}</div><div>${esCliente ? 'Cliente' : 'Proveedor'}</div></div>
   </div></body></html>`)
 }

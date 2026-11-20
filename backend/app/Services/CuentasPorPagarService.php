@@ -74,6 +74,9 @@ class CuentasPorPagarService
         if ($compra->pagos()->where('anulado', false)->exists()) {
             throw new DomainException('La compra tiene pagos registrados. Anúlalos antes de cambiar la condición.');
         }
+        if ($compra->devoluciones()->exists()) {
+            throw new DomainException('La compra tiene devoluciones registradas; ya no se puede cambiar la condición.');
+        }
 
         $compra->update($this->datosCompra(
             $compra->empresa_id, $compra->proveedor_id, (float) $compra->total,
@@ -141,7 +144,8 @@ class CuentasPorPagarService
         }
 
         $pago->update(['anulado' => true, 'anulado_por' => $usuarioId, 'anulado_at' => now()]);
-        $compra->update(['saldo_pendiente' => min((float) $compra->total, round((float) $compra->saldo_pendiente + (float) $pago->monto, 4))]);
+        $tope = (float) $compra->total - (float) $compra->devuelto_a_saldo;
+        $compra->update(['saldo_pendiente' => min($tope, round((float) $compra->saldo_pendiente + (float) $pago->monto, 4))]);
 
         return $pago;
     }

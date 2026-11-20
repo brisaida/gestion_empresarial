@@ -133,7 +133,8 @@ class CreditoService
         }
 
         $abono->update(['anulado' => true, 'anulado_por' => $usuarioId, 'anulado_at' => now()]);
-        $venta->update(['saldo_pendiente' => min((float) $venta->total, round((float) $venta->saldo_pendiente + (float) $abono->monto, 4))]);
+        $tope = (float) $venta->total - (float) $venta->devuelto_a_saldo;
+        $venta->update(['saldo_pendiente' => min($tope, round((float) $venta->saldo_pendiente + (float) $abono->monto, 4))]);
 
         return $abono;
     }
@@ -141,6 +142,9 @@ class CreditoService
     /** Al cancelar una venta al crédito su saldo deja de contar. No se permite si tiene abonos vigentes. */
     public function alCancelarVenta(Venta $venta): void
     {
+        if ($venta->devoluciones()->exists()) {
+            throw new DomainException('La venta tiene devoluciones registradas; no se puede cancelar completa.');
+        }
         if (! $venta->esCredito()) return;
 
         if ($venta->abonos()->where('anulado', false)->exists()) {

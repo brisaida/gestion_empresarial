@@ -35,6 +35,7 @@ class StoreCompraRequest extends FormRequest
             'fecha_compra'   => ['required', 'date'],
             'descuento'      => ['nullable', 'numeric', 'min:0'],
             'impuesto'       => ['nullable', 'numeric', 'min:0'],
+            'costo_envio'    => ['nullable', 'numeric', 'min:0'],
             'condicion'      => ['nullable', 'string', 'in:contado,credito'],
             'metodo_pago'    => ['nullable', 'string', 'in:' . implode(',', \App\Services\CuentasPorPagarService::METODOS_CONTADO)],
             'dias_credito'   => ['nullable', 'integer', 'min:0', 'max:365'],

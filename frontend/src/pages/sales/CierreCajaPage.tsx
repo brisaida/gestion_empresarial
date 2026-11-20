@@ -230,6 +230,18 @@ export default function CierreCajaPage() {
                           <span className="font-medium text-red-600">− {formatCurrency(resumen.pagos_proveedores!.total)}</span>
                         </div>
                       )}
+                      {(resumen.reembolsos?.clientes ?? 0) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#5F6B7A]">Reembolsos a clientes</span>
+                          <span className="font-medium text-red-600">− {formatCurrency(resumen.reembolsos!.clientes)}</span>
+                        </div>
+                      )}
+                      {(resumen.reembolsos?.proveedores ?? 0) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#5F6B7A]">Reembolsos de proveedores</span>
+                          <span className="font-medium text-emerald-600">+ {formatCurrency(resumen.reembolsos!.proveedores)}</span>
+                        </div>
+                      )}
                       {(resumen.credito?.total ?? 0) > 0 && (
                         <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
                           <span className="text-[#5F6B7A]">Vendido al crédito ({resumen.credito.cantidad})</span>
@@ -240,7 +252,7 @@ export default function CierreCajaPage() {
                     <div className="pl-4 border-l border-gray-100">
                       <p className="text-xs text-[#5F6B7A] mb-1">Efectivo esperado en caja</p>
                       <p className="text-xl font-bold text-[var(--cs)]">{formatCurrency(resumen.efectivo_esperado)}</p>
-                      <p className="text-xs text-[#5F6B7A] mt-1">Fondo + ventas en efectivo + abonos en efectivo − pagos a proveedores desde caja. Las ventas al crédito no entran.</p>
+                      <p className="text-xs text-[#5F6B7A] mt-1">Fondo + ventas y abonos en efectivo − pagos a proveedores y reembolsos a clientes en efectivo. Las ventas al crédito no entran.</p>
                     </div>
                   </div>
                 </div>

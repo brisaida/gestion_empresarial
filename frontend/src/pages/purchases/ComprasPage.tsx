@@ -365,7 +365,7 @@ export default function ComprasPage() {
   const empresaId = state.empresaActiva?.id ?? 0
   const qc = useQueryClient()
 
-  const [form, setForm] = useState({ proveedor_id: '', bodega_id: '', fecha_compra: todayISO(), numero_factura: '', descuento: '', impuesto: '' })
+  const [form, setForm] = useState({ proveedor_id: '', bodega_id: '', fecha_compra: todayISO(), numero_factura: '', descuento: '', impuesto: '', costo_envio: '' })
   const [lineas, setLineas] = useState<LineaItem[]>([emptyLinea()])
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -405,7 +405,7 @@ export default function ComprasPage() {
     mutationFn: (payload: unknown) => comprasApi.create(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['compras'] })
-      setForm({ proveedor_id: '', bodega_id: '', fecha_compra: todayISO(), numero_factura: '', descuento: '', impuesto: '' })
+      setForm({ proveedor_id: '', bodega_id: '', fecha_compra: todayISO(), numero_factura: '', descuento: '', impuesto: '', costo_envio: '' })
       setCondicion('contado'); setMetodoPago('efectivo'); setDiasManual(null)
       qc.invalidateQueries({ queryKey: ['cxp'] })
       setLineas([emptyLinea()])
@@ -500,7 +500,8 @@ export default function ComprasPage() {
   }
 
   const subtotal = lineas.reduce((s, l) => s + (Number(l.cantidad) * Number(l.costo_unitario) || 0), 0)
-  const total    = subtotal - (Number(form.descuento) || 0) + (Number(form.impuesto) || 0)
+  const envio    = Number(form.costo_envio) || 0
+  const total    = subtotal - (Number(form.descuento) || 0) + (Number(form.impuesto) || 0) + envio
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError('')
@@ -511,6 +512,7 @@ export default function ComprasPage() {
         empresa_id: empresaId, proveedor_id: Number(form.proveedor_id), bodega_id: Number(form.bodega_id),
         fecha_compra: form.fecha_compra, numero_factura: form.numero_factura || null,
         descuento: form.descuento ? Number(form.descuento) : 0, impuesto: form.impuesto ? Number(form.impuesto) : 0,
+        costo_envio: envio,
         condicion,
         metodo_pago:  condicion === 'contado' ? metodoPago : null,
         dias_credito: condicion === 'credito' ? diasNum : null,
@@ -576,6 +578,7 @@ export default function ComprasPage() {
             <Input label="N° Factura proveedor" value={form.numero_factura} onChange={e => setForm(f => ({ ...f, numero_factura: e.target.value }))} placeholder="FAC-001" />
             <Input label="Descuento" type="number" step="0.01" min="0" value={form.descuento} onChange={e => setForm(f => ({ ...f, descuento: e.target.value }))} placeholder="0.00" />
             <Input label="Impuesto / ISV" type="number" step="0.01" min="0" value={form.impuesto} onChange={e => setForm(f => ({ ...f, impuesto: e.target.value }))} placeholder="0.00" />
+            <Input label="Envío / flete" type="number" step="0.01" min="0" value={form.costo_envio} onChange={e => setForm(f => ({ ...f, costo_envio: e.target.value }))} placeholder="0.00" />
           </div>
 
           {/* Condición de pago */}
@@ -752,6 +755,7 @@ export default function ComprasPage() {
               <div className="flex justify-between text-sm text-[#5F6B7A]"><span>Subtotal</span><span className="font-medium">{formatCurrency(subtotal)}</span></div>
               <div className="flex justify-between text-sm text-[#5F6B7A]"><span>Descuento</span><span className="font-medium text-red-500">− {formatCurrency(Number(form.descuento) || 0)}</span></div>
               <div className="flex justify-between text-sm text-[#5F6B7A]"><span>Impuesto</span><span className="font-medium">{formatCurrency(Number(form.impuesto) || 0)}</span></div>
+              {envio > 0 && <div className="flex justify-between text-sm text-[#5F6B7A]"><span>Envío</span><span className="font-medium">+ {formatCurrency(envio)}</span></div>}
               <div className="flex justify-between text-base font-bold text-[var(--cs)] pt-1.5 border-t border-gray-200"><span>Total</span><span>{formatCurrency(total)}</span></div>
             </div>
           </div>

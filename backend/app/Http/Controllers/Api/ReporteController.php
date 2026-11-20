@@ -22,7 +22,7 @@ class ReporteController extends ApiController
         };
 
         $filas = DB::table('ventas')
-            ->selectRaw("DATE_TRUNC('{$trunc}', fecha_venta::date) as periodo, SUM(total) as total, COUNT(*) as cantidad")
+            ->selectRaw("DATE_TRUNC('{$trunc}', fecha_venta::date) as periodo, SUM(total - monto_devuelto) as total, COUNT(*) as cantidad")
             ->where('empresa_id', $empresaId)
             ->where('estado', 'completada')
             ->whereDate('fecha_venta', '>=', $desde)
@@ -41,7 +41,7 @@ class ReporteController extends ApiController
             ->where('estado', 'completada')
             ->whereDate('fecha_venta', '>=', $desde)
             ->whereDate('fecha_venta', '<=', $hasta)
-            ->selectRaw('COALESCE(SUM(total), 0) as total, COUNT(*) as cantidad')
+            ->selectRaw('COALESCE(SUM(total - monto_devuelto), 0) as total, COUNT(*) as cantidad')
             ->first();
 
         return response()->json([

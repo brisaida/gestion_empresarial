@@ -231,6 +231,7 @@ export interface DetalleCompra {
   subtotal: number
   lote?: string
   fecha_vencimiento?: string
+  cantidad_devuelta?: number
   producto?: { id: number; codigo?: string; nombre: string }
 }
 
@@ -247,6 +248,7 @@ export interface Compra {
   impuesto: number
   total: number
   estado: EstadoCompra
+  costo_envio?: number
   condicion?: CondicionVenta
   metodo_pago?: MetodoPagoCompra | null
   dias_credito?: number | null
@@ -256,9 +258,65 @@ export interface Compra {
   estado_pago?: EstadoPago | null
   dias_vencida?: number
   pagos?: PagoCompra[]
+  monto_devuelto?: number
+  motivo_cancelacion?: string | null
+  cancelada_at?: string | null
+  cancelada_por?: string | null
+  devoluciones?: DevolucionCompra[]
   proveedor?: { id: number; nombre: string; rtn?: string | null }
   bodega?: { id: number; nombre: string }
   detalles?: DetalleCompra[]
+}
+
+// ── Devoluciones ──────────────────────────────────────────────────────────
+export type ReembolsoMetodo = 'efectivo' | 'tarjeta' | 'transferencia' | 'cambio'
+
+export interface DetalleDevolucion {
+  id: number
+  producto_id?: number | null
+  nombre?: string | null
+  codigo?: string | null
+  cantidad: number
+  precio: number
+  subtotal: number
+  regresa_a_stock?: boolean
+}
+
+interface DevolucionBase {
+  id: number
+  numero: string
+  numero_factura?: string | null
+  bodega?: string | null
+  usuario?: string | null
+  fecha: string
+  motivo: string
+  subtotal: number
+  impuesto: number
+  total: number
+  aplicado_a_saldo: number
+  reembolsado: number
+  reembolso_metodo?: ReembolsoMetodo | null
+  desde_caja: boolean
+  detalles?: DetalleDevolucion[]
+  created_at?: string
+}
+
+export interface DevolucionVenta extends DevolucionBase {
+  venta_id: number
+  cliente?: { id: number; nombre: string; rtn?: string | null } | null
+}
+
+export interface DevolucionCompra extends DevolucionBase {
+  compra_id: number
+  proveedor?: { id: number; nombre: string; rtn?: string | null } | null
+}
+
+export interface NuevaDevolucion {
+  motivo: string
+  fecha?: string
+  reembolso_metodo?: ReembolsoMetodo | null
+  desde_caja?: boolean
+  lineas: { detalle_id: number; cantidad: number }[]
 }
 
 // ── Compras al crédito (cuentas por pagar) ────────────────────────────────
@@ -363,6 +421,8 @@ export interface DetalleVenta {
   unidad?: string | null
   tasa_isv?: number | null
   receta?: string | null
+  descripcion?: string | null
+  cantidad_devuelta?: number
 }
 
 // ── Firma y sello de documentos autorizados ──────────────────────────────
@@ -496,6 +556,11 @@ export interface Venta {
   estado_pago?: EstadoPago | null
   dias_vencida?: number
   abonos?: AbonoVenta[]
+  monto_devuelto?: number
+  motivo_cancelacion?: string | null
+  cancelada_at?: string | null
+  cancelada_por?: string | null
+  devoluciones?: DevolucionVenta[]
   costo_envio?: number
   exonerado?: boolean
   orden_compra_exenta?: string | null
@@ -730,6 +795,8 @@ export interface SesionCaja {
   total_abonos?: number | null
   total_abonos_efectivo?: number | null
   total_pagos_proveedores?: number | null
+  total_reembolsos_clientes?: number | null
+  total_reembolsos_proveedores?: number | null
   estado: 'abierta' | 'cerrada'
   fecha_apertura: string
   fecha_cierre?: string | null
@@ -741,6 +808,7 @@ export interface SesionCaja {
     credito: { total: number; cantidad: number }
     abonos: { total: number; cantidad: number; por_metodo: Record<MetodoAbono, number> }
     pagos_proveedores?: { total: number; cantidad: number }
+    reembolsos?: { clientes: number; proveedores: number }
     efectivo_esperado: number
   }
 }

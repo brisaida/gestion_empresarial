@@ -36,12 +36,12 @@ class DashboardController extends ApiController
         $comprasMes = Compra::where('empresa_id', $empresaId)
             ->whereIn('estado', ['recibida'])
             ->whereBetween('fecha_compra', [$inicioMes, $finMes])
-            ->sum('total');
+            ->sum(DB::raw('total - monto_devuelto'));
 
         $ventasMes = Venta::where('empresa_id', $empresaId)
             ->where('estado', 'completada')
             ->whereBetween('fecha_venta', [$inicioMes, $finMes])
-            ->sum('total');
+            ->sum(DB::raw('total - monto_devuelto'));   // neto de devoluciones
 
         // Ventas mes anterior (para variación %)
         $inicioMesAnt = now()->subMonth()->startOfMonth()->toDateString();
@@ -50,7 +50,7 @@ class DashboardController extends ApiController
         $ventasMesAnterior = Venta::where('empresa_id', $empresaId)
             ->where('estado', 'completada')
             ->whereBetween('fecha_venta', [$inicioMesAnt, $finMesAnt])
-            ->sum('total');
+            ->sum(DB::raw('total - monto_devuelto'));
 
         $variacionVentas = $ventasMesAnterior > 0
             ? round((((float) $ventasMes - (float) $ventasMesAnterior) / (float) $ventasMesAnterior) * 100, 1)
@@ -63,6 +63,16 @@ class DashboardController extends ApiController
             ->where('v.estado', 'completada')
             ->whereBetween('v.fecha_venta', [$inicioMes, $finMes])
             ->sum(DB::raw('dv.cantidad * dv.costo_unitario'));
+
+        // Lo devuelto por clientes no cuenta como costo de lo vendido
+        $costoDevueltoMes = DB::table('detalle_devoluciones_venta as dd')
+            ->join('detalle_ventas as dv', 'dd.detalle_venta_id', '=', 'dv.id')
+            ->join('ventas as v', 'dv.venta_id', '=', 'v.id')
+            ->where('v.empresa_id', $empresaId)
+            ->where('v.estado', 'completada')
+            ->whereBetween('v.fecha_venta', [$inicioMes, $finMes])
+            ->sum(DB::raw('dd.cantidad * dv.costo_unitario'));
+        $costoVentasMes = (float) $costoVentasMes - (float) $costoDevueltoMes;
 
         $margenBruto = (float) $ventasMes - (float) $costoVentasMes;
         $margenPct   = (float) $ventasMes > 0

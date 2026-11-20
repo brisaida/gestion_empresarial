@@ -187,7 +187,12 @@ class VentaController extends ApiController
 
     public function show(Venta $venta): JsonResponse
     {
-        $venta->load(['cliente', 'bodega', 'usuario', 'detalles.producto.unidadMedida', 'abonos.usuario']);
+        $venta->load([
+            'cliente', 'bodega', 'usuario', 'canceladaPor', 'abonos.usuario',
+            'detalles' => fn($q) => $q->withSum('devueltos as cantidad_devuelta', 'cantidad'),
+            'detalles.producto.unidadMedida', 'detalles.receta',
+            'devoluciones' => fn($q) => $q->orderBy('id'), 'devoluciones.usuario',
+        ]);
         return response()->json(['success' => true, 'data' => new VentaResource($venta)]);
     }
 
@@ -198,14 +203,22 @@ class VentaController extends ApiController
         if ($venta->estado === 'cancelada') {
             return $this->error('La venta ya está cancelada.', 409);
         }
+        $motivo = $request->validate(
+            ['motivo' => ['required', 'string', 'min:3', 'max:500']],
+            ['motivo.required' => 'Escribe el motivo de la cancelación.'],
+        )['motivo'];
+
         try {
-            DB::transaction(function () use ($venta, $request) {
+            DB::transaction(function () use ($venta, $request, $motivo) {
                 $venta = Venta::lockForUpdate()->findOrFail($venta->id);
                 if ($venta->estado === 'cancelada') {
                     throw new \DomainException('La venta ya está cancelada.');
                 }
                 $this->credito->alCancelarVenta($venta);
-                $venta->estado = 'cancelada';
+                $venta->estado             = 'cancelada';
+                $venta->cancelada_por      = $request->user()->id;
+                $venta->cancelada_at       = now();
+                $venta->motivo_cancelacion = $motivo;
                 $venta->save();
 
                 // Lo vendido vuelve a la bodega de donde salió

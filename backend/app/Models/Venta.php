@@ -15,6 +15,7 @@ class Venta extends Model
         'subtotal', 'impuesto', 'descuento', 'costo_envio', 'total', 'estado', 'metodo_pago',
         'exonerado', 'orden_compra_exenta', 'constancia_exonerado', 'registro_sag',
         'condicion', 'dias_credito', 'fecha_vencimiento', 'saldo_pendiente',
+        'monto_devuelto', 'devuelto_a_saldo', 'cancelada_por', 'cancelada_at', 'motivo_cancelacion',
     ];
 
     protected function casts(): array
@@ -30,6 +31,9 @@ class Venta extends Model
             'total'        => 'decimal:4',
             'fecha_vencimiento' => 'date',
             'saldo_pendiente'   => 'decimal:4',
+            'monto_devuelto'    => 'decimal:4',
+            'devuelto_a_saldo'  => 'decimal:4',
+            'cancelada_at'      => 'datetime',
         ];
     }
 
@@ -83,5 +87,15 @@ class Venta extends Model
         if ($this->estado === 'cancelada') return 'cancelada';
         if ((float) $this->saldo_pendiente <= 0.004) return 'pagada';
         return $this->fecha_vencimiento && $this->fecha_vencimiento->lt(today()) ? 'vencida' : 'pendiente';
+    }
+
+    public function devoluciones()
+    {
+        return $this->hasMany(DevolucionVenta::class);
+    }
+
+    public function canceladaPor()
+    {
+        return $this->belongsTo(User::class, 'cancelada_por');
     }
 }

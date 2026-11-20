@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse, Bookmark,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen, ClipboardPen, ClipboardCheck, HandCoins, Wallet,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen, ClipboardPen, ClipboardCheck, HandCoins, Wallet, Undo2,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
@@ -20,6 +20,7 @@ const nav = [
     { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas',       rubro: null },
     { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas',       rubro: null },
     { to: '/cuentas-por-cobrar',     label: 'Cuentas por cobrar',  icon: HandCoins,       end: true,  permiso: 'ventas',       rubro: null },
+    { to: '/ventas/devoluciones',    label: 'Devoluciones',        icon: Undo2,           end: true,  permiso: 'ventas',       rubro: null },
     { to: '/caja',                   label: 'Cierre de caja',      icon: LockOpen,        end: true,  permiso: 'ventas',       rubro: null },
     { to: '/restaurante',            label: 'Salón / Mesas',       icon: LayoutGrid,      end: true,  permiso: 'ventas',       rubro: 'restaurante' },
     { to: '/recetas',                label: 'Recetas / Platos',    icon: ChefHat,         end: false, permiso: 'ventas',       rubro: 'restaurante' },
@@ -40,6 +41,7 @@ const nav = [
     { to: '/compras',                label: 'Nueva compra',        icon: ShoppingCart,    end: true,  permiso: 'compras'       },
     { to: '/compras/historial',      label: 'Historial compras',   icon: ClipboardList,   end: true,  permiso: 'compras'       },
     { to: '/cuentas-por-pagar',      label: 'Cuentas por pagar',   icon: Wallet,          end: true,  permiso: 'compras'       },
+    { to: '/compras/devoluciones',   label: 'Devoluciones',        icon: Undo2,           end: true,  permiso: 'compras'       },
     { to: '/requisiciones',          label: 'Nueva requisición',   icon: ClipboardPen,    end: true,  permiso: 'compras'       },
     { to: '/requisiciones/historial', label: 'Requisiciones',      icon: ClipboardCheck,  end: true,  permiso: 'compras'       },
   ]},

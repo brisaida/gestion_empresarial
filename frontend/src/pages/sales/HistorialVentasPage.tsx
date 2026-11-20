@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type React from 'react'
-import { XCircle, Download, Loader2, Banknote, CreditCard, ArrowLeftRight, Layers, Clock, HandCoins } from 'lucide-react'
+import { XCircle, Download, Loader2, Banknote, CreditCard, ArrowLeftRight, Layers, Clock, HandCoins, Undo2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { ventasApi, empresaApi } from '@/api/recursos'
@@ -12,6 +12,7 @@ import SearchBar from '@/components/ui/SearchBar'
 import { formatCurrency, getAxiosError, cn } from '@/lib/utils'
 import AbonoModal, { type AbonoDestino } from '@/components/credito/AbonoModal'
 import EstadoPagoBadge from '@/components/credito/EstadoPagoBadge'
+import DevolucionModal, { type DevolucionDestino } from '@/components/credito/DevolucionModal'
 import { formatoNumeroFactura } from '@/lib/printVenta'
 import type { Venta, EstadoVenta, MetodoPago } from '@/types'
 
@@ -53,6 +54,8 @@ export default function HistorialVentasPage() {
   const [pdfError, setPdfError]       = useState('')
   const [condicion, setCondicion]     = useState<'' | 'contado' | 'credito'>('')
   const [abono, setAbono]             = useState<AbonoDestino | null>(null)
+  const [devolucion, setDevolucion]   = useState<DevolucionDestino | null>(null)
+  const [motivo, setMotivo]           = useState('')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['ventas', empresaId, page, search, condicion],
@@ -62,7 +65,7 @@ export default function HistorialVentasPage() {
   })
 
   const cancelar = useMutation({
-    mutationFn: (id: number) => ventasApi.cancelar(id),
+    mutationFn: (id: number) => ventasApi.cancelar(id, motivo.trim()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ventas'] })
       qc.invalidateQueries({ queryKey: ['cxc'] })
@@ -148,11 +151,23 @@ export default function HistorialVentasPage() {
     },
     {
       key: 'estado', header: 'Estado',
-      cell: r => <EstadoBadge estado={r.estado} />,
-      align: 'center', width: '110px',
+      cell: r => (
+        <div className="flex flex-col items-center gap-0.5" title={r.motivo_cancelacion ? `Motivo: ${r.motivo_cancelacion}` : undefined}>
+          <EstadoBadge estado={r.estado} />
+          {r.estado === 'cancelada' && r.motivo_cancelacion && (
+            <span className="text-[10px] text-[#5F6B7A] max-w-[120px] truncate">{r.motivo_cancelacion}</span>
+          )}
+          {(r.monto_devuelto ?? 0) > 0 && (
+            <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-1.5 rounded-full">
+              {(r.monto_devuelto ?? 0) >= r.total - (r.costo_envio ?? 0) - 0.01 ? 'Devuelta' : 'Devolución'} {formatCurrency(r.monto_devuelto ?? 0)}
+            </span>
+          )}
+        </div>
+      ),
+      align: 'center', width: '130px',
     },
     {
-      key: 'acciones', header: '', align: 'right', width: '130px',
+      key: 'acciones', header: '', align: 'right', width: '160px',
       cell: r => (
         <div className="flex items-center justify-end gap-1">
           {r.condicion === 'credito' && r.estado === 'completada' && (r.saldo_pendiente ?? 0) > 0 && (
@@ -181,10 +196,21 @@ export default function HistorialVentasPage() {
             PDF
           </button>
 
-          {/* Cancelar */}
+          {/* Devolución */}
           {r.estado === 'completada' && (
             <button
-              onClick={() => { setCancelarId(r.id); setActionError('') }}
+              onClick={() => setDevolucion({ tipo: 'venta', id: r.id })}
+              className="p-1.5 rounded text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+              title="Devolución del cliente"
+            >
+              <Undo2 size={15} />
+            </button>
+          )}
+
+          {/* Cancelar (solo sin devoluciones) */}
+          {r.estado === 'completada' && !(r.monto_devuelto ?? 0) && (
+            <button
+              onClick={() => { setCancelarId(r.id); setActionError(''); setMotivo('') }}
               className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
               title="Cancelar venta"
             >
@@ -240,6 +266,7 @@ export default function HistorialVentasPage() {
       </div>
 
       <AbonoModal destino={abono} empresaId={empresaId} onClose={() => setAbono(null)} />
+      <DevolucionModal destino={devolucion} empresaId={empresaId} onClose={() => setDevolucion(null)} />
 
       {/* Confirmar cancelar */}
       <Modal open={cancelarId !== null} onClose={() => setCancelarId(null)} title="Cancelar venta" size="sm">
@@ -249,10 +276,14 @@ export default function HistorialVentasPage() {
         {data?.data.find(v => v.id === cancelarId)?.condicion === 'credito' && (
           <p className="text-sm text-[#5F6B7A] mb-4">Es una venta al crédito: su saldo deja de contar en cuentas por cobrar. Si tiene abonos, anúlalos primero.</p>
         )}
-        {actionError && <p className="mb-4 text-sm text-red-600">{actionError}</p>}
+        <p className="text-xs text-[#5F6B7A] mb-3">Si el cliente solo devuelve algunos productos, usa <strong>Devolución</strong> en lugar de cancelar.</p>
+        <label className="block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5">Motivo *</label>
+        <textarea rows={2} value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Error al facturar, cliente se arrepintió…"
+          className="w-full mb-4 rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30" />
+        {actionError && <p className="mb-4 text-sm text-red-600 whitespace-pre-line">{actionError}</p>}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setCancelarId(null)}>Volver</Button>
-          <Button variant="danger" loading={cancelar.isPending} onClick={() => cancelar.mutate(cancelarId!)}>Cancelar venta</Button>
+          <Button variant="danger" loading={cancelar.isPending} disabled={motivo.trim().length < 3} onClick={() => cancelar.mutate(cancelarId!)}>Cancelar venta</Button>
         </div>
       </Modal>
     </div>
