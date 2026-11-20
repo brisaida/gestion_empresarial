@@ -6,6 +6,7 @@ use App\Http\Requests\Inventory\StoreCompraRequest;
 use App\Http\Resources\CompraResource;
 use App\Models\Compra;
 use App\Models\DetalleCompra;
+use App\Services\CuentasPorPagarService;
 use App\Services\InventarioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,10 @@ use Illuminate\Support\Facades\Http;
 
 class CompraController extends ApiController
 {
-    public function __construct(private readonly InventarioService $inventario) {}
+    public function __construct(
+        private readonly InventarioService $inventario,
+        private readonly CuentasPorPagarService $cxp,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -28,6 +32,19 @@ class CompraController extends ApiController
         if ($request->filled('proveedor_id')) {
             $query->where('proveedor_id', $request->integer('proveedor_id'));
         }
+
+        if ($request->filled('condicion')) {
+            $query->where('condicion', $request->condicion);
+        }
+
+        // Estado de pago de compras al crédito
+        match ($request->input('estado_pago')) {
+            'pendiente'  => $query->creditoPendiente()->whereDate('fecha_vencimiento', '>=', today()),
+            'vencida'    => $query->creditoPendiente()->whereDate('fecha_vencimiento', '<', today()),
+            'por_pagar'  => $query->creditoPendiente(),
+            'pagada'     => $query->where('condicion', 'credito')->where('estado', '!=', 'cancelada')->where('saldo_pendiente', '<=', 0.004),
+            default      => null,
+        };
 
         if ($request->filled('search')) {
             $q = '%' . $request->search . '%';
@@ -58,10 +75,16 @@ class CompraController extends ApiController
     {
         $validated = $request->validated();
 
+        try {
         $compra = DB::transaction(function () use ($validated, $request) {
             $subtotal = collect($validated['detalles'])->sum(fn($d) => $d['cantidad'] * $d['costo_unitario']);
             $descuento = $validated['descuento'] ?? 0;
             $impuesto  = $validated['impuesto'] ?? 0;
+            $condicion = $this->cxp->datosCompra(
+                $validated['empresa_id'], $validated['proveedor_id'], $subtotal - $descuento + $impuesto,
+                $validated['fecha_compra'], $validated['condicion'] ?? 'contado',
+                $validated['dias_credito'] ?? null, $validated['metodo_pago'] ?? null,
+            );
 
             $compra = Compra::create([
                 'empresa_id'     => $validated['empresa_id'],
@@ -75,6 +98,7 @@ class CompraController extends ApiController
                 'impuesto'       => $impuesto,
                 'total'          => $subtotal - $descuento + $impuesto,
                 'estado'         => 'pendiente',
+                ...$condicion,
             ]);
 
             foreach ($validated['detalles'] as $det) {
@@ -91,6 +115,9 @@ class CompraController extends ApiController
 
             return $compra;
         });
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
 
         $compra->load(['proveedor', 'bodega', 'detalles.producto']);
         return $this->created(new CompraResource($compra));
@@ -98,7 +125,7 @@ class CompraController extends ApiController
 
     public function show(Compra $compra): JsonResponse
     {
-        $compra->load(['proveedor', 'bodega', 'detalles.producto']);
+        $compra->load(['proveedor', 'bodega', 'detalles.producto', 'pagos.usuario']);
         return response()->json(['success' => true, 'data' => new CompraResource($compra)]);
     }
 
@@ -130,8 +157,34 @@ class CompraController extends ApiController
         if ($compra->estado !== 'pendiente') {
             return $this->error("Solo se pueden cancelar compras pendientes.", 409);
         }
-        $compra->update(['estado' => 'cancelada']);
+        if ($compra->pagos()->where('anulado', false)->exists()) {
+            return $this->error('La compra tiene pagos registrados. Anúlalos antes de cancelarla.', 422);
+        }
+        $compra->update(['estado' => 'cancelada', 'saldo_pendiente' => 0]);
         return response()->json(['success' => true, 'message' => 'Compra cancelada.', 'data' => new CompraResource($compra)]);
+    }
+
+    /** Cambia contado/crédito de una compra ya registrada. */
+    public function cambiarCondicion(Request $request, Compra $compra): JsonResponse
+    {
+        abort_unless($request->user()->tienePermiso($compra->empresa_id, 'compras'), 404);
+
+        $validated = $request->validate([
+            'condicion'    => ['required', 'string', 'in:contado,credito'],
+            'metodo_pago'  => ['nullable', 'string', 'in:' . implode(',', CuentasPorPagarService::METODOS_CONTADO)],
+            'dias_credito' => ['nullable', 'integer', 'min:0', 'max:365'],
+        ]);
+
+        try {
+            $compra = DB::transaction(fn() => $this->cxp->cambiarCondicion(
+                $compra, $validated['condicion'], $validated['dias_credito'] ?? null, $validated['metodo_pago'] ?? null,
+            ));
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+
+        $compra->load(['proveedor', 'bodega']);
+        return $this->success(new CompraResource($compra), 'Condición actualizada.');
     }
 
     public function escanearFactura(Request $request): JsonResponse

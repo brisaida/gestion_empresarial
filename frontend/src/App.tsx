@@ -20,6 +20,7 @@ import StockBajoPage   from '@/pages/inventory/StockBajoPage'
 import MovimientosPage from '@/pages/movements/MovimientosPage'
 import ComprasPage         from '@/pages/purchases/ComprasPage'
 import HistorialComprasPage from '@/pages/purchases/HistorialComprasPage'
+import CuentasPorPagarPage  from '@/pages/purchases/CuentasPorPagarPage'
 import CotizacionesPage        from '@/pages/quotations/CotizacionesPage'
 import HistorialCotizacionesPage from '@/pages/quotations/HistorialCotizacionesPage'
 import VentasPage               from '@/pages/sales/VentasPage'
@@ -87,6 +88,7 @@ export default function App() {
               <Route path="movimientos" element={<Guard perm="inventario"><MovimientosPage /></Guard>} />
               <Route path="compras"            element={<Guard perm="compras"><ComprasPage /></Guard>} />
               <Route path="compras/historial" element={<Guard perm="compras"><HistorialComprasPage /></Guard>} />
+              <Route path="cuentas-por-pagar" element={<Guard perm="compras"><CuentasPorPagarPage /></Guard>} />
               <Route path="requisiciones"              element={<Guard perm="compras"><RequisicionPage /></Guard>} />
               <Route path="requisiciones/historial"    element={<Guard perm="compras"><HistorialRequisicionesPage /></Guard>} />
               <Route path="requisiciones/:id/editar"   element={<Guard perm="compras"><RequisicionPage key="editar" /></Guard>} />

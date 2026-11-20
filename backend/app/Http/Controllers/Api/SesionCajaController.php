@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\AbonoVenta;
+use App\Models\PagoCompra;
 use App\Models\SesionCaja;
 use App\Models\Venta;
 use Illuminate\Http\JsonResponse;
@@ -91,6 +92,7 @@ class SesionCajaController extends ApiController
             'total_credito'      => $resumen['credito']['total'],
             'total_abonos'       => $resumen['abonos']['total'],
             'total_abonos_efectivo' => $resumen['abonos']['por_metodo']['efectivo'],
+            'total_pagos_proveedores' => $resumen['pagos_proveedores']['total'],
             'estado'             => 'cerrada',
             'fecha_cierre'       => now(),
             'observaciones'      => $validated['observaciones'] ?? null,
@@ -162,6 +164,15 @@ class SesionCajaController extends ApiController
             ->get()
             ->keyBy('metodo_pago');
 
+        // Pagos a proveedores hechos con efectivo de la caja
+        $pagosProv = PagoCompra::where('empresa_id', $sesion->empresa_id)
+            ->where('anulado', false)
+            ->where('desde_caja', true)
+            ->tap($enSesion)
+            ->selectRaw('COALESCE(SUM(monto), 0) as total, COUNT(*) as cantidad')
+            ->first();
+        $pagosProvTotal = (float) ($pagosProv->total ?? 0);
+
         $por_metodo = [
             'efectivo'      => (float) ($ventas['efectivo']->total      ?? 0),
             'tarjeta'       => (float) ($ventas['tarjeta']->total       ?? 0),
@@ -189,7 +200,8 @@ class SesionCajaController extends ApiController
                 'cantidad'   => (int) $abonos->sum('cantidad'),
                 'por_metodo' => $abonosPorMetodo,
             ],
-            'efectivo_esperado' => (float) $sesion->monto_inicial + $por_metodo['efectivo'] + $abonosPorMetodo['efectivo'],
+            'pagos_proveedores' => ['total' => $pagosProvTotal, 'cantidad' => (int) ($pagosProv->cantidad ?? 0)],
+            'efectivo_esperado' => (float) $sesion->monto_inicial + $por_metodo['efectivo'] + $abonosPorMetodo['efectivo'] - $pagosProvTotal,
         ];
     }
 
@@ -211,6 +223,7 @@ class SesionCajaController extends ApiController
             'total_credito'       => $s->total_credito !== null ? (float) $s->total_credito : null,
             'total_abonos'        => $s->total_abonos !== null ? (float) $s->total_abonos : null,
             'total_abonos_efectivo' => $s->total_abonos_efectivo !== null ? (float) $s->total_abonos_efectivo : null,
+            'total_pagos_proveedores' => $s->total_pagos_proveedores !== null ? (float) $s->total_pagos_proveedores : null,
             'estado'              => $s->estado,
             'fecha_apertura'      => $s->fecha_apertura?->toDateTimeString(),
             'fecha_cierre'        => $s->fecha_cierre?->toDateTimeString(),

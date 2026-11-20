@@ -21,7 +21,18 @@ class CompraResource extends JsonResource
             'descuento'       => (float) $this->descuento,
             'total'           => (float) $this->total,
             'estado'          => $this->estado,
-            'proveedor'       => $this->whenLoaded('proveedor', fn() => ['id' => $this->proveedor->id, 'nombre' => $this->proveedor->nombre]),
+            'condicion'         => $this->condicion ?? 'contado',
+            'metodo_pago'       => $this->metodo_pago,
+            'dias_credito'      => $this->dias_credito,
+            'fecha_vencimiento' => $this->fecha_vencimiento?->toDateString(),
+            'saldo_pendiente'   => (float) $this->saldo_pendiente,
+            'total_pagado'      => $this->condicion === 'credito' && $this->estado !== 'cancelada'
+                ? round((float) $this->total - (float) $this->saldo_pendiente, 2) : 0,
+            'estado_pago'       => $this->resource->estadoPago(),
+            'dias_vencida'      => $this->resource->estadoPago() === 'vencida'
+                ? (int) $this->fecha_vencimiento->diffInDays(today()) : 0,
+            'pagos'             => $this->whenLoaded('pagos', fn() => PagoCompraResource::collection($this->pagos->sortByDesc('id')->values())),
+            'proveedor'       => $this->whenLoaded('proveedor', fn() => ['id' => $this->proveedor->id, 'nombre' => $this->proveedor->nombre, 'rtn' => $this->proveedor->rtn]),
             'bodega'          => $this->whenLoaded('bodega', fn() => ['id' => $this->bodega->id, 'nombre' => $this->bodega->nombre]),
             'detalles'        => $this->whenLoaded('detalles', fn() => $this->detalles->map(fn($d) => [
                 'id'              => $d->id,

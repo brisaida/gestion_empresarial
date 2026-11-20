@@ -20,6 +20,7 @@ class StoreProveedorRequest extends FormRequest
             'departamento' => ['nullable', 'string', 'max:100'],
             'municipio'    => ['nullable', 'string', 'max:100'],
             'activo'       => ['boolean'],
+            'dias_credito' => ['nullable', 'integer', 'min:0', 'max:365'],
         ];
     }
 }

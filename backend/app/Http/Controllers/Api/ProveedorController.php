@@ -13,7 +13,8 @@ class ProveedorController extends ApiController
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Proveedor::where('empresa_id', $request->integer('empresa_id'));
+        $query = Proveedor::where('empresa_id', $request->integer('empresa_id'))
+            ->withSum(['compras as saldo_credito' => fn($q) => $q->creditoPendiente()], 'saldo_pendiente');
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {

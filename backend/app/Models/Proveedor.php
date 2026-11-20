@@ -14,6 +14,7 @@ class Proveedor extends Model
     protected $fillable = [
         'empresa_id', 'nombre', 'rtn', 'correo',
         'telefono', 'direccion', 'departamento', 'municipio', 'activo',
+        'dias_credito',
     ];
 
     protected function casts(): array
@@ -29,5 +30,10 @@ class Proveedor extends Model
     public function compras()
     {
         return $this->hasMany(Compra::class);
+    }
+
+    public function pagos()
+    {
+        return $this->hasMany(PagoCompra::class);
     }
 }

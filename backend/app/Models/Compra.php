@@ -13,6 +13,7 @@ class Compra extends Model
         'empresa_id', 'proveedor_id', 'bodega_id', 'usuario_id',
         'numero_factura', 'fecha_compra',
         'subtotal', 'impuesto', 'descuento', 'total', 'estado',
+        'condicion', 'metodo_pago', 'dias_credito', 'fecha_vencimiento', 'saldo_pendiente',
     ];
 
     protected function casts(): array
@@ -23,6 +24,8 @@ class Compra extends Model
             'impuesto'     => 'decimal:4',
             'descuento'    => 'decimal:4',
             'total'        => 'decimal:4',
+            'fecha_vencimiento' => 'date',
+            'saldo_pendiente'   => 'decimal:4',
         ];
     }
 
@@ -49,5 +52,32 @@ class Compra extends Model
     public function detalles()
     {
         return $this->hasMany(DetalleCompra::class);
+    }
+
+    public function pagos()
+    {
+        return $this->hasMany(PagoCompra::class);
+    }
+
+    public function esCredito(): bool
+    {
+        return $this->condicion === 'credito';
+    }
+
+    /** Compras al crédito con saldo y sin cancelar. */
+    public function scopeCreditoPendiente($query)
+    {
+        return $query->where('condicion', 'credito')
+            ->where('estado', '!=', 'cancelada')
+            ->where('saldo_pendiente', '>', 0.004);
+    }
+
+    /** pagada · pendiente · vencida (solo crédito; null en contado). */
+    public function estadoPago(): ?string
+    {
+        if (! $this->esCredito()) return null;
+        if ($this->estado === 'cancelada') return 'cancelada';
+        if ((float) $this->saldo_pendiente <= 0.004) return 'pagada';
+        return $this->fecha_vencimiento && $this->fecha_vencimiento->lt(today()) ? 'vencida' : 'pendiente';
     }
 }

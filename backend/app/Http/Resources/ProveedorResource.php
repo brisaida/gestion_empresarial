@@ -20,6 +20,8 @@ class ProveedorResource extends JsonResource
             'departamento' => $this->departamento,
             'municipio'    => $this->municipio,
             'activo'       => $this->activo,
+            'dias_credito' => $this->dias_credito,
+            'saldo_pendiente' => $this->when(array_key_exists('saldo_credito', $this->resource->getAttributes()), fn() => round((float) $this->saldo_credito, 2)),
         ];
     }
 }

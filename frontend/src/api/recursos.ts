@@ -5,6 +5,7 @@ import type {
   Producto, Existencia, DashboardData, ProductoPendiente, Movimiento, Compra, Venta, Cotizacion,
   Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja, Requisicion, DatosFirma, MetodoPago,
   CondicionVenta, AbonoVenta, ResumenCxC, EstadoCuenta, NuevoAbono,
+  MetodoPagoCompra, PagoCompra, ResumenCxP, EstadoCuentaProveedor, NuevoPagoCompra,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -176,6 +177,8 @@ export const comprasApi = {
   create:   (data: unknown) => create<Compra>('/compras', data),
   recibir:  (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/recibir`),
   cancelar: (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/cancelar`),
+  cambiarCondicion: (id: number, data: { condicion: CondicionVenta; metodo_pago?: MetodoPagoCompra | null; dias_credito?: number | null }) =>
+    client.patch<ApiResponse<Compra>>(`/compras/${id}/condicion`, data),
   escanear: (imagen: string, media_type: string) =>
     client.post<ApiResponse<FacturaEscaneada>>('/compras/escanear-factura', { imagen, media_type }),
 }
@@ -267,6 +270,21 @@ export const cxcApi = {
   anular:       (abonoId: number) =>
     client.post<ApiResponse<AbonoVenta>>(`/abonos/${abonoId}/anular`),
   abonos:       (params: Record<string, unknown>) => list<AbonoVenta>('/abonos', params),
+}
+
+// ── Cuentas por pagar (compras al crédito) ─────────────────────────────────
+export const cxpApi = {
+  resumen:        (params: Record<string, unknown>) =>
+    client.get<ApiResponse<ResumenCxP>>('/cuentas-por-pagar', { params }),
+  estadoCuenta:   (proveedorId: number) =>
+    client.get<ApiResponse<EstadoCuentaProveedor>>(`/cuentas-por-pagar/proveedores/${proveedorId}`),
+  pagarProveedor: (proveedorId: number, data: NuevoPagoCompra) =>
+    client.post<ApiResponse<PagoCompra[]>>(`/cuentas-por-pagar/proveedores/${proveedorId}/pagos`, data),
+  pagar:          (compraId: number, data: NuevoPagoCompra) =>
+    client.post<ApiResponse<PagoCompra>>(`/compras/${compraId}/pagos`, data),
+  anular:         (pagoId: number) =>
+    client.post<ApiResponse<PagoCompra>>(`/pagos-compra/${pagoId}/anular`),
+  pagos:          (params: Record<string, unknown>) => list<PagoCompra>('/pagos-compra', params),
 }
 
 // ── Comandas ───────────────────────────────────────────────────────────────

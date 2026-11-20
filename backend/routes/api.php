@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\TransferenciaController;
 use App\Http\Controllers\Api\UnidadMedidaController;
 use App\Http\Controllers\Api\CotizacionController;
 use App\Http\Controllers\Api\CuentasPorCobrarController;
+use App\Http\Controllers\Api\CuentasPorPagarController;
 use App\Http\Controllers\Api\ComandaController;
 use App\Http\Controllers\Api\MesaController;
 use App\Http\Controllers\Api\EmpresaController;
@@ -97,6 +98,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('compras', CompraController::class)->only(['index', 'store', 'show']);
         Route::post('compras/{compra}/recibir',  [CompraController::class, 'recibir']);
         Route::post('compras/{compra}/cancelar', [CompraController::class, 'cancelar']);
+        Route::patch('compras/{compra}/condicion', [CompraController::class, 'cambiarCondicion']);
+
+        // Compras al crédito: cuentas por pagar y pagos a proveedores
+        Route::get('cuentas-por-pagar',                          [CuentasPorPagarController::class, 'resumen']);
+        Route::get('cuentas-por-pagar/proveedores/{proveedor}',  [CuentasPorPagarController::class, 'estadoCuenta']);
+        Route::post('cuentas-por-pagar/proveedores/{proveedor}/pagos', [CuentasPorPagarController::class, 'pagarProveedor']);
+        Route::get('pagos-compra',                               [CuentasPorPagarController::class, 'pagos']);
+        Route::post('compras/{compra}/pagos',                    [CuentasPorPagarController::class, 'pagar']);
+        Route::post('pagos-compra/{pago}/anular',                [CuentasPorPagarController::class, 'anular']);
 
         // Requisiciones (pedido a proveedor, solo documento)
         Route::get('requisiciones/siguiente-numero', [RequisicionController::class, 'siguienteNumero']);

@@ -4,7 +4,9 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/stores/authStore'
-import { proveedoresApi } from '@/api/recursos'
+import { useQuery } from '@tanstack/react-query'
+import { proveedoresApi, empresaApi } from '@/api/recursos'
+import { formatCurrency } from '@/lib/utils'
 import { useCrud } from '@/hooks/useCrud'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import { StatusBadge } from '@/components/ui/Badge'
@@ -24,6 +26,7 @@ const schema = z.object({
   departamento: z.string().optional(),
   municipio:    z.string().optional(),
   activo:       z.boolean().optional(),
+  dias_credito: z.string().optional().refine(v => !v || (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 365), 'Entre 0 y 365'),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -31,6 +34,13 @@ export default function ProveedoresPage() {
   const { state } = useAuth()
   const empresaId = state.empresaActiva?.id ?? 0
   const crud = useCrud(proveedoresApi, { queryKey: 'proveedores', empresaId })
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn:  () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
+  const diasEmpresa = empresaConfig?.dias_credito ?? 30
 
   const [modal, setModal] = useState<'create' | 'edit' | null>(null)
   const [selected, setSelected] = useState<Proveedor | null>(null)
@@ -46,12 +56,14 @@ export default function ProveedoresPage() {
   const openCreate = () => { reset({ nombre: '', activo: true }); setModal('create') }
   const openEdit = (p: Proveedor) => {
     setSelected(p)
-    reset({ nombre: p.nombre, rtn: p.rtn ?? '', correo: p.correo ?? '', telefono: p.telefono ?? '', direccion: p.direccion ?? '', departamento: p.departamento ?? '', municipio: p.municipio ?? '', activo: p.activo })
+    reset({ nombre: p.nombre, rtn: p.rtn ?? '', correo: p.correo ?? '', telefono: p.telefono ?? '', direccion: p.direccion ?? '', departamento: p.departamento ?? '', municipio: p.municipio ?? '', activo: p.activo,
+      dias_credito: p.dias_credito != null ? String(p.dias_credito) : '' })
     setModal('edit')
   }
   const closeModal = () => { setModal(null); setSelected(null); crud.setError('') }
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (form: FormValues) => {
+    const values = { ...form, dias_credito: form.dias_credito ? Number(form.dias_credito) : null }
     if (modal === 'create') await crud.create.mutateAsync({ ...values, empresa_id: empresaId })
     else if (selected) await crud.update.mutateAsync({ id: selected.id, data: values })
     closeModal()
@@ -62,6 +74,12 @@ export default function ProveedoresPage() {
     { key: 'rtn',      header: 'RTN',       cell: (r) => <span className="text-gray-500">{r.rtn ?? '—'}</span> },
     { key: 'correo',   header: 'Correo',    cell: (r) => <span className="text-gray-500">{r.correo ?? '—'}</span> },
     { key: 'telefono', header: 'Teléfono',  cell: (r) => <span className="text-gray-500">{r.telefono ?? '—'}</span> },
+    {
+      key: 'saldo', header: 'Le debes', align: 'right', width: '130px',
+      cell: (r) => (r.saldo_pendiente ?? 0) > 0
+        ? <span className="font-semibold text-[var(--cs)]">{formatCurrency(r.saldo_pendiente ?? 0)}</span>
+        : <span className="text-gray-300">—</span>,
+    },
     { key: 'activo',   header: 'Estado',    cell: (r) => <StatusBadge activo={r.activo} />, align: 'center', width: '90px' },
     {
       key: 'acciones', header: '', align: 'right', width: '80px',
@@ -123,6 +141,11 @@ export default function ProveedoresPage() {
                 {municipios.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <Input label="Días de crédito que da el proveedor" type="number" step="1" min="0" max="365"
+              placeholder={`${diasEmpresa} (de la empresa)`} error={errors.dias_credito?.message} {...register('dias_credito')} />
+            <p className="text-[11px] text-[#5F6B7A] mt-1.5">Se usa para calcular el vencimiento de las compras al crédito. Vacío = {diasEmpresa} días.</p>
           </div>
           <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
             <input type="checkbox" {...register('activo')} className="rounded" />

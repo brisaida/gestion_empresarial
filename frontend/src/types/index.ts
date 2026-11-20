@@ -106,6 +106,8 @@ export interface Proveedor {
   departamento?: string
   municipio?: string
   activo: boolean
+  dias_credito?: number | null   // null = usa el de la empresa
+  saldo_pendiente?: number       // lo que se le debe (compras al crédito)
 }
 
 export interface Cliente {
@@ -245,9 +247,69 @@ export interface Compra {
   impuesto: number
   total: number
   estado: EstadoCompra
-  proveedor?: { id: number; nombre: string }
+  condicion?: CondicionVenta
+  metodo_pago?: MetodoPagoCompra | null
+  dias_credito?: number | null
+  fecha_vencimiento?: string | null
+  saldo_pendiente?: number
+  total_pagado?: number
+  estado_pago?: EstadoPago | null
+  dias_vencida?: number
+  pagos?: PagoCompra[]
+  proveedor?: { id: number; nombre: string; rtn?: string | null }
   bodega?: { id: number; nombre: string }
   detalles?: DetalleCompra[]
+}
+
+// ── Compras al crédito (cuentas por pagar) ────────────────────────────────
+export type MetodoPagoCompra = 'efectivo' | 'debito' | 'tarjeta' | 'transferencia' | 'cheque'
+
+export interface PagoCompra {
+  id: number
+  compra_id: number
+  proveedor_id?: number | null
+  fecha: string
+  monto: number
+  metodo_pago: MetodoPagoCompra
+  desde_caja: boolean
+  referencia?: string | null
+  observaciones?: string | null
+  anulado: boolean
+  anulado_at?: string | null
+  usuario?: string | null
+  numero_factura?: string | null
+  proveedor?: string | null
+  created_at?: string
+}
+
+export interface CuentaProveedor extends AntiguedadSaldos {
+  proveedor_id: number | null
+  nombre: string
+  rtn?: string | null
+  telefono?: string | null
+  facturas: number
+  vence_primero: string | null
+}
+
+export interface ResumenCxP {
+  totales: AntiguedadSaldos & { proveedores: number; facturas: number; vence_7_dias: number }
+  proveedores: CuentaProveedor[]
+}
+
+export interface EstadoCuentaProveedor {
+  proveedor: { id: number; nombre: string; rtn?: string | null; telefono?: string | null; correo?: string | null; dias_credito: number }
+  resumen: AntiguedadSaldos & { facturas: number }
+  facturas: Compra[]
+  pagos: PagoCompra[]
+}
+
+export interface NuevoPagoCompra {
+  monto: number
+  fecha?: string
+  metodo_pago: MetodoPagoCompra
+  desde_caja?: boolean
+  referencia?: string | null
+  observaciones?: string | null
 }
 
 // ── Cotizaciones ──────────────────────────────────────────────────────────
@@ -667,6 +729,7 @@ export interface SesionCaja {
   total_credito?: number | null
   total_abonos?: number | null
   total_abonos_efectivo?: number | null
+  total_pagos_proveedores?: number | null
   estado: 'abierta' | 'cerrada'
   fecha_apertura: string
   fecha_cierre?: string | null
@@ -677,6 +740,7 @@ export interface SesionCaja {
     por_metodo: { efectivo: number; tarjeta: number; transferencia: number; mixto: number }
     credito: { total: number; cantidad: number }
     abonos: { total: number; cantidad: number; por_metodo: Record<MetodoAbono, number> }
+    pagos_proveedores?: { total: number; cantidad: number }
     efectivo_esperado: number
   }
 }

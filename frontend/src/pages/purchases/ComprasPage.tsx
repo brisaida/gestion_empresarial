@@ -3,14 +3,15 @@ import { Plus, Trash2, ShoppingCart, ClipboardList, Sparkles, Camera, Loader2, X
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { comprasApi, proveedoresApi, bodegasApi, productosApi } from '@/api/recursos'
+import { comprasApi, proveedoresApi, bodegasApi, productosApi, empresaApi } from '@/api/recursos'
+import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
 import type { FacturaEscaneada } from '@/api/recursos'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import ComboBox from '@/components/ui/ComboBox'
 import Modal from '@/components/ui/Modal'
-import { formatCurrency, getAxiosError, todayISO } from '@/lib/utils'
-import type { Proveedor, Producto } from '@/types'
+import { formatCurrency, formatDate, getAxiosError, todayISO, addDaysISO } from '@/lib/utils'
+import type { Proveedor, Producto, MetodoPagoCompra } from '@/types'
 
 interface LineaItem {
   producto_id: string
@@ -369,6 +370,9 @@ export default function ComprasPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [proveedorHint, setProveedorHint] = useState<ProveedorHint | null>(null)
+  const [condicion, setCondicion]   = useState<'contado' | 'credito'>('contado')
+  const [metodoPago, setMetodoPago] = useState<MetodoPagoCompra>('efectivo')
+  const [diasManual, setDiasManual] = useState<string | null>(null)   // null = plazo del proveedor/empresa
 
   // Modales de creación rápida
   const [modalProv, setModalProv] = useState(false)
@@ -384,6 +388,17 @@ export default function ComprasPage() {
     const pred = bodegas.find(b => b.predeterminada)
     if (pred) setForm(f => f.bodega_id ? f : { ...f, bodega_id: String(pred.id) })
   }, [bodegas])
+  const { data: empresaConfig } = useQuery({
+    queryKey: ['empresa', empresaId],
+    queryFn:  () => empresaApi.get(empresaId).then(r => r.data.data),
+    enabled:  empresaId > 0,
+    staleTime: 5 * 60_000,
+  })
+  const proveedorSel = proveedores.find(p => String(p.id) === form.proveedor_id)
+  const diasDefecto  = proveedorSel?.dias_credito ?? empresaConfig?.dias_credito ?? 30
+  const diasCredito  = diasManual ?? String(diasDefecto)
+  const diasNum      = diasCredito === '' ? diasDefecto : Math.max(0, Math.round(Number(diasCredito) || 0))
+  const vence        = addDaysISO(form.fecha_compra || todayISO(), diasNum)
   const { data: productos = [] }   = useQuery({ queryKey: ['productos-all', empresaId],   queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, solo_activos: true }).then(r => r.data.data), enabled: empresaId > 0 })
 
   const crear = useMutation({
@@ -391,6 +406,8 @@ export default function ComprasPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['compras'] })
       setForm({ proveedor_id: '', bodega_id: '', fecha_compra: todayISO(), numero_factura: '', descuento: '', impuesto: '' })
+      setCondicion('contado'); setMetodoPago('efectivo'); setDiasManual(null)
+      qc.invalidateQueries({ queryKey: ['cxp'] })
       setLineas([emptyLinea()])
       setError(''); setProveedorHint(null)
       setSuccess(true)
@@ -494,6 +511,9 @@ export default function ComprasPage() {
         empresa_id: empresaId, proveedor_id: Number(form.proveedor_id), bodega_id: Number(form.bodega_id),
         fecha_compra: form.fecha_compra, numero_factura: form.numero_factura || null,
         descuento: form.descuento ? Number(form.descuento) : 0, impuesto: form.impuesto ? Number(form.impuesto) : 0,
+        condicion,
+        metodo_pago:  condicion === 'contado' ? metodoPago : null,
+        dias_credito: condicion === 'credito' ? diasNum : null,
         detalles: lineas.map(l => ({
           producto_id: Number(l.producto_id), cantidad: Number(l.cantidad), costo_unitario: Number(l.costo_unitario),
           lote: l.lote || null, fecha_vencimiento: l.fecha_vencimiento || null,
@@ -528,7 +548,7 @@ export default function ComprasPage() {
                 options={proveedores.map(p => ({ value: p.id, label: p.nombre }))}
                 placeholder="Seleccionar"
                 value={form.proveedor_id}
-                onChange={v => setForm(f => ({ ...f, proveedor_id: v }))}
+                onChange={v => { setForm(f => ({ ...f, proveedor_id: v })); setDiasManual(null) }}
               />
               <div className="flex items-center justify-between">
                 {proveedorHint && !form.proveedor_id && (
@@ -557,6 +577,45 @@ export default function ComprasPage() {
             <Input label="Descuento" type="number" step="0.01" min="0" value={form.descuento} onChange={e => setForm(f => ({ ...f, descuento: e.target.value }))} placeholder="0.00" />
             <Input label="Impuesto / ISV" type="number" step="0.01" min="0" value={form.impuesto} onChange={e => setForm(f => ({ ...f, impuesto: e.target.value }))} placeholder="0.00" />
           </div>
+
+          {/* Condición de pago */}
+          <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Condición de pago</label>
+              <div className="grid grid-cols-2 gap-1 p-1 bg-[#F4F7FA] border border-gray-200 rounded-lg">
+                {(['contado', 'credito'] as const).map(c => (
+                  <button key={c} type="button" onClick={() => setCondicion(c)}
+                    className={`py-1.5 rounded-md text-sm font-semibold transition-all ${
+                      condicion === c ? 'bg-white text-[var(--cp)] shadow-sm' : 'text-[#5F6B7A] hover:text-[var(--cs)]'}`}>
+                    {c === 'contado' ? 'Contado' : 'Crédito'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {condicion === 'contado' ? (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Se paga con</label>
+                <select value={metodoPago} onChange={e => setMetodoPago(e.target.value as MetodoPagoCompra)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)]">
+                  {(Object.keys(METODO_COMPRA_LABEL) as MetodoPagoCompra[]).map(m => <option key={m} value={m}>{METODO_COMPRA_LABEL[m]}</option>)}
+                </select>
+              </div>
+            ) : (
+              <>
+                <Input label="Días de crédito" type="number" min="0" max="365" step="1"
+                  value={diasCredito} onChange={e => setDiasManual(e.target.value)} />
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Vence el</label>
+                  <div className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-[var(--cs)] bg-[#F4F7FA]">
+                    {formatDate(vence)}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          {condicion === 'credito' && (
+            <p className="mt-2 text-xs text-[#5F6B7A]">Quedará en <strong>Cuentas por pagar</strong> hasta que registres el pago al proveedor.</p>
+          )}
         </div>
 
         {/* Líneas de productos */}
