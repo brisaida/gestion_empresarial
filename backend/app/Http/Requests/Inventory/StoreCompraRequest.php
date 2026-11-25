@@ -39,6 +39,8 @@ class StoreCompraRequest extends FormRequest
             'condicion'      => ['nullable', 'string', 'in:contado,credito'],
             'metodo_pago'    => ['nullable', 'string', 'in:' . implode(',', \App\Services\CuentasPorPagarService::METODOS_CONTADO)],
             'dias_credito'   => ['nullable', 'integer', 'min:0', 'max:365'],
+            'tarjeta_credito_id' => ['nullable', 'integer'],
+            'requisicion_id' => ['nullable', 'integer'],
             'detalles'       => ['required', 'array', 'min:1'],
             'detalles.*.producto_id'       => ['required', 'integer', 'exists:productos,id'],
             'detalles.*.cantidad'          => ['required', 'numeric', 'min:0.0001'],

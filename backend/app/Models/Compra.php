@@ -15,6 +15,7 @@ class Compra extends Model
         'subtotal', 'impuesto', 'descuento', 'costo_envio', 'total', 'estado',
         'condicion', 'metodo_pago', 'dias_credito', 'fecha_vencimiento', 'saldo_pendiente',
         'monto_devuelto', 'devuelto_a_saldo', 'cancelada_por', 'cancelada_at', 'motivo_cancelacion',
+        'tarjeta_credito_id', 'requisicion_id',
     ];
 
     protected function casts(): array
@@ -94,5 +95,15 @@ class Compra extends Model
     public function canceladaPor()
     {
         return $this->belongsTo(User::class, 'cancelada_por');
+    }
+
+    public function tarjeta()
+    {
+        return $this->belongsTo(TarjetaCredito::class, 'tarjeta_credito_id');
+    }
+
+    public function requisicion()
+    {
+        return $this->belongsTo(Requisicion::class);
     }
 }

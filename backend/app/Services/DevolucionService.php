@@ -25,7 +25,7 @@ use DomainException;
 class DevolucionService
 {
     public const METODOS_REEMBOLSO_CLIENTE   = ['efectivo', 'tarjeta', 'transferencia', 'cambio'];
-    public const METODOS_REEMBOLSO_PROVEEDOR = ['efectivo', 'transferencia', 'cambio'];
+    public const METODOS_REEMBOLSO_PROVEEDOR = ['efectivo', 'transferencia', 'tarjeta', 'cambio'];
 
     public function __construct(private readonly InventarioService $inventario) {}
 
@@ -204,6 +204,10 @@ class DevolucionService
             'reembolso_metodo' => $metodo,
             'desde_caja'       => $metodo === 'efectivo' && (bool) ($datos['desde_caja'] ?? true),
         ]);
+
+        if ($metodo === TarjetaService::METODO) {
+            app(TarjetaService::class)->acreditarDevolucion($devolucion, $compra, $usuarioId);
+        }
 
         $salidas = [];
         foreach ($items as [$det, $cantidad, $sub]) {

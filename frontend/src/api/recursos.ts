@@ -7,6 +7,7 @@ import type {
   CondicionVenta, AbonoVenta, ResumenCxC, EstadoCuenta, NuevoAbono,
   MetodoPagoCompra, PagoCompra, ResumenCxP, EstadoCuentaProveedor, NuevoPagoCompra,
   DevolucionVenta, DevolucionCompra, NuevaDevolucion,
+  TarjetaCredito, MovimientoTarjeta, RequisicionConTarjeta,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -179,7 +180,7 @@ export const comprasApi = {
   recibir:  (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/recibir`),
   cancelar: (id: number, motivo: string) => client.post<ApiResponse<Compra>>(`/compras/${id}/cancelar`, { motivo }),
   devolver: (id: number, data: NuevaDevolucion) => client.post<ApiResponse<DevolucionCompra>>(`/compras/${id}/devoluciones`, data),
-  cambiarCondicion: (id: number, data: { condicion: CondicionVenta; metodo_pago?: MetodoPagoCompra | null; dias_credito?: number | null }) =>
+  cambiarCondicion: (id: number, data: { condicion: CondicionVenta; metodo_pago?: MetodoPagoCompra | null; dias_credito?: number | null; tarjeta_credito_id?: number | null; requisicion_id?: number | null }) =>
     client.patch<ApiResponse<Compra>>(`/compras/${id}/condicion`, data),
   escanear: (imagen: string, media_type: string) =>
     client.post<ApiResponse<FacturaEscaneada>>('/compras/escanear-factura', { imagen, media_type }),
@@ -219,6 +220,8 @@ export const requisicionesApi = {
   list:            (params: Record<string, unknown>) => list<Requisicion>('/requisiciones', params),
   get:             (id: number) => get<Requisicion>(`/requisiciones/${id}`),
   create:          (data: unknown) => create<Requisicion>('/requisiciones', data),
+  formaPago:       (id: number, data: { metodo_pago: MetodoPagoCompra | null; tarjeta_credito_id?: number | null }) =>
+    client.patch<ApiResponse<Requisicion>>(`/requisiciones/${id}/forma-pago`, data),
   update:          (id: number, data: unknown) => update<Requisicion>(`/requisiciones/${id}`, data),
   cambiarEstado:   (id: number, estado: string) => client.post<ApiResponse<Requisicion>>(`/requisiciones/${id}/estado`, { estado }),
   autorizar:       (id: number, pin: string) => client.post<ApiResponse<Requisicion>>(`/requisiciones/${id}/autorizar`, { pin }),
@@ -288,6 +291,22 @@ export const cxpApi = {
   anular:         (pagoId: number) =>
     client.post<ApiResponse<PagoCompra>>(`/pagos-compra/${pagoId}/anular`),
   pagos:          (params: Record<string, unknown>) => list<PagoCompra>('/pagos-compra', params),
+}
+
+// ── Tarjetas de crédito ──────────────────────────────────────────────────
+export const tarjetasApi = {
+  list:        (empresa_id: number, todas = false) =>
+    client.get<ApiResponse<TarjetaCredito[]>>('/tarjetas-credito', { params: { empresa_id, todas: todas ? 1 : undefined } }),
+  create:      (data: unknown) => client.post<ApiResponse<TarjetaCredito>>('/tarjetas-credito', data),
+  update:      (id: number, data: unknown) => client.put<ApiResponse<TarjetaCredito>>(`/tarjetas-credito/${id}`, data),
+  movimientos: (id: number, params: Record<string, unknown>) =>
+    client.get<ApiResponse<{ tarjeta: TarjetaCredito; saldo_inicial: number; movimientos: MovimientoTarjeta[] }>>(`/tarjetas-credito/${id}/movimientos`, { params }),
+  pagar:       (id: number, data: unknown) => client.post<ApiResponse<TarjetaCredito>>(`/tarjetas-credito/${id}/pagos`, data),
+  cargo:       (id: number, data: unknown) => client.post<ApiResponse<TarjetaCredito>>(`/tarjetas-credito/${id}/cargos`, data),
+  anularPago:  (pagoId: number) => client.post(`/pagos-tarjeta/${pagoId}/anular`),
+  anularCargo: (cargoId: number) => client.post(`/cargos-tarjeta/${cargoId}/anular`),
+  requisicionesPendientes: (empresa_id: number, proveedor_id?: number | null) =>
+    client.get<ApiResponse<RequisicionConTarjeta[]>>('/requisiciones-con-tarjeta', { params: { empresa_id, proveedor_id: proveedor_id || undefined } }),
 }
 
 // ── Devoluciones ──────────────────────────────────────────────────────────

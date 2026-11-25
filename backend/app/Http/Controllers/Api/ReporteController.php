@@ -22,7 +22,8 @@ class ReporteController extends ApiController
         };
 
         $filas = DB::table('ventas')
-            ->selectRaw("DATE_TRUNC('{$trunc}', fecha_venta::date) as periodo, SUM(total - monto_devuelto) as total, COUNT(*) as cantidad")
+            ->selectRaw("DATE_TRUNC('{$trunc}', fecha_venta::date) as periodo, SUM(total - monto_devuelto) as total, COUNT(*) as cantidad,
+                SUM(CASE WHEN condicion = 'credito' THEN total - monto_devuelto ELSE 0 END) as credito")
             ->where('empresa_id', $empresaId)
             ->where('estado', 'completada')
             ->whereDate('fecha_venta', '>=', $desde)
@@ -34,6 +35,7 @@ class ReporteController extends ApiController
                 'periodo'  => substr($r->periodo, 0, 10),
                 'total'    => (float) $r->total,
                 'cantidad' => (int) $r->cantidad,
+                'credito'  => round((float) $r->credito, 2),
             ]);
 
         $resumen = DB::table('ventas')
@@ -41,7 +43,8 @@ class ReporteController extends ApiController
             ->where('estado', 'completada')
             ->whereDate('fecha_venta', '>=', $desde)
             ->whereDate('fecha_venta', '<=', $hasta)
-            ->selectRaw('COALESCE(SUM(total - monto_devuelto), 0) as total, COUNT(*) as cantidad')
+            ->selectRaw("COALESCE(SUM(total - monto_devuelto), 0) as total, COUNT(*) as cantidad,
+                COALESCE(SUM(CASE WHEN condicion = 'credito' THEN total - monto_devuelto ELSE 0 END), 0) as credito")
             ->first();
 
         return response()->json([
@@ -51,6 +54,7 @@ class ReporteController extends ApiController
                 'resumen' => [
                     'total'    => (float) $resumen->total,
                     'cantidad' => (int) $resumen->cantidad,
+                    'credito'  => round((float) $resumen->credito, 2),
                     'promedio' => $resumen->cantidad > 0
                         ? round((float) $resumen->total / $resumen->cantidad, 2)
                         : 0,
@@ -69,12 +73,14 @@ class ReporteController extends ApiController
         $productos = DB::table('detalle_ventas as dv')
             ->join('ventas as v', 'dv.venta_id', '=', 'v.id')
             ->join('productos as p', 'dv.producto_id', '=', 'p.id')
-            ->selectRaw('p.id, p.nombre, p.codigo, SUM(dv.cantidad) as total_unidades, SUM(dv.subtotal) as total_monto')
+            ->leftJoinSub(DashboardController::devueltoPorLinea(), 'dev', 'dev.detalle_venta_id', '=', 'dv.id')
+            ->selectRaw('p.id, p.nombre, p.codigo, SUM(dv.cantidad - COALESCE(dev.cantidad, 0)) as total_unidades, SUM(dv.subtotal - COALESCE(dev.monto, 0)) as total_monto')
             ->where('v.empresa_id', $empresaId)
             ->where('v.estado', 'completada')
             ->whereDate('v.fecha_venta', '>=', $desde)
             ->whereDate('v.fecha_venta', '<=', $hasta)
             ->groupBy('p.id', 'p.nombre', 'p.codigo')
+            ->havingRaw('SUM(dv.cantidad - COALESCE(dev.cantidad, 0)) > 0')
             ->orderByDesc('total_monto')
             ->limit($limit)
             ->get()

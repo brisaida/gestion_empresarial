@@ -17,6 +17,7 @@ class PagoCompraResource extends JsonResource
             'monto'          => (float) $this->monto,
             'metodo_pago'    => $this->metodo_pago,
             'desde_caja'     => (bool) $this->desde_caja,
+            'tarjeta_credito_id' => $this->tarjeta_credito_id,
             'referencia'     => $this->referencia,
             'observaciones'  => $this->observaciones,
             'anulado'        => (bool) $this->anulado,

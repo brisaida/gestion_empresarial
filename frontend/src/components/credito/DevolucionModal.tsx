@@ -98,7 +98,7 @@ function Formulario({ tipo, doc, empresaId, onClose }: { tipo: 'venta' | 'compra
         : comprasApi.devolver(doc.id, payload).then(r => r.data.data)
     },
     onSuccess: async (dev) => {
-      for (const k of ['ventas', 'compras', 'existencias', 'productos', 'productos-all', 'cxc', 'cxp', 'clientes-all', 'caja-actual', 'devoluciones', 'dashboard']) {
+      for (const k of ['ventas', 'compras', 'existencias', 'productos', 'productos-all', 'cxc', 'cxp', 'clientes-all', 'caja-actual', 'devoluciones', 'dashboard', 'tarjetas']) {
         qc.invalidateQueries({ queryKey: [k] })
       }
       toast.success(`Devolución ${dev.numero} registrada.`)
@@ -123,6 +123,11 @@ function Formulario({ tipo, doc, empresaId, onClose }: { tipo: 'venta' | 'compra
     setError('')
     guardar.mutate()
   }
+
+  // Si la compra se pagó con tarjeta de crédito, el proveedor puede reversar a la tarjeta
+  const metodos = !esVenta && (doc as Compra).metodo_pago === 'tarjeta'
+    ? [{ value: 'tarjeta' as ReembolsoMetodo, label: `A la tarjeta${(doc as Compra).tarjeta ? ` ••${(doc as Compra).tarjeta!.ultimos4}` : ''}` }, ...METODOS.compra]
+    : METODOS[tipo]
 
   const parte = esVenta ? ((doc as Venta).cliente?.nombre ?? 'Consumidor final') : ((doc as Compra).proveedor?.nombre ?? '')
   const numero = esVenta ? formatoNumeroFactura(doc.numero_factura) : (doc.numero_factura ?? `#${doc.id}`)
@@ -206,7 +211,7 @@ function Formulario({ tipo, doc, empresaId, onClose }: { tipo: 'venta' | 'compra
             {esVenta ? 'Cómo se le devuelve el dinero' : 'Cómo te lo devuelve el proveedor'}
           </label>
           <div className="flex flex-wrap gap-1 p-1 bg-[#F4F7FA] border border-gray-200 rounded-lg">
-            {METODOS[tipo].map(m => (
+            {metodos.map(m => (
               <button key={m.value} type="button" onClick={() => setMetodo(m.value)}
                 className={cn('flex-1 min-w-[110px] py-1.5 rounded-md text-xs sm:text-sm font-semibold transition-all',
                   metodo === m.value ? 'bg-white text-[var(--cp)] shadow-sm' : 'text-[#5F6B7A] hover:text-[var(--cs)]')}>

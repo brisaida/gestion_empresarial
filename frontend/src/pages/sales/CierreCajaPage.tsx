@@ -230,6 +230,12 @@ export default function CierreCajaPage() {
                           <span className="font-medium text-red-600">− {formatCurrency(resumen.pagos_proveedores!.total)}</span>
                         </div>
                       )}
+                      {(resumen.pagos_tarjetas ?? 0) > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#5F6B7A]">Pagos de tarjetas de crédito</span>
+                          <span className="font-medium text-red-600">− {formatCurrency(resumen.pagos_tarjetas!)}</span>
+                        </div>
+                      )}
                       {(resumen.reembolsos?.clientes ?? 0) > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-[#5F6B7A]">Reembolsos a clientes</span>

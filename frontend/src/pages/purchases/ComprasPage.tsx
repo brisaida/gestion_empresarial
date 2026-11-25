@@ -3,7 +3,8 @@ import { Plus, Trash2, ShoppingCart, ClipboardList, Sparkles, Camera, Loader2, X
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { comprasApi, proveedoresApi, bodegasApi, productosApi, empresaApi } from '@/api/recursos'
+import { comprasApi, proveedoresApi, bodegasApi, productosApi, empresaApi, tarjetasApi } from '@/api/recursos'
+import TarjetaSelect from '@/components/tarjetas/TarjetaSelect'
 import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
 import type { FacturaEscaneada } from '@/api/recursos'
 import Button from '@/components/ui/Button'
@@ -373,6 +374,8 @@ export default function ComprasPage() {
   const [condicion, setCondicion]   = useState<'contado' | 'credito'>('contado')
   const [metodoPago, setMetodoPago] = useState<MetodoPagoCompra>('efectivo')
   const [diasManual, setDiasManual] = useState<string | null>(null)   // null = plazo del proveedor/empresa
+  const [tarjetaId, setTarjetaId]   = useState('')
+  const [requisicionId, setRequisicionId] = useState('')
 
   // Modales de creación rápida
   const [modalProv, setModalProv] = useState(false)
@@ -394,6 +397,12 @@ export default function ComprasPage() {
     enabled:  empresaId > 0,
     staleTime: 5 * 60_000,
   })
+  const pagaConTarjeta = condicion === 'contado' && metodoPago === 'tarjeta'
+  const { data: reqsTarjeta = [] } = useQuery({
+    queryKey: ['requisiciones-tarjeta', empresaId, form.proveedor_id],
+    queryFn:  () => tarjetasApi.requisicionesPendientes(empresaId, Number(form.proveedor_id)).then(r => r.data.data),
+    enabled:  empresaId > 0 && pagaConTarjeta && !!form.proveedor_id,
+  })
   const proveedorSel = proveedores.find(p => String(p.id) === form.proveedor_id)
   const diasDefecto  = proveedorSel?.dias_credito ?? empresaConfig?.dias_credito ?? 30
   const diasCredito  = diasManual ?? String(diasDefecto)
@@ -406,7 +415,9 @@ export default function ComprasPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['compras'] })
       setForm({ proveedor_id: '', bodega_id: '', fecha_compra: todayISO(), numero_factura: '', descuento: '', impuesto: '', costo_envio: '' })
-      setCondicion('contado'); setMetodoPago('efectivo'); setDiasManual(null)
+      setCondicion('contado'); setMetodoPago('efectivo'); setDiasManual(null); setTarjetaId(''); setRequisicionId('')
+      qc.invalidateQueries({ queryKey: ['tarjetas'] })
+      qc.invalidateQueries({ queryKey: ['requisiciones-tarjeta'] })
       qc.invalidateQueries({ queryKey: ['cxp'] })
       setLineas([emptyLinea()])
       setError(''); setProveedorHint(null)
@@ -507,6 +518,7 @@ export default function ComprasPage() {
     e.preventDefault(); setError('')
     if (!form.proveedor_id || !form.bodega_id || !form.fecha_compra) { setError('Completa los campos requeridos.'); return }
     if (lineas.some(l => !l.producto_id || !l.cantidad || !l.costo_unitario)) { setError('Cada línea necesita producto, cantidad y costo unitario.'); return }
+    if (pagaConTarjeta && !tarjetaId) { setError('Selecciona con qué tarjeta de crédito se pagó.'); return }
     try {
       await crear.mutateAsync({
         empresa_id: empresaId, proveedor_id: Number(form.proveedor_id), bodega_id: Number(form.bodega_id),
@@ -515,6 +527,8 @@ export default function ComprasPage() {
         costo_envio: envio,
         condicion,
         metodo_pago:  condicion === 'contado' ? metodoPago : null,
+        tarjeta_credito_id: pagaConTarjeta ? Number(tarjetaId) : null,
+        requisicion_id:     pagaConTarjeta && requisicionId ? Number(requisicionId) : null,
         dias_credito: condicion === 'credito' ? diasNum : null,
         detalles: lineas.map(l => ({
           producto_id: Number(l.producto_id), cantidad: Number(l.cantidad), costo_unitario: Number(l.costo_unitario),
@@ -550,7 +564,7 @@ export default function ComprasPage() {
                 options={proveedores.map(p => ({ value: p.id, label: p.nombre }))}
                 placeholder="Seleccionar"
                 value={form.proveedor_id}
-                onChange={v => { setForm(f => ({ ...f, proveedor_id: v })); setDiasManual(null) }}
+                onChange={v => { setForm(f => ({ ...f, proveedor_id: v })); setDiasManual(null); setRequisicionId('') }}
               />
               <div className="flex items-center justify-between">
                 {proveedorHint && !form.proveedor_id && (
@@ -618,6 +632,34 @@ export default function ComprasPage() {
           </div>
           {condicion === 'credito' && (
             <p className="mt-2 text-xs text-[#5F6B7A]">Quedará en <strong>Cuentas por pagar</strong> hasta que registres el pago al proveedor.</p>
+          )}
+          {pagaConTarjeta && (
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+              <TarjetaSelect empresaId={empresaId} value={tarjetaId} onChange={setTarjetaId} />
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">¿Ya se cargó a la tarjeta en una requisición?</label>
+                <select value={requisicionId}
+                  onChange={e => {
+                    setRequisicionId(e.target.value)
+                    const r = reqsTarjeta.find(x => String(x.id) === e.target.value)
+                    if (r) setTarjetaId(String(r.tarjeta_credito_id))
+                  }}
+                  disabled={!form.proveedor_id}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] disabled:bg-gray-50">
+                  <option value="">No — cargar esta compra a la tarjeta</option>
+                  {reqsTarjeta.map(r => (
+                    <option key={r.id} value={r.id}>
+                      Sí, en {r.numero_requisicion} ({formatDate(r.fecha)} · {formatCurrency(r.total)}{r.tarjeta ? ` · ••${r.tarjeta.ultimos4}` : ''})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-[#5F6B7A] mt-1">
+                  {requisicionId
+                    ? 'No se vuelve a cargar: la compra se enlaza al cargo de esa requisición.'
+                    : form.proveedor_id && reqsTarjeta.length === 0 ? 'Este proveedor no tiene requisiciones pagadas con tarjeta pendientes.' : 'Evita cargar dos veces lo mismo a la tarjeta.'}
+                </p>
+              </div>
+            </div>
           )}
         </div>
 

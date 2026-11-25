@@ -1,3 +1,4 @@
+import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
@@ -183,11 +184,19 @@ export default function ReportesExportarPage() {
         'Cliente':     v.cliente?.nombre ?? 'Consumidor final',
         'Bodega':      v.bodega?.nombre ?? '',
         'Fecha':       fmtDate(typeof v.fecha_venta === 'string' ? v.fecha_venta.slice(0, 10) : ''),
+        'Condición':   v.condicion === 'credito' ? 'Crédito' : 'Contado',
+        'Pago':        v.condicion === 'credito'
+          ? (v.estado_pago === 'pagada' ? 'Pagada' : v.estado_pago === 'vencida' ? 'Vencida' : 'Por cobrar')
+          : ({ efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', mixto: 'Mixto' }[v.metodo_pago ?? 'efectivo']),
         'Subtotal (L)': v.subtotal,
         'Descuento (L)': v.descuento,
         'ISV (L)':     v.impuesto,
+        'Envío (L)':   v.costo_envio ?? 0,
         'Total (L)':   v.total,
-        'Estado':      v.estado,
+        'Devuelto (L)': v.monto_devuelto ?? 0,
+        'Total neto (L)': v.total - (v.monto_devuelto ?? 0),
+        'Saldo por cobrar (L)': v.condicion === 'credito' ? (v.saldo_pendiente ?? 0) : 0,
+        'Vence':       v.fecha_vencimiento ? fmtDate(v.fecha_vencimiento) : '',
       }))
       await writeXlsx(rows, 'Ventas', `Ventas_${rangeVentas.desde}_${rangeVentas.hasta}`, `Ventas del ${fmtDate(rangeVentas.desde)} al ${fmtDate(rangeVentas.hasta)}`)
     },
@@ -199,16 +208,24 @@ export default function ReportesExportarPage() {
         fecha_hasta: rangeCompras.hasta,
         per_page:    5000,
       })
-      const compras = res.data.data as unknown as Compra[]
+      const compras = (res.data.data as unknown as Compra[]).filter(c => c.estado !== 'cancelada')
       const rows = compras.map(c => ({
         'N° Factura':    c.numero_factura ?? '',
         'Proveedor':     c.proveedor?.nombre ?? '',
         'Bodega':        c.bodega?.nombre ?? '',
         'Fecha':         fmtDate(typeof c.fecha_compra === 'string' ? c.fecha_compra.slice(0, 10) : ''),
+        'Condición':     c.condicion === 'credito' ? 'Crédito' : 'Contado',
+        'Pago':          c.condicion === 'credito'
+          ? (c.estado_pago === 'pagada' ? 'Pagada' : c.estado_pago === 'vencida' ? 'Vencida' : 'Por pagar')
+          : (c.metodo_pago ? METODO_COMPRA_LABEL[c.metodo_pago] : '') + (c.tarjeta ? ` ${c.tarjeta.banco} ••${c.tarjeta.ultimos4}` : ''),
         'Subtotal (L)':  c.subtotal,
         'Descuento (L)': c.descuento,
         'ISV (L)':       c.impuesto,
+        'Envío (L)':     c.costo_envio ?? 0,
         'Total (L)':     c.total,
+        'Devuelto (L)':  c.monto_devuelto ?? 0,
+        'Total neto (L)': c.total - (c.monto_devuelto ?? 0),
+        'Saldo por pagar (L)': c.condicion === 'credito' ? (c.saldo_pendiente ?? 0) : 0,
         'Estado':        c.estado,
       }))
       await writeXlsx(rows, 'Compras', `Compras_${rangeCompras.desde}_${rangeCompras.hasta}`, `Compras del ${fmtDate(rangeCompras.desde)} al ${fmtDate(rangeCompras.hasta)}`)
@@ -221,13 +238,15 @@ export default function ReportesExportarPage() {
         fecha_hasta: rangeIngresos.hasta,
         agrupacion,
       })
-      const { filas, resumen } = (res.data as { data: { filas: { periodo: string; total: number; cantidad: number }[]; resumen: { total: number; cantidad: number; promedio: number } } }).data
+      const { filas, resumen } = (res.data as { data: { filas: { periodo: string; total: number; cantidad: number; credito: number }[]; resumen: { total: number; cantidad: number; promedio: number; credito: number } } }).data
       const rows = filas.map(f => ({
         'Período':       f.periodo,
         'N° ventas':     f.cantidad,
         'Total (L)':     f.total,
+        'De contado (L)': f.total - f.credito,
+        'Al crédito (L)': f.credito,
       }))
-      rows.push({ 'Período': 'TOTAL', 'N° ventas': resumen.cantidad, 'Total (L)': resumen.total })
+      rows.push({ 'Período': 'TOTAL', 'N° ventas': resumen.cantidad, 'Total (L)': resumen.total, 'De contado (L)': resumen.total - resumen.credito, 'Al crédito (L)': resumen.credito })
       await writeXlsx(rows, 'Ingresos', `Ingresos_${rangeIngresos.desde}_${rangeIngresos.hasta}`, `Ingresos del ${fmtDate(rangeIngresos.desde)} al ${fmtDate(rangeIngresos.hasta)}`)
     },
 
@@ -303,7 +322,7 @@ export default function ReportesExportarPage() {
         <ExportCard
           id="ventas"
           title="Ventas por período"
-          description="Historial de ventas completadas con cliente, fecha, subtotal, ISV y total."
+          description="Ventas completadas con cliente, condición, ISV, envío, devoluciones y saldo por cobrar."
           loading={loading} done={done} onExport={doExport}
         >
           <DateRangePicker value={rangeVentas} onChange={setRangeVentas} />
@@ -313,7 +332,7 @@ export default function ReportesExportarPage() {
         <ExportCard
           id="compras"
           title="Compras por período"
-          description="Historial de órdenes de compra con proveedor, fecha y montos."
+          description="Compras (sin canceladas) con proveedor, forma de pago o tarjeta, envío, devoluciones y saldo por pagar."
           loading={loading} done={done} onExport={doExport}
         >
           <DateRangePicker value={rangeCompras} onChange={setRangeCompras} />

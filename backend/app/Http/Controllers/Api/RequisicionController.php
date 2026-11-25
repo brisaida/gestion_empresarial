@@ -6,13 +6,18 @@ use App\Http\Resources\RequisicionResource;
 use App\Models\DetalleRequisicion;
 use App\Models\Requisicion;
 use App\Services\AutorizacionService;
+use App\Services\CuentasPorPagarService;
+use App\Services\TarjetaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class RequisicionController extends ApiController
 {
-    public function __construct(private readonly AutorizacionService $autorizacion) {}
+    public function __construct(
+        private readonly AutorizacionService $autorizacion,
+        private readonly TarjetaService $tarjetas,
+    ) {}
 
     /* ── Siguiente número correlativo ─────────────────────────────── */
     public function siguienteNumero(Request $request): JsonResponse
@@ -25,7 +30,7 @@ class RequisicionController extends ApiController
     /* ── Listado ──────────────────────────────────────────────────── */
     public function index(Request $request): JsonResponse
     {
-        $query = Requisicion::with(['proveedor', 'autorizador:id,nombre'])->withCount('detalles')
+        $query = Requisicion::with(['proveedor', 'autorizador:id,nombre', 'tarjeta'])->withCount('detalles')
             ->where('empresa_id', $request->integer('empresa_id'));
 
         if ($request->filled('estado'))       $query->where('estado', $request->estado);
@@ -49,8 +54,10 @@ class RequisicionController extends ApiController
     {
         $validated = $request->validate(['empresa_id' => ['required', 'integer', 'exists:empresas,id']] + $this->reglas());
 
+        try {
         $requisicion = DB::transaction(function () use ($validated, $request) {
-            $requisicion = Requisicion::create([
+            $pago = $this->datosFormaPago($validated['empresa_id'], $validated);
+            $requisicion = Requisicion::create($pago + [
                 'empresa_id'         => $validated['empresa_id'],
                 'proveedor_id'       => $validated['proveedor_id'] ?? null,
                 'usuario_id'         => $request->user()->id,
@@ -63,11 +70,15 @@ class RequisicionController extends ApiController
             ] + $this->totales($validated));
 
             $this->guardarDetalles($requisicion, $validated['detalles']);
+            $this->tarjetas->sincronizarRequisicion($requisicion, $request->user()->id);
 
             return $requisicion;
         });
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
 
-        return $this->created(new RequisicionResource($requisicion->load(['proveedor', 'detalles.producto', 'autorizador:id,nombre'])));
+        return $this->created(new RequisicionResource($requisicion->load(['proveedor', 'detalles.producto', 'autorizador:id,nombre', 'tarjeta'])));
     }
 
     /* ── Ver detalle ──────────────────────────────────────────────── */
@@ -75,7 +86,7 @@ class RequisicionController extends ApiController
     {
         $this->verificarEmpresa($request, $requisicion);
 
-        return $this->success(new RequisicionResource($requisicion->load(['proveedor', 'detalles.producto', 'autorizador:id,nombre'])));
+        return $this->success(new RequisicionResource($requisicion->load(['proveedor', 'detalles.producto', 'autorizador:id,nombre', 'tarjeta'])));
     }
 
     /* ── Editar (solo en borrador) ────────────────────────────────── */
@@ -92,8 +103,10 @@ class RequisicionController extends ApiController
 
         $validated = $request->validate($this->reglas());
 
-        DB::transaction(function () use ($requisicion, $validated) {
-            $requisicion->update([
+        try {
+        DB::transaction(function () use ($requisicion, $validated, $request) {
+            $pago = $this->datosFormaPago($requisicion->empresa_id, $validated);
+            $requisicion->update($pago + [
                 'proveedor_id'      => $validated['proveedor_id'] ?? null,
                 'fecha_requisicion' => $validated['fecha_requisicion'],
                 'realizado_por'     => $validated['realizado_por'] ?? $requisicion->realizado_por,
@@ -103,9 +116,13 @@ class RequisicionController extends ApiController
 
             $requisicion->detalles()->delete();
             $this->guardarDetalles($requisicion, $validated['detalles']);
+            $this->tarjetas->sincronizarRequisicion($requisicion->fresh(), $request->user()->id);
         });
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
 
-        return $this->success(new RequisicionResource($requisicion->load(['proveedor', 'detalles.producto', 'autorizador:id,nombre'])));
+        return $this->success(new RequisicionResource($requisicion->load(['proveedor', 'detalles.producto', 'autorizador:id,nombre', 'tarjeta'])));
     }
 
     /* ── Cambiar estado ───────────────────────────────────────────── */
@@ -125,9 +142,41 @@ class RequisicionController extends ApiController
             return $this->error("No se puede cambiar de '{$requisicion->estado}' a '{$nuevoEstado}'.", 422);
         }
 
-        $requisicion->update(['estado' => $nuevoEstado]);
+        DB::transaction(function () use ($requisicion, $nuevoEstado, $request) {
+            $requisicion->update(['estado' => $nuevoEstado]);
+            $this->tarjetas->sincronizarRequisicion($requisicion, $request->user()->id);
+        });
 
         return $this->success(new RequisicionResource($requisicion->load('proveedor')));
+    }
+
+    /* ── Forma de pago (también después de autorizada: se decide al pagar) ── */
+    public function formaPago(Request $request, Requisicion $requisicion): JsonResponse
+    {
+        $this->verificarEmpresa($request, $requisicion);
+
+        if ($requisicion->estado === 'cancelada') {
+            return $this->error('La requisición está cancelada.', 422);
+        }
+        if ($requisicion->condicion === 'credito') {
+            return $this->error('La requisición es al crédito; la forma de pago aplica solo a contado.', 422);
+        }
+
+        $validated = $request->validate([
+            'metodo_pago'        => ['nullable', 'string', 'in:' . implode(',', CuentasPorPagarService::METODOS_CONTADO)],
+            'tarjeta_credito_id' => ['nullable', 'integer'],
+        ]);
+
+        try {
+            DB::transaction(function () use ($requisicion, $validated, $request) {
+                $requisicion->update($this->datosFormaPago($requisicion->empresa_id, $validated + ['condicion' => 'contado']));
+                $this->tarjetas->sincronizarRequisicion($requisicion, $request->user()->id);
+            });
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+
+        return $this->success(new RequisicionResource($requisicion->load(['proveedor', 'tarjeta'])), 'Forma de pago actualizada.');
     }
 
     /* ── Autorizar con PIN (firma y sello de la empresa) ────────────── */
@@ -165,6 +214,8 @@ class RequisicionController extends ApiController
             'fecha_requisicion' => ['required', 'date'],
             'realizado_por'     => ['nullable', 'string', 'max:150'],
             'condicion'         => ['nullable', 'string', 'in:credito,contado'],
+            'metodo_pago'       => ['nullable', 'string', 'in:' . implode(',', CuentasPorPagarService::METODOS_CONTADO)],
+            'tarjeta_credito_id' => ['nullable', 'integer'],
             // ISV calculado en el frontend según la tasa de cada producto (igual que cotizaciones)
             'impuesto'          => ['nullable', 'numeric', 'min:0'],
             'observaciones'     => ['nullable', 'string', 'max:1000'],
@@ -176,6 +227,18 @@ class RequisicionController extends ApiController
             'detalles.*.cantidad'    => ['required', 'numeric', 'min:0.0001'],
             'detalles.*.precio_unitario' => ['nullable', 'numeric', 'min:0'],
         ];
+    }
+
+    /** Forma de pago de contado; en crédito no aplica. Tarjeta de crédito exige elegir la tarjeta. */
+    private function datosFormaPago(int $empresaId, array $v): array
+    {
+        if (($v['condicion'] ?? null) === 'credito' || empty($v['metodo_pago'])) {
+            return ['metodo_pago' => null, 'tarjeta_credito_id' => null];
+        }
+        $tarjeta = $v['metodo_pago'] === TarjetaService::METODO
+            ? $this->tarjetas->validar($empresaId, $v['tarjeta_credito_id'] ?? null)
+            : null;
+        return ['metodo_pago' => $v['metodo_pago'], 'tarjeta_credito_id' => $tarjeta?->id];
     }
 
     private function guardarDetalles(Requisicion $requisicion, array $detalles): void

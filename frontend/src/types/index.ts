@@ -251,6 +251,10 @@ export interface Compra {
   costo_envio?: number
   condicion?: CondicionVenta
   metodo_pago?: MetodoPagoCompra | null
+  tarjeta_credito_id?: number | null
+  tarjeta?: TarjetaResumen | null
+  requisicion_id?: number | null
+  requisicion?: string | null
   dias_credito?: number | null
   fecha_vencimiento?: string | null
   saldo_pendiente?: number
@@ -270,6 +274,43 @@ export interface Compra {
 
 // ── Devoluciones ──────────────────────────────────────────────────────────
 export type ReembolsoMetodo = 'efectivo' | 'tarjeta' | 'transferencia' | 'cambio'
+
+// ── Tarjetas de crédito de la empresa ─────────────────────────────────────
+export interface TarjetaResumen { id: number; nombre: string; banco: string; ultimos4: string; etiqueta: string }
+
+export interface TarjetaCredito extends TarjetaResumen {
+  dia_corte: number | null
+  dia_pago: number | null
+  limite: number | null
+  activo: boolean
+  saldo: number
+  disponible: number | null
+  ultimo_corte: string | null
+  proximo_corte: string | null
+  fecha_pago: string | null
+  cargado_periodo: number | null
+}
+
+export interface MovimientoTarjeta {
+  tipo: 'cargo' | 'pago'
+  id: number
+  fecha: string
+  monto: number
+  descripcion: string
+  origen: string
+  anulado: boolean
+  usuario?: string | null
+  saldo: number
+}
+
+export interface RequisicionConTarjeta {
+  id: number
+  numero_requisicion: string
+  fecha: string
+  total: number
+  tarjeta_credito_id: number
+  tarjeta: TarjetaResumen | null
+}
 
 export interface DetalleDevolucion {
   id: number
@@ -330,6 +371,7 @@ export interface PagoCompra {
   monto: number
   metodo_pago: MetodoPagoCompra
   desde_caja: boolean
+  tarjeta_credito_id?: number | null
   referencia?: string | null
   observaciones?: string | null
   anulado: boolean
@@ -366,6 +408,7 @@ export interface NuevoPagoCompra {
   fecha?: string
   metodo_pago: MetodoPagoCompra
   desde_caja?: boolean
+  tarjeta_credito_id?: number | null
   referencia?: string | null
   observaciones?: string | null
 }
@@ -457,6 +500,9 @@ export interface Requisicion {
   fecha_requisicion: string
   realizado_por: string | null
   condicion: 'credito' | 'contado' | null
+  metodo_pago?: MetodoPagoCompra | null
+  tarjeta_credito_id?: number | null
+  tarjeta?: TarjetaResumen | null
   observaciones: string | null
   subtotal: number
   impuesto: number
@@ -809,6 +855,7 @@ export interface SesionCaja {
     abonos: { total: number; cantidad: number; por_metodo: Record<MetodoAbono, number> }
     pagos_proveedores?: { total: number; cantidad: number }
     reembolsos?: { clientes: number; proveedores: number }
+    pagos_tarjetas?: number
     efectivo_esperado: number
   }
 }

@@ -6,6 +6,7 @@ use App\Models\AbonoVenta;
 use App\Models\DevolucionCompra;
 use App\Models\DevolucionVenta;
 use App\Models\PagoCompra;
+use App\Models\PagoTarjeta;
 use App\Models\SesionCaja;
 use App\Models\Venta;
 use Illuminate\Http\JsonResponse;
@@ -97,6 +98,7 @@ class SesionCajaController extends ApiController
             'total_pagos_proveedores' => $resumen['pagos_proveedores']['total'],
             'total_reembolsos_clientes'    => $resumen['reembolsos']['clientes'],
             'total_reembolsos_proveedores' => $resumen['reembolsos']['proveedores'],
+            'total_pagos_tarjetas'         => $resumen['pagos_tarjetas'],
             'estado'             => 'cerrada',
             'fecha_cierre'       => now(),
             'observaciones'      => $validated['observaciones'] ?? null,
@@ -177,6 +179,10 @@ class SesionCajaController extends ApiController
             ->first();
         $pagosProvTotal = (float) ($pagosProv->total ?? 0);
 
+        // Pagos de tarjetas de crédito al banco hechos con efectivo de la caja
+        $pagosTarjetas = (float) PagoTarjeta::where('empresa_id', $sesion->empresa_id)
+            ->where('anulado', false)->where('desde_caja', true)->tap($enSesion)->sum('monto');
+
         // Reembolsos en efectivo por devoluciones: a clientes sale de caja, de proveedores entra
         $reembClientes = (float) DevolucionVenta::where('empresa_id', $sesion->empresa_id)
             ->where('desde_caja', true)->tap($enSesion)->sum('reembolsado');
@@ -212,8 +218,9 @@ class SesionCajaController extends ApiController
             ],
             'pagos_proveedores' => ['total' => $pagosProvTotal, 'cantidad' => (int) ($pagosProv->cantidad ?? 0)],
             'reembolsos'        => ['clientes' => round($reembClientes, 2), 'proveedores' => round($reembProveedores, 2)],
+            'pagos_tarjetas'    => round($pagosTarjetas, 2),
             'efectivo_esperado' => (float) $sesion->monto_inicial + $por_metodo['efectivo'] + $abonosPorMetodo['efectivo']
-                - $pagosProvTotal - $reembClientes + $reembProveedores,
+                - $pagosProvTotal - $reembClientes + $reembProveedores - $pagosTarjetas,
         ];
     }
 
@@ -238,6 +245,7 @@ class SesionCajaController extends ApiController
             'total_pagos_proveedores' => $s->total_pagos_proveedores !== null ? (float) $s->total_pagos_proveedores : null,
             'total_reembolsos_clientes'    => $s->total_reembolsos_clientes !== null ? (float) $s->total_reembolsos_clientes : null,
             'total_reembolsos_proveedores' => $s->total_reembolsos_proveedores !== null ? (float) $s->total_reembolsos_proveedores : null,
+            'total_pagos_tarjetas'         => $s->total_pagos_tarjetas !== null ? (float) $s->total_pagos_tarjetas : null,
             'estado'              => $s->estado,
             'fecha_apertura'      => $s->fecha_apertura?->toDateTimeString(),
             'fecha_cierre'        => $s->fecha_cierre?->toDateTimeString(),

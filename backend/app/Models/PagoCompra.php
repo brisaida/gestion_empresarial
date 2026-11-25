@@ -11,6 +11,7 @@ class PagoCompra extends Model
     protected $fillable = [
         'empresa_id', 'compra_id', 'proveedor_id', 'usuario_id', 'fecha', 'monto', 'metodo_pago',
         'desde_caja', 'referencia', 'observaciones', 'anulado', 'anulado_por', 'anulado_at',
+        'tarjeta_credito_id',
     ];
 
     protected function casts(): array
@@ -37,5 +38,10 @@ class PagoCompra extends Model
     public function usuario()
     {
         return $this->belongsTo(User::class, 'usuario_id');
+    }
+
+    public function tarjeta()
+    {
+        return $this->belongsTo(TarjetaCredito::class, 'tarjeta_credito_id');
     }
 }

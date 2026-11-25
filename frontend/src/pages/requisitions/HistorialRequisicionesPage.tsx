@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Send, CheckCircle, XCircle, RotateCcw, Download, Loader2, Pencil, Plus, ShieldCheck } from 'lucide-react'
+import { Send, CheckCircle, XCircle, RotateCcw, Download, Loader2, Pencil, Plus, ShieldCheck, CreditCard } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { requisicionesApi, empresaApi } from '@/api/recursos'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
@@ -11,7 +11,10 @@ import AutorizarModal from '@/components/ui/AutorizarModal'
 import { usePermisos } from '@/lib/permisos'
 import { getAxiosError, formatCurrency } from '@/lib/utils'
 import { printRequisicion } from '@/lib/printRequisicion'
-import type { Requisicion, EstadoRequisicion } from '@/types'
+import type { Requisicion, EstadoRequisicion, MetodoPagoCompra } from '@/types'
+import Modal from '@/components/ui/Modal'
+import TarjetaSelect from '@/components/tarjetas/TarjetaSelect'
+import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
 
 const estadoConfig: Record<EstadoRequisicion, { label: string; cls: string }> = {
   borrador:  { label: 'Borrador',  cls: 'bg-gray-100 text-gray-600' },
@@ -44,6 +47,7 @@ export default function HistorialRequisicionesPage() {
   const [error, setError]       = useState('')
   const [printing, setPrinting] = useState<number | null>(null)
   const [autorizarReq, setAutorizarReq] = useState<Requisicion | null>(null)
+  const [pagoReq, setPagoReq]   = useState<Requisicion | null>(null)
   const { hasPerm } = usePermisos()
 
   const { data, isLoading } = useQuery({
@@ -84,6 +88,18 @@ export default function HistorialRequisicionesPage() {
     { key: 'realizado', header: 'Realizado por', cell: r => r.realizado_por ?? '—' },
     { key: 'articulos', header: 'Artículos', align: 'center', cell: r => r.total_articulos ?? '—' },
     { key: 'total', header: 'Total', align: 'right', cell: r => <span className="font-bold text-[var(--cs)]">{formatCurrency(r.total)}</span> },
+    {
+      key: 'pago', header: 'Pago', cell: r => r.condicion === 'credito'
+        ? <span className="text-xs font-semibold text-orange-700">Crédito</span>
+        : (
+          <button type="button" disabled={r.estado === 'cancelada'} onClick={() => setPagoReq(r)} title="Cambiar forma de pago"
+            className="text-left text-xs text-[#5F6B7A] hover:text-[var(--cp)] disabled:hover:text-[#5F6B7A]">
+            <span className="font-semibold">{r.metodo_pago ? METODO_COMPRA_LABEL[r.metodo_pago] : 'Contado'}</span>
+            {r.tarjeta && <span className="block text-[10px]">{r.tarjeta.banco} ••{r.tarjeta.ultimos4}</span>}
+            {!r.metodo_pago && r.estado !== 'cancelada' && <span className="block text-[10px] text-[var(--cp)]">Indicar forma de pago</span>}
+          </button>
+        ),
+    },
     {
       key: 'estado', header: 'Estado', cell: r => {
         const { label, cls } = estadoConfig[r.estado]
@@ -153,6 +169,10 @@ export default function HistorialRequisicionesPage() {
         )}
       </div>
 
+      <Modal open={!!pagoReq} onClose={() => setPagoReq(null)} title={`Forma de pago · ${pagoReq?.numero_requisicion ?? ''}`} size="sm">
+        {pagoReq && <FormaPagoForm key={pagoReq.id} req={pagoReq} empresaId={empresaId} onClose={() => setPagoReq(null)} />}
+      </Modal>
+
       <AutorizarModal
         open={autorizarReq !== null}
         onClose={() => setAutorizarReq(null)}
@@ -162,6 +182,47 @@ export default function HistorialRequisicionesPage() {
           qc.invalidateQueries({ queryKey: ['requisiciones'] })
         }}
       />
+    </div>
+  )
+}
+
+function FormaPagoForm({ req, empresaId, onClose }: { req: Requisicion; empresaId: number; onClose: () => void }) {
+  const qc = useQueryClient()
+  const [metodo, setMetodo]       = useState<MetodoPagoCompra | ''>(req.metodo_pago ?? '')
+  const [tarjetaId, setTarjetaId] = useState(req.tarjeta_credito_id ? String(req.tarjeta_credito_id) : '')
+  const [error, setError]         = useState('')
+
+  const guardar = useMutation({
+    mutationFn: () => requisicionesApi.formaPago(req.id, {
+      metodo_pago: metodo || null,
+      tarjeta_credito_id: metodo === 'tarjeta' && tarjetaId ? Number(tarjetaId) : null,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['requisiciones'] })
+      qc.invalidateQueries({ queryKey: ['tarjetas'] })
+      onClose()
+    },
+    onError: err => setError(getAxiosError(err)),
+  })
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-[#5F6B7A]">Total <strong>{formatCurrency(req.total)}</strong>{req.proveedor ? ` · ${req.proveedor.nombre}` : ''}. Se puede indicar aunque la requisición ya esté autorizada o enviada.</p>
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Forma de pago</label>
+        <select value={metodo} onChange={e => setMetodo(e.target.value as MetodoPagoCompra | '')}
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] bg-white">
+          <option value="">— Sin indicar —</option>
+          {(Object.keys(METODO_COMPRA_LABEL) as MetodoPagoCompra[]).map(m => <option key={m} value={m}>{METODO_COMPRA_LABEL[m]}</option>)}
+        </select>
+      </div>
+      {metodo === 'tarjeta' && <TarjetaSelect empresaId={empresaId} value={tarjetaId} onChange={setTarjetaId} />}
+      {metodo === 'tarjeta' && <p className="text-[11px] text-[#5F6B7A]">El total se carga a la tarjeta. Al registrar la compra, elige esta requisición para no cargarlo dos veces.</p>}
+      {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+      <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+        <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+        <Button icon={<CreditCard size={14} />} loading={guardar.isPending} disabled={metodo === 'tarjeta' && !tarjetaId} onClick={() => guardar.mutate()}>Guardar</Button>
+      </div>
     </div>
   )
 }

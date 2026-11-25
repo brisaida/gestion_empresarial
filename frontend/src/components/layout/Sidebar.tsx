@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse, Bookmark,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen, ClipboardPen, ClipboardCheck, HandCoins, Wallet, Undo2,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen, ClipboardPen, ClipboardCheck, HandCoins, Wallet, Undo2, CreditCard,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
@@ -41,6 +41,7 @@ const nav = [
     { to: '/compras',                label: 'Nueva compra',        icon: ShoppingCart,    end: true,  permiso: 'compras'       },
     { to: '/compras/historial',      label: 'Historial compras',   icon: ClipboardList,   end: true,  permiso: 'compras'       },
     { to: '/cuentas-por-pagar',      label: 'Cuentas por pagar',   icon: Wallet,          end: true,  permiso: 'compras'       },
+    { to: '/tarjetas-credito',       label: 'Tarjetas de crédito', icon: CreditCard,      end: true,  permiso: 'compras'       },
     { to: '/compras/devoluciones',   label: 'Devoluciones',        icon: Undo2,           end: true,  permiso: 'compras'       },
     { to: '/requisiciones',          label: 'Nueva requisición',   icon: ClipboardPen,    end: true,  permiso: 'compras'       },
     { to: '/requisiciones/historial', label: 'Requisiciones',      icon: ClipboardCheck,  end: true,  permiso: 'compras'       },

@@ -73,7 +73,7 @@ export default function ReportesIngresosPage() {
       fecha_desde: desde,
       fecha_hasta: hasta,
       agrupacion,
-    }).then(r => (r.data as { data: { filas: { periodo: string; total: number; cantidad: number }[]; resumen: { total: number; cantidad: number; promedio: number } } }).data),
+    }).then(r => (r.data as { data: { filas: { periodo: string; total: number; cantidad: number }[]; resumen: { total: number; cantidad: number; promedio: number; credito?: number } } }).data),
     enabled: empresaId > 0,
     staleTime: 60_000,
   })
@@ -123,6 +123,12 @@ export default function ReportesIngresosPage() {
           <p className="text-2xl font-bold text-[var(--cs)]">
             {isLoading ? '—' : formatCurrency(resumen.total)}
           </p>
+          {!isLoading && (resumen.credito ?? 0) > 0 && (
+            <p className="text-xs text-[#5F6B7A] mt-1">
+              {formatCurrency(resumen.total - (resumen.credito ?? 0))} de contado · <span className="text-orange-600 font-semibold">{formatCurrency(resumen.credito ?? 0)} al crédito</span>
+            </p>
+          )}
+          <p className="text-[10px] text-gray-400 mt-1">Incluye ISV y envío; descuenta devoluciones.</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">

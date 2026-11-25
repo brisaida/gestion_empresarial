@@ -33,11 +33,15 @@ class CuentasPorPagarService
         ?string $condicion,
         ?int $dias = null,
         ?string $metodoPago = null,
+        ?int $tarjetaId = null,
     ): array {
         if ($condicion !== 'credito') {
+            $metodo  = $metodoPago ?: 'efectivo';
+            $tarjeta = $metodo === TarjetaService::METODO ? app(TarjetaService::class)->validar($empresaId, $tarjetaId) : null;
             return [
                 'condicion'         => 'contado',
-                'metodo_pago'       => $metodoPago ?: 'efectivo',
+                'metodo_pago'       => $metodo,
+                'tarjeta_credito_id' => $tarjeta?->id,
                 'dias_credito'      => null,
                 'fecha_vencimiento' => null,
                 'saldo_pendiente'   => 0,
@@ -54,6 +58,7 @@ class CuentasPorPagarService
         return [
             'condicion'         => 'credito',
             'metodo_pago'       => null,
+            'tarjeta_credito_id' => null,
             'dias_credito'      => $dias,
             'fecha_vencimiento' => Carbon::parse($fechaCompra)->addDays($dias)->toDateString(),
             'saldo_pendiente'   => round($total, 4),
@@ -64,7 +69,7 @@ class CuentasPorPagarService
      * Cambia la condición de una compra ya registrada (p. ej. una que se ingresó
      * antes de existir el crédito). No se permite si ya tiene pagos vigentes.
      */
-    public function cambiarCondicion(Compra $compra, ?string $condicion, ?int $dias, ?string $metodoPago): Compra
+    public function cambiarCondicion(Compra $compra, ?string $condicion, ?int $dias, ?string $metodoPago, ?int $tarjetaId = null, ?int $usuarioId = null): Compra
     {
         $compra = Compra::lockForUpdate()->findOrFail($compra->id);
 
@@ -80,8 +85,9 @@ class CuentasPorPagarService
 
         $compra->update($this->datosCompra(
             $compra->empresa_id, $compra->proveedor_id, (float) $compra->total,
-            $compra->fecha_compra->toDateString(), $condicion, $dias, $metodoPago,
+            $compra->fecha_compra->toDateString(), $condicion, $dias, $metodoPago, $tarjetaId,
         ));
+        app(TarjetaService::class)->sincronizarCompra($compra, $usuarioId ?? $compra->usuario_id);
 
         return $compra;
     }
@@ -109,7 +115,10 @@ class CuentasPorPagarService
                 number_format($monto, 2), number_format($saldo, 2)));
         }
 
-        $metodo = $datos['metodo_pago'] ?? 'transferencia';
+        $metodo  = $datos['metodo_pago'] ?? 'transferencia';
+        $tarjeta = $metodo === TarjetaService::METODO
+            ? app(TarjetaService::class)->validar($compra->empresa_id, $datos['tarjeta_credito_id'] ?? null)
+            : null;
 
         $pago = PagoCompra::create([
             'empresa_id'    => $compra->empresa_id,
@@ -123,7 +132,9 @@ class CuentasPorPagarService
             'desde_caja'    => $metodo === 'efectivo' && (bool) ($datos['desde_caja'] ?? false),
             'referencia'    => $datos['referencia'] ?? null,
             'observaciones' => $datos['observaciones'] ?? null,
+            'tarjeta_credito_id' => $tarjeta?->id,
         ]);
+        app(TarjetaService::class)->cargarPagoProveedor($pago, $usuarioId);
 
         $compra->update(['saldo_pendiente' => max(0, round((float) $compra->saldo_pendiente - $monto, 4))]);
 
@@ -144,6 +155,7 @@ class CuentasPorPagarService
         }
 
         $pago->update(['anulado' => true, 'anulado_por' => $usuarioId, 'anulado_at' => now()]);
+        app(TarjetaService::class)->anularPorPagoProveedor($pago);
         $tope = (float) $compra->total - (float) $compra->devuelto_a_saldo;
         $compra->update(['saldo_pendiente' => min($tope, round((float) $compra->saldo_pendiente + (float) $pago->monto, 4))]);
 

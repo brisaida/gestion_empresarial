@@ -22,7 +22,7 @@ class CompraController extends ApiController
 
     public function index(Request $request): JsonResponse
     {
-        $query = Compra::with(['proveedor', 'bodega'])
+        $query = Compra::with(['proveedor', 'bodega', 'tarjeta'])
             ->where('empresa_id', $request->integer('empresa_id'));
 
         if ($request->filled('estado')) {
@@ -85,7 +85,7 @@ class CompraController extends ApiController
             $condicion = $this->cxp->datosCompra(
                 $validated['empresa_id'], $validated['proveedor_id'], $total,
                 $validated['fecha_compra'], $validated['condicion'] ?? 'contado',
-                $validated['dias_credito'] ?? null, $validated['metodo_pago'] ?? null,
+                $validated['dias_credito'] ?? null, $validated['metodo_pago'] ?? null, $validated['tarjeta_credito_id'] ?? null,
             );
 
             $compra = Compra::create([
@@ -99,10 +99,13 @@ class CompraController extends ApiController
                 'descuento'      => $descuento,
                 'impuesto'       => $impuesto,
                 'costo_envio'    => $envio,
+                'requisicion_id' => $this->requisicionValida($validated),
                 'total'          => $total,
                 'estado'         => 'pendiente',
                 ...$condicion,
             ]);
+
+            app(\App\Services\TarjetaService::class)->sincronizarCompra($compra, $request->user()->id);
 
             foreach ($validated['detalles'] as $det) {
                 DetalleCompra::create([
@@ -122,14 +125,14 @@ class CompraController extends ApiController
             return $this->error($e->getMessage(), 422);
         }
 
-        $compra->load(['proveedor', 'bodega', 'detalles.producto']);
+        $compra->load(['proveedor', 'bodega', 'tarjeta', 'requisicion:id,numero_requisicion', 'detalles.producto']);
         return $this->created(new CompraResource($compra));
     }
 
     public function show(Compra $compra): JsonResponse
     {
         $compra->load([
-            'proveedor', 'bodega', 'canceladaPor', 'pagos.usuario',
+            'proveedor', 'bodega', 'canceladaPor', 'pagos.usuario', 'tarjeta', 'requisicion:id,numero_requisicion',
             'detalles' => fn($q) => $q->withSum('devueltos as cantidad_devuelta', 'cantidad'),
             'detalles.producto',
             'devoluciones' => fn($q) => $q->orderBy('id'), 'devoluciones.usuario',
@@ -156,7 +159,7 @@ class CompraController extends ApiController
             return $this->error($e->getMessage(), 422);
         }
 
-        $compra->load(['proveedor', 'bodega', 'detalles.producto']);
+        $compra->load(['proveedor', 'bodega', 'tarjeta', 'requisicion:id,numero_requisicion', 'detalles.producto']);
         return response()->json(['success' => true, 'message' => 'Compra recibida y stock actualizado.', 'data' => new CompraResource($compra)]);
     }
 
@@ -173,11 +176,38 @@ class CompraController extends ApiController
         if ($compra->pagos()->where('anulado', false)->exists()) {
             return $this->error('La compra tiene pagos registrados. Anúlalos antes de cancelarla.', 422);
         }
-        $compra->update([
-            'estado' => 'cancelada', 'saldo_pendiente' => 0,
-            'cancelada_por' => $request->user()->id, 'cancelada_at' => now(), 'motivo_cancelacion' => $motivo,
-        ]);
+        DB::transaction(function () use ($compra, $request, $motivo) {
+            $compra->update([
+                'estado' => 'cancelada', 'saldo_pendiente' => 0,
+                'cancelada_por' => $request->user()->id, 'cancelada_at' => now(), 'motivo_cancelacion' => $motivo,
+            ]);
+            app(\App\Services\TarjetaService::class)->sincronizarCompra($compra, $request->user()->id);
+        });
         return response()->json(['success' => true, 'message' => 'Compra cancelada.', 'data' => new CompraResource($compra)]);
+    }
+
+    /** Requisiciones de un proveedor pagadas con tarjeta y sin compra (para no cargar dos veces). */
+    public function requisicionesConTarjeta(Request $request): JsonResponse
+    {
+        $lista = app(\App\Services\TarjetaService::class)
+            ->requisicionesSinCompra($request->integer('empresa_id'), $request->filled('proveedor_id') ? $request->integer('proveedor_id') : null);
+
+        return $this->success($lista->map(fn($r) => [
+            'id' => $r->id, 'numero_requisicion' => $r->numero_requisicion, 'fecha' => $r->fecha_requisicion?->toDateString(),
+            'total' => (float) $r->total, 'tarjeta_credito_id' => $r->tarjeta_credito_id,
+            'tarjeta' => $r->tarjeta ? \App\Http\Resources\TarjetaCreditoResource::resumen($r->tarjeta) : null,
+        ])->values());
+    }
+
+    /** La requisición debe ser de la misma empresa (y proveedor, si lo tiene). */
+    private function requisicionValida(array $v): ?int
+    {
+        if (empty($v['requisicion_id'])) return null;
+        $r = \App\Models\Requisicion::where('empresa_id', $v['empresa_id'])->find($v['requisicion_id']);
+        if (! $r || ($r->proveedor_id && $r->proveedor_id != $v['proveedor_id'])) {
+            throw new \DomainException('La requisición no corresponde a este proveedor.');
+        }
+        return $r->id;
     }
 
     /** Cambia contado/crédito de una compra ya registrada. */
@@ -189,17 +219,25 @@ class CompraController extends ApiController
             'condicion'    => ['required', 'string', 'in:contado,credito'],
             'metodo_pago'  => ['nullable', 'string', 'in:' . implode(',', CuentasPorPagarService::METODOS_CONTADO)],
             'dias_credito' => ['nullable', 'integer', 'min:0', 'max:365'],
+            'tarjeta_credito_id' => ['nullable', 'integer'],
+            'requisicion_id'     => ['nullable', 'integer'],
         ]);
 
         try {
-            $compra = DB::transaction(fn() => $this->cxp->cambiarCondicion(
-                $compra, $validated['condicion'], $validated['dias_credito'] ?? null, $validated['metodo_pago'] ?? null,
-            ));
+            $compra = DB::transaction(function () use ($compra, $validated, $request) {
+                if (array_key_exists('requisicion_id', $validated)) {
+                    $compra->update(['requisicion_id' => $this->requisicionValida($validated + ['empresa_id' => $compra->empresa_id, 'proveedor_id' => $compra->proveedor_id])]);
+                }
+                return $this->cxp->cambiarCondicion(
+                    $compra, $validated['condicion'], $validated['dias_credito'] ?? null, $validated['metodo_pago'] ?? null,
+                    $validated['tarjeta_credito_id'] ?? null, $request->user()->id,
+                );
+            });
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         }
 
-        $compra->load(['proveedor', 'bodega']);
+        $compra->load(['proveedor', 'bodega', 'tarjeta']);
         return $this->success(new CompraResource($compra), 'Condición actualizada.');
     }
 

@@ -74,9 +74,23 @@ class DashboardController extends ApiController
             ->sum(DB::raw('dd.cantidad * dv.costo_unitario'));
         $costoVentasMes = (float) $costoVentasMes - (float) $costoDevueltoMes;
 
-        $margenBruto = (float) $ventasMes - (float) $costoVentasMes;
-        $margenPct   = (float) $ventasMes > 0
-            ? round($margenBruto / (float) $ventasMes * 100, 1)
+        // El margen se calcula sobre la venta sin ISV ni envío (el ISV es de la SAR),
+        // neta de descuentos y de devoluciones
+        $baseVentasMes = (float) Venta::where('empresa_id', $empresaId)
+            ->where('estado', 'completada')
+            ->whereBetween('fecha_venta', [$inicioMes, $finMes])
+            ->sum(DB::raw('subtotal - descuento'));
+        $baseDevueltaMes = (float) DB::table('devoluciones_venta as d')
+            ->join('ventas as v', 'd.venta_id', '=', 'v.id')
+            ->where('v.empresa_id', $empresaId)
+            ->where('v.estado', 'completada')
+            ->whereBetween('v.fecha_venta', [$inicioMes, $finMes])
+            ->sum('d.subtotal');
+        $baseNetaMes = $baseVentasMes - $baseDevueltaMes;
+
+        $margenBruto = $baseNetaMes - (float) $costoVentasMes;
+        $margenPct   = $baseNetaMes > 0
+            ? round($margenBruto / $baseNetaMes * 100, 1)
             : 0;
 
         // Valor del inventario actual (stock × costo)
@@ -113,8 +127,10 @@ class DashboardController extends ApiController
             ->where('ventas.empresa_id', $empresaId)
             ->where('ventas.estado', 'completada')
             ->whereBetween('ventas.fecha_venta', [$inicioMes, $finMes])
-            ->selectRaw('detalle_ventas.producto_id, productos.nombre, SUM(detalle_ventas.cantidad) as total_vendido')
+            ->leftJoinSub(self::devueltoPorLinea(), 'dev', 'dev.detalle_venta_id', '=', 'detalle_ventas.id')
+            ->selectRaw('detalle_ventas.producto_id, productos.nombre, SUM(detalle_ventas.cantidad - COALESCE(dev.cantidad, 0)) as total_vendido')
             ->groupBy('detalle_ventas.producto_id', 'productos.nombre')
+            ->havingRaw('SUM(detalle_ventas.cantidad - COALESCE(dev.cantidad, 0)) > 0')
             ->orderByDesc('total_vendido')
             ->limit(5)
             ->get();
@@ -181,5 +197,13 @@ class DashboardController extends ApiController
         })->filter(fn($p) => count($p['pendientes']) > 0)->values();
 
         return $this->success($data);
+    }
+
+    /** Cantidad y monto devuelto por línea de venta. */
+    public static function devueltoPorLinea()
+    {
+        return DB::table('detalle_devoluciones_venta')
+            ->selectRaw('detalle_venta_id, SUM(cantidad) as cantidad, SUM(subtotal) as monto')
+            ->groupBy('detalle_venta_id');
     }
 }

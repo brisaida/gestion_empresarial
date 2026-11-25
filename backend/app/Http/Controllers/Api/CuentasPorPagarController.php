@@ -179,6 +179,7 @@ class CuentasPorPagarController extends ApiController
             'fecha'         => ['nullable', 'date', 'before_or_equal:today'],
             'metodo_pago'   => ['required', 'string', 'in:' . implode(',', CuentasPorPagarService::METODOS_PAGO)],
             'desde_caja'    => ['nullable', 'boolean'],
+            'tarjeta_credito_id' => ['nullable', 'integer'],
             'referencia'    => ['nullable', 'string', 'max:100'],
             'observaciones' => ['nullable', 'string', 'max:500'],
         ]);

@@ -18,7 +18,11 @@ const fecha = (f?: string | null) => {
 /** Requisición a proveedor con el mismo formato que la factura y la cotización */
 export async function printRequisicion(r: Requisicion, empresa: PrintEmpresa, logoSrc?: string, firma?: DatosFirma | null): Promise<void> {
   const detalles  = r.detalles ?? []
-  const condicion = r.condicion === 'credito' ? 'CRÉDITO' : r.condicion === 'contado' ? 'CONTADO' : '—'
+  const metodo: Record<string, string> = { efectivo: 'EFECTIVO', debito: 'DÉBITO', transferencia: 'TRANSFERENCIA', cheque: 'CHEQUE', tarjeta: 'TARJETA DE CRÉDITO' }
+  const condicion = r.condicion === 'credito' ? 'CRÉDITO'
+    : r.condicion === 'contado'
+      ? 'CONTADO' + (r.metodo_pago ? ` · ${metodo[r.metodo_pago] ?? r.metodo_pago.toUpperCase()}` : '') + (r.tarjeta ? ` ••${r.tarjeta.ultimos4}` : '')
+      : '—'
 
   /* ── Filas de artículos ─────────────────────────────────── */
   const filas = detalles.map(d => {

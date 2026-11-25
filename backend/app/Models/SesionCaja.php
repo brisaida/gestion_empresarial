@@ -15,6 +15,7 @@ class SesionCaja extends Model
         'estado', 'fecha_apertura', 'fecha_cierre', 'observaciones',
         'total_credito', 'total_abonos', 'total_abonos_efectivo', 'total_pagos_proveedores',
         'total_reembolsos_clientes', 'total_reembolsos_proveedores',
+        'total_pagos_tarjetas',
     ];
 
     protected $casts = [

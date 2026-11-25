@@ -14,6 +14,7 @@ import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
 import EstadoPagoBadge from '@/components/credito/EstadoPagoBadge'
 import DevolucionModal, { type DevolucionDestino } from '@/components/credito/DevolucionModal'
 import { printDevolucion } from '@/lib/printCredito'
+import TarjetaSelect from '@/components/tarjetas/TarjetaSelect'
 
 
 const estadoMap: Record<EstadoCompra, { label: string; cls: string }> = {
@@ -194,8 +195,9 @@ export default function HistorialComprasPage() {
           {r.estado !== 'cancelada' && <EstadoPagoBadge venta={r} pendiente="Por pagar" />}
         </div>
       ) : (
-        <span className="text-xs font-semibold text-[#5F6B7A]">
+        <span className="text-xs font-semibold text-[#5F6B7A]" title={r.tarjeta?.etiqueta}>
           {r.metodo_pago ? METODO_COMPRA_LABEL[r.metodo_pago] : 'Contado'}
+          {r.tarjeta && <span className="block text-[10px] font-normal">••{r.tarjeta.ultimos4}</span>}
         </span>
       ),
     },
@@ -379,16 +381,19 @@ function CondicionForm({ compra, onClose }: { compra: Compra; onClose: () => voi
   const [condicion, setCondicion] = useState<'contado' | 'credito'>(compra.condicion ?? 'contado')
   const [metodo, setMetodo]       = useState<MetodoPagoCompra>(compra.metodo_pago ?? 'efectivo')
   const [dias, setDias]           = useState(compra.dias_credito != null ? String(compra.dias_credito) : '')
+  const [tarjetaId, setTarjetaId] = useState(compra.tarjeta_credito_id ? String(compra.tarjeta_credito_id) : '')
+  const empresaIdCond = useAuth().state.empresaActiva?.id ?? 0
   const [error, setError]         = useState('')
 
   const guardar = useMutation({
     mutationFn: () => comprasApi.cambiarCondicion(compra.id, condicion === 'credito'
       ? { condicion, dias_credito: dias === '' ? null : Number(dias) }
-      : { condicion, metodo_pago: metodo }),
+      : { condicion, metodo_pago: metodo, tarjeta_credito_id: metodo === 'tarjeta' && tarjetaId ? Number(tarjetaId) : null }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['compras'] })
       qc.invalidateQueries({ queryKey: ['cxp'] })
       qc.invalidateQueries({ queryKey: ['proveedores'] })
+      qc.invalidateQueries({ queryKey: ['tarjetas'] })
       onClose()
     },
     onError: err => setError(getAxiosError(err)),
@@ -415,6 +420,10 @@ function CondicionForm({ compra, onClose }: { compra: Compra; onClose: () => voi
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] bg-white">
             {(Object.keys(METODO_COMPRA_LABEL) as MetodoPagoCompra[]).map(m => <option key={m} value={m}>{METODO_COMPRA_LABEL[m]}</option>)}
           </select>
+          {metodo === 'tarjeta' && <TarjetaSelect empresaId={empresaIdCond} value={tarjetaId} onChange={setTarjetaId} className="mt-3" />}
+          {metodo === 'tarjeta' && compra.requisicion && (
+            <p className="text-[11px] text-[#5F6B7A] mt-1">Enlazada a la requisición {compra.requisicion}: no se carga dos veces.</p>
+          )}
         </div>
       ) : (
         <div>
@@ -428,7 +437,7 @@ function CondicionForm({ compra, onClose }: { compra: Compra; onClose: () => voi
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
       <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
         <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-        <Button loading={guardar.isPending} onClick={() => guardar.mutate()}>Guardar</Button>
+        <Button loading={guardar.isPending} disabled={condicion === 'contado' && metodo === 'tarjeta' && !tarjetaId} onClick={() => guardar.mutate()}>Guardar</Button>
       </div>
     </div>
   )

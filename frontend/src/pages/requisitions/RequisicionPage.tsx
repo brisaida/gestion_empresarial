@@ -9,7 +9,9 @@ import { requisicionesApi, proveedoresApi, productosApi, empresaApi } from '@/ap
 import Button from '@/components/ui/Button'
 import CantidadInput from '@/components/ui/CantidadInput'
 import { getAxiosError, todayISO, imgUrl, formatCurrency } from '@/lib/utils'
-import type { Requisicion, Producto } from '@/types'
+import type { Requisicion, Producto, MetodoPagoCompra } from '@/types'
+import TarjetaSelect from '@/components/tarjetas/TarjetaSelect'
+import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
 import { printRequisicion } from '@/lib/printRequisicion'
 
 // producto = null → artículo libre (código y descripción escritos a mano)
@@ -45,6 +47,8 @@ export default function RequisicionPage() {
   const [realizadoPor, setRealizadoPor] = useState(state.usuario?.nombre ?? '')
   const [observaciones, setObservaciones] = useState('')
   const [condicion, setCondicion]       = useState<'credito' | 'contado'>('contado')
+  const [metodoPago, setMetodoPago]     = useState<MetodoPagoCompra | ''>('')
+  const [tarjetaId, setTarjetaId]       = useState('')
   const [incluyeIsv, setIncluyeIsv]     = useState(true)
   const [lineas, setLineas]             = useState<LineaReq[]>([])
 
@@ -80,6 +84,8 @@ export default function RequisicionPage() {
     setRealizadoPor(editando.realizado_por ?? '')
     setObservaciones(editando.observaciones ?? '')
     setCondicion(editando.condicion ?? 'contado')
+    setMetodoPago(editando.metodo_pago ?? '')
+    setTarjetaId(editando.tarjeta_credito_id ? String(editando.tarjeta_credito_id) : '')
     setIncluyeIsv(false) // se guardan precios sin ISV
     setLineas((editando.detalles ?? []).map(d => ({
       key: nuevaKey(),
@@ -143,7 +149,7 @@ export default function RequisicionPage() {
 
   const resetForm = () => {
     setProveedorId(''); setFecha(todayISO()); setRealizadoPor(state.usuario?.nombre ?? '')
-    setObservaciones(''); setCondicion('contado'); setIncluyeIsv(true)
+    setObservaciones(''); setCondicion('contado'); setMetodoPago(''); setTarjetaId(''); setIncluyeIsv(true)
     setLineas([]); setSearch(''); setError('')
   }
 
@@ -175,12 +181,15 @@ export default function RequisicionPage() {
     setError('')
     if (lineas.length === 0) { setError('Agrega al menos un artículo.'); return }
     if (lineas.some(l => !l.producto && !l.descripcion.trim())) { setError('Escribe la descripción de los artículos libres.'); return }
+    if (condicion === 'contado' && metodoPago === 'tarjeta' && !tarjetaId) { setError('Selecciona con qué tarjeta de crédito se paga.'); return }
     await guardar.mutateAsync({
       empresa_id:        empresaId,
       proveedor_id:      proveedorId ? Number(proveedorId) : null,
       fecha_requisicion: fecha,
       realizado_por:     realizadoPor.trim() || null,
       condicion,
+      metodo_pago:       condicion === 'contado' && metodoPago ? metodoPago : null,
+      tarjeta_credito_id: condicion === 'contado' && metodoPago === 'tarjeta' && tarjetaId ? Number(tarjetaId) : null,
       observaciones:     observaciones.trim() || null,
       impuesto:          r4(isv),
       detalles: lineas.map(l => ({
@@ -257,6 +266,26 @@ export default function RequisicionPage() {
               </select>
             </div>
           </div>
+
+          {condicion === 'contado' && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 pt-4 border-t border-gray-100">
+              <div>
+                <label className={labelCls}>Forma de pago</label>
+                <select value={metodoPago} onChange={e => setMetodoPago(e.target.value as MetodoPagoCompra | '')} className={inputCls}>
+                  <option value="">— Sin indicar —</option>
+                  {(Object.keys(METODO_COMPRA_LABEL) as MetodoPagoCompra[]).map(m => <option key={m} value={m}>{METODO_COMPRA_LABEL[m]}</option>)}
+                </select>
+              </div>
+              {metodoPago === 'tarjeta' && (
+                <TarjetaSelect empresaId={empresaId} value={tarjetaId} onChange={setTarjetaId} className="md:col-span-2" />
+              )}
+              {metodoPago === 'tarjeta' && (
+                <p className="col-span-2 self-end text-xs text-[#5F6B7A] pb-2">
+                  El total se carga a la tarjeta y aparece en <strong>Compras → Tarjetas de crédito</strong>.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Detalle + Resumen ─────────────────────────────────────── */}

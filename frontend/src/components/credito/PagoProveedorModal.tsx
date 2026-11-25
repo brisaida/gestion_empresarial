@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/Toast'
 import { cxpApi } from '@/api/recursos'
 import { formatCurrency, formatDate, getAxiosError, todayISO } from '@/lib/utils'
 import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
+import { useAuth } from '@/stores/authStore'
+import TarjetaSelect from '@/components/tarjetas/TarjetaSelect'
 import type { MetodoPagoCompra, PagoCompra } from '@/types'
 
 
@@ -52,6 +54,8 @@ function PagoForm({ destino, onClose, onSaved }: Props & { destino: PagoDestino 
   const [referencia, setRef]      = useState('')
   const [observaciones, setObs]   = useState('')
   const [error, setError]         = useState('')
+  const [tarjetaId, setTarjetaId] = useState('')
+  const empresaId = useAuth().state.empresaActiva?.id ?? 0
 
   const montoNum = Number(monto) || 0
   const restante = Math.max(0, destino.saldo - montoNum)
@@ -61,6 +65,7 @@ function PagoForm({ destino, onClose, onSaved }: Props & { destino: PagoDestino 
       const data = {
         monto: montoNum, fecha, metodo_pago: metodo,
         desde_caja: metodo === 'efectivo' && desdeCaja,
+        tarjeta_credito_id: metodo === 'tarjeta' && tarjetaId ? Number(tarjetaId) : null,
         referencia: referencia.trim() || null, observaciones: observaciones.trim() || null,
       }
       if (destino.compraId) return [(await cxpApi.pagar(destino.compraId, data)).data.data]
@@ -71,6 +76,7 @@ function PagoForm({ destino, onClose, onSaved }: Props & { destino: PagoDestino 
       qc.invalidateQueries({ queryKey: ['cxp'] })
       qc.invalidateQueries({ queryKey: ['proveedores'] })
       qc.invalidateQueries({ queryKey: ['caja-actual'] })
+      qc.invalidateQueries({ queryKey: ['tarjetas'] })
       toast.success(`Pago de ${formatCurrency(montoNum)} registrado.`)
       onSaved?.(pagos)
       onClose()
@@ -81,6 +87,7 @@ function PagoForm({ destino, onClose, onSaved }: Props & { destino: PagoDestino 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (montoNum <= 0) { setError('Escribe el monto del pago.'); return }
+    if (metodo === 'tarjeta' && !tarjetaId) { setError('Selecciona con qué tarjeta de crédito se paga.'); return }
     if (montoNum > destino.saldo + 0.004) { setError(`El pago no puede pasar el saldo (${formatCurrency(destino.saldo)}).`); return }
     setError('')
     guardar.mutate()
@@ -127,6 +134,7 @@ function PagoForm({ destino, onClose, onSaved }: Props & { destino: PagoDestino 
             Sale del efectivo de la caja (se resta en el cierre)
           </label>
         )}
+        {metodo === 'tarjeta' && <TarjetaSelect empresaId={empresaId} value={tarjetaId} onChange={setTarjetaId} className="mt-3" />}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

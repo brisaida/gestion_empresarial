@@ -12,6 +12,7 @@ class Requisicion extends Model
         'empresa_id', 'proveedor_id', 'usuario_id',
         'numero_requisicion', 'fecha_requisicion', 'realizado_por', 'condicion',
         'observaciones', 'subtotal', 'impuesto', 'total', 'estado', 'autorizado_por', 'autorizado_at',
+        'metodo_pago', 'tarjeta_credito_id',
     ];
 
     protected function casts(): array
@@ -30,4 +31,14 @@ class Requisicion extends Model
     public function usuario()   { return $this->belongsTo(User::class, 'usuario_id'); }
     public function detalles()  { return $this->hasMany(DetalleRequisicion::class); }
     public function autorizador() { return $this->belongsTo(User::class, 'autorizado_por'); }
+
+    public function tarjeta()
+    {
+        return $this->belongsTo(TarjetaCredito::class, 'tarjeta_credito_id');
+    }
+
+    public function cargosTarjeta()
+    {
+        return $this->hasMany(CargoTarjeta::class);
+    }
 }

@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\RecetaController;
 use App\Http\Controllers\Api\ReporteController;
 use App\Http\Controllers\Api\RequisicionController;
 use App\Http\Controllers\Api\SesionCajaController;
+use App\Http\Controllers\Api\TarjetaCreditoController;
 use Illuminate\Support\Facades\Route;
 
 // ── Autenticación (sin token) ──────────────────────────────────────────────
@@ -101,6 +102,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('compras/{compra}/cancelar', [CompraController::class, 'cancelar']);
         Route::patch('compras/{compra}/condicion', [CompraController::class, 'cambiarCondicion']);
 
+        // Tarjetas de crédito de la empresa
+        Route::get('requisiciones-con-tarjeta',             [CompraController::class, 'requisicionesConTarjeta']);
+        Route::get('tarjetas-credito',                      [TarjetaCreditoController::class, 'index']);
+        Route::post('tarjetas-credito',                     [TarjetaCreditoController::class, 'store']);
+        Route::put('tarjetas-credito/{tarjeta}',            [TarjetaCreditoController::class, 'update']);
+        Route::get('tarjetas-credito/{tarjeta}/movimientos', [TarjetaCreditoController::class, 'movimientos']);
+        Route::post('tarjetas-credito/{tarjeta}/pagos',     [TarjetaCreditoController::class, 'pagar']);
+        Route::post('tarjetas-credito/{tarjeta}/cargos',    [TarjetaCreditoController::class, 'cargo']);
+        Route::post('pagos-tarjeta/{pago}/anular',          [TarjetaCreditoController::class, 'anularPago']);
+        Route::post('cargos-tarjeta/{cargo}/anular',        [TarjetaCreditoController::class, 'anularCargo']);
+
         // Devoluciones a proveedores
         Route::post('compras/{compra}/devoluciones',        [DevolucionController::class, 'devolverCompra']);
         Route::get('devoluciones-compra',                   [DevolucionController::class, 'indexCompra']);
@@ -120,6 +132,7 @@ Route::middleware('auth:sanctum')->group(function () {
             ->only(['index', 'store', 'show', 'update'])
             ->parameters(['requisiciones' => 'requisicion']);
         Route::post('requisiciones/{requisicion}/estado', [RequisicionController::class, 'cambiarEstado']);
+        Route::patch('requisiciones/{requisicion}/forma-pago', [RequisicionController::class, 'formaPago']);
         Route::get('requisiciones/{requisicion}/firma',   [RequisicionController::class, 'firma']);
         Route::post('requisiciones/{requisicion}/autorizar', [RequisicionController::class, 'autorizar'])->middleware('throttle:5,1');
     });
