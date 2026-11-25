@@ -16,6 +16,7 @@ class Venta extends Model
         'exonerado', 'orden_compra_exenta', 'constancia_exonerado', 'registro_sag',
         'condicion', 'dias_credito', 'fecha_vencimiento', 'saldo_pendiente',
         'monto_devuelto', 'devuelto_a_saldo', 'cancelada_por', 'cancelada_at', 'motivo_cancelacion',
+        'cuenta_bancaria_id',
     ];
 
     protected function casts(): array

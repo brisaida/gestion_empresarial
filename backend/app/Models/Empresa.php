@@ -18,6 +18,7 @@ class Empresa extends Model
         'color_primario', 'color_secundario',
         'timeout_inactividad',
         'dias_credito',
+        'config_bancos',
     ];
 
     // Imágenes de firma y sello: solo se entregan al imprimir documentos autorizados
@@ -29,6 +30,7 @@ class Empresa extends Model
             'activo'            => 'boolean',
             'isv_rate'          => 'decimal:2',
             'config_cotizacion' => 'array',
+            'config_bancos'     => 'array',
             'factura_fecha_limite' => 'date',
         ];
     }

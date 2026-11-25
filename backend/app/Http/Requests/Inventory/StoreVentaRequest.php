@@ -21,6 +21,7 @@ class StoreVentaRequest extends FormRequest
             'impuesto'       => ['nullable', 'numeric', 'min:0'],
             'metodo_pago'    => ['nullable', 'string', 'in:efectivo,tarjeta,transferencia,mixto'],
             'condicion'      => ['nullable', 'string', 'in:contado,credito'],
+            'cuenta_bancaria_id' => ['nullable', 'integer'],
             'dias_credito'   => ['nullable', 'integer', 'min:0', 'max:365'],
             'exonerado'            => ['nullable', 'boolean'],
             'orden_compra_exenta'  => ['nullable', 'string', 'max:60'],

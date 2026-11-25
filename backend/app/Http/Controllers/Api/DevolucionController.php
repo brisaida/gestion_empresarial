@@ -103,6 +103,7 @@ class DevolucionController extends ApiController
             'fecha'               => ['nullable', 'date', 'before_or_equal:today'],
             'reembolso_metodo'    => ['nullable', 'string', 'in:' . implode(',', $metodos)],
             'desde_caja'          => ['nullable', 'boolean'],
+            'cuenta_bancaria_id'  => ['nullable', 'integer'],
             'lineas'              => ['required', 'array', 'min:1'],
             'lineas.*.detalle_id' => ['required', 'integer'],
             'lineas.*.cantidad'   => ['required', 'numeric', 'min:0'],

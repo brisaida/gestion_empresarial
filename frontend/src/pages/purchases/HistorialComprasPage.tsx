@@ -15,6 +15,7 @@ import EstadoPagoBadge from '@/components/credito/EstadoPagoBadge'
 import DevolucionModal, { type DevolucionDestino } from '@/components/credito/DevolucionModal'
 import { printDevolucion } from '@/lib/printCredito'
 import TarjetaSelect from '@/components/tarjetas/TarjetaSelect'
+import CuentaSelect from '@/components/tarjetas/CuentaSelect'
 
 
 const estadoMap: Record<EstadoCompra, { label: string; cls: string }> = {
@@ -382,18 +383,23 @@ function CondicionForm({ compra, onClose }: { compra: Compra; onClose: () => voi
   const [metodo, setMetodo]       = useState<MetodoPagoCompra>(compra.metodo_pago ?? 'efectivo')
   const [dias, setDias]           = useState(compra.dias_credito != null ? String(compra.dias_credito) : '')
   const [tarjetaId, setTarjetaId] = useState(compra.tarjeta_credito_id ? String(compra.tarjeta_credito_id) : '')
+  const [cuentaId, setCuentaId]   = useState('')
   const empresaIdCond = useAuth().state.empresaActiva?.id ?? 0
   const [error, setError]         = useState('')
 
   const guardar = useMutation({
     mutationFn: () => comprasApi.cambiarCondicion(compra.id, condicion === 'credito'
       ? { condicion, dias_credito: dias === '' ? null : Number(dias) }
-      : { condicion, metodo_pago: metodo, tarjeta_credito_id: metodo === 'tarjeta' && tarjetaId ? Number(tarjetaId) : null }),
+      : {
+          condicion, metodo_pago: metodo, tarjeta_credito_id: metodo === 'tarjeta' && tarjetaId ? Number(tarjetaId) : null,
+          cuenta_bancaria_id: ['debito', 'transferencia', 'cheque'].includes(metodo) && cuentaId ? Number(cuentaId) : null,
+        }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['compras'] })
       qc.invalidateQueries({ queryKey: ['cxp'] })
       qc.invalidateQueries({ queryKey: ['proveedores'] })
       qc.invalidateQueries({ queryKey: ['tarjetas'] })
+      qc.invalidateQueries({ queryKey: ['cuentas-banco'] })
       onClose()
     },
     onError: err => setError(getAxiosError(err)),
@@ -421,6 +427,9 @@ function CondicionForm({ compra, onClose }: { compra: Compra; onClose: () => voi
             {(Object.keys(METODO_COMPRA_LABEL) as MetodoPagoCompra[]).map(m => <option key={m} value={m}>{METODO_COMPRA_LABEL[m]}</option>)}
           </select>
           {metodo === 'tarjeta' && <TarjetaSelect empresaId={empresaIdCond} value={tarjetaId} onChange={setTarjetaId} className="mt-3" />}
+          {['debito', 'transferencia', 'cheque'].includes(metodo) && (
+            <CuentaSelect empresaId={empresaIdCond} value={cuentaId} onChange={setCuentaId} uso="cuenta_pagos_id" label="Cuenta de donde salió" className="mt-3" />
+          )}
           {metodo === 'tarjeta' && compra.requisicion && (
             <p className="text-[11px] text-[#5F6B7A] mt-1">Enlazada a la requisición {compra.requisicion}: no se carga dos veces.</p>
           )}

@@ -22,6 +22,7 @@ import ComprasPage         from '@/pages/purchases/ComprasPage'
 import HistorialComprasPage from '@/pages/purchases/HistorialComprasPage'
 import CuentasPorPagarPage  from '@/pages/purchases/CuentasPorPagarPage'
 import TarjetasCreditoPage  from '@/pages/purchases/TarjetasCreditoPage'
+import BancosPage           from '@/pages/finanzas/BancosPage'
 import CotizacionesPage        from '@/pages/quotations/CotizacionesPage'
 import HistorialCotizacionesPage from '@/pages/quotations/HistorialCotizacionesPage'
 import VentasPage               from '@/pages/sales/VentasPage'
@@ -90,8 +91,9 @@ export default function App() {
               <Route path="movimientos" element={<Guard perm="inventario"><MovimientosPage /></Guard>} />
               <Route path="compras"            element={<Guard perm="compras"><ComprasPage /></Guard>} />
               <Route path="compras/historial" element={<Guard perm="compras"><HistorialComprasPage /></Guard>} />
-              <Route path="cuentas-por-pagar" element={<Guard perm="compras"><CuentasPorPagarPage /></Guard>} />
-              <Route path="tarjetas-credito"  element={<Guard perm="compras"><TarjetasCreditoPage /></Guard>} />
+              <Route path="cuentas-por-pagar" element={<Guard perm="finanzas"><CuentasPorPagarPage /></Guard>} />
+              <Route path="tarjetas-credito"  element={<Guard perm="finanzas"><TarjetasCreditoPage /></Guard>} />
+              <Route path="bancos"            element={<Guard perm="finanzas"><BancosPage /></Guard>} />
               <Route path="compras/devoluciones" element={<Guard perm="compras"><DevolucionesPage key="proveedores" tipo="proveedores" /></Guard>} />
               <Route path="requisiciones"              element={<Guard perm="compras"><RequisicionPage /></Guard>} />
               <Route path="requisiciones/historial"    element={<Guard perm="compras"><HistorialRequisicionesPage /></Guard>} />
@@ -103,7 +105,7 @@ export default function App() {
               <Route path="ventas"                 element={<Guard perm="ventas"><VentasPage /></Guard>} />
               <Route path="ventas/historial"       element={<Guard perm="ventas"><HistorialVentasPage /></Guard>} />
               <Route path="caja"                   element={<Guard perm="ventas"><CierreCajaPage /></Guard>} />
-              <Route path="cuentas-por-cobrar"     element={<Guard perm="ventas"><CuentasPorCobrarPage /></Guard>} />
+              <Route path="cuentas-por-cobrar"     element={<Guard perm="finanzas"><CuentasPorCobrarPage /></Guard>} />
               <Route path="ventas/devoluciones"    element={<Guard perm="ventas"><DevolucionesPage key="clientes" tipo="clientes" /></Guard>} />
               <Route path="restaurante"             element={<Guard perm="ventas"><RestaurantePage /></Guard>} />
               <Route path="recetas"                element={<Guard perm="ventas"><RecetasPage /></Guard>} />

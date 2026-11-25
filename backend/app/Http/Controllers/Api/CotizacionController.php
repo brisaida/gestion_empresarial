@@ -310,6 +310,7 @@ class CotizacionController extends ApiController
 
                 $venta->load('detalles');
                 $this->inventario->procesarVenta($venta, $request->user()->id);
+                app(\App\Services\BancoService::class)->registrarVenta($venta, null, $request->user()->id);
 
                 $cotizacion->update(['estado' => 'convertida', 'venta_id' => $venta->id]);
 

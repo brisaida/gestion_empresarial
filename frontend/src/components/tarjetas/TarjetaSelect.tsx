@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { tarjetasApi } from '@/api/recursos'
+import { bancosApi } from '@/api/recursos'
+import { usePermisos } from '@/lib/permisos'
 
 /** Selector de tarjeta de crédito de la empresa (solo activas). */
 export default function TarjetaSelect({ empresaId, value, onChange, label = 'Tarjeta de crédito *', className }: {
@@ -11,12 +12,13 @@ export default function TarjetaSelect({ empresaId, value, onChange, label = 'Tar
   className?: string
 }) {
   const { data: tarjetas = [], isLoading } = useQuery({
-    queryKey: ['tarjetas', empresaId],
-    queryFn:  () => tarjetasApi.list(empresaId).then(r => r.data.data),
+    queryKey: ['tarjetas', 'opciones', empresaId],
+    queryFn:  () => bancosApi.opcionesTarjetas(empresaId).then(r => r.data.data),
     enabled:  empresaId > 0,
     staleTime: 60_000,
   })
 
+  const { hasPerm } = usePermisos()
   return (
     <div className={className}>
       <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -27,7 +29,8 @@ export default function TarjetaSelect({ empresaId, value, onChange, label = 'Tar
       </select>
       {!isLoading && tarjetas.length === 0 && (
         <p className="text-[11px] text-amber-700 mt-1">
-          No hay tarjetas registradas. <Link to="/tarjetas-credito" className="font-semibold underline">Agrégalas aquí</Link>.
+          No hay tarjetas registradas.{' '}
+          {hasPerm('finanzas') ? <Link to="/tarjetas-credito" className="font-semibold underline">Agrégalas aquí</Link> : 'Pide que las registren en Finanzas.'}
         </p>
       )}
     </div>

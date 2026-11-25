@@ -69,7 +69,7 @@ class CuentasPorPagarService
      * Cambia la condición de una compra ya registrada (p. ej. una que se ingresó
      * antes de existir el crédito). No se permite si ya tiene pagos vigentes.
      */
-    public function cambiarCondicion(Compra $compra, ?string $condicion, ?int $dias, ?string $metodoPago, ?int $tarjetaId = null, ?int $usuarioId = null): Compra
+    public function cambiarCondicion(Compra $compra, ?string $condicion, ?int $dias, ?string $metodoPago, ?int $tarjetaId = null, ?int $usuarioId = null, ?int $cuentaId = null): Compra
     {
         $compra = Compra::lockForUpdate()->findOrFail($compra->id);
 
@@ -88,6 +88,7 @@ class CuentasPorPagarService
             $compra->fecha_compra->toDateString(), $condicion, $dias, $metodoPago, $tarjetaId,
         ));
         app(TarjetaService::class)->sincronizarCompra($compra, $usuarioId ?? $compra->usuario_id);
+        app(BancoService::class)->sincronizarCompra($compra, $cuentaId, $usuarioId ?? $compra->usuario_id);
 
         return $compra;
     }
@@ -135,6 +136,7 @@ class CuentasPorPagarService
             'tarjeta_credito_id' => $tarjeta?->id,
         ]);
         app(TarjetaService::class)->cargarPagoProveedor($pago, $usuarioId);
+        app(BancoService::class)->registrarPagoCompra($pago, $datos['cuenta_bancaria_id'] ?? null, $usuarioId);
 
         $compra->update(['saldo_pendiente' => max(0, round((float) $compra->saldo_pendiente - $monto, 4))]);
 
@@ -156,6 +158,7 @@ class CuentasPorPagarService
 
         $pago->update(['anulado' => true, 'anulado_por' => $usuarioId, 'anulado_at' => now()]);
         app(TarjetaService::class)->anularPorPagoProveedor($pago);
+        app(BancoService::class)->anularPor('pago_compra_id', $pago->id);
         $tope = (float) $compra->total - (float) $compra->devuelto_a_saldo;
         $compra->update(['saldo_pendiente' => min($tope, round((float) $compra->saldo_pendiente + (float) $pago->monto, 4))]);
 

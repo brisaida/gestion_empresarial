@@ -106,6 +106,7 @@ class CompraController extends ApiController
             ]);
 
             app(\App\Services\TarjetaService::class)->sincronizarCompra($compra, $request->user()->id);
+            app(\App\Services\BancoService::class)->sincronizarCompra($compra, $validated['cuenta_bancaria_id'] ?? null, $request->user()->id);
 
             foreach ($validated['detalles'] as $det) {
                 DetalleCompra::create([
@@ -182,6 +183,7 @@ class CompraController extends ApiController
                 'cancelada_por' => $request->user()->id, 'cancelada_at' => now(), 'motivo_cancelacion' => $motivo,
             ]);
             app(\App\Services\TarjetaService::class)->sincronizarCompra($compra, $request->user()->id);
+            app(\App\Services\BancoService::class)->sincronizarCompra($compra, null, $request->user()->id);
         });
         return response()->json(['success' => true, 'message' => 'Compra cancelada.', 'data' => new CompraResource($compra)]);
     }
@@ -221,6 +223,7 @@ class CompraController extends ApiController
             'dias_credito' => ['nullable', 'integer', 'min:0', 'max:365'],
             'tarjeta_credito_id' => ['nullable', 'integer'],
             'requisicion_id'     => ['nullable', 'integer'],
+            'cuenta_bancaria_id' => ['nullable', 'integer'],
         ]);
 
         try {
@@ -230,7 +233,7 @@ class CompraController extends ApiController
                 }
                 return $this->cxp->cambiarCondicion(
                     $compra, $validated['condicion'], $validated['dias_credito'] ?? null, $validated['metodo_pago'] ?? null,
-                    $validated['tarjeta_credito_id'] ?? null, $request->user()->id,
+                    $validated['tarjeta_credito_id'] ?? null, $request->user()->id, $validated['cuenta_bancaria_id'] ?? null,
                 );
             });
         } catch (\DomainException $e) {

@@ -59,7 +59,7 @@ class User extends Authenticatable
         if (! $rolId) return false;
 
         $rol = Rol::find($rolId);
-        return ! $rol || $rol->modulos === null || in_array($modulo, $rol->modulos);
+        return ! $rol || $rol->modulos === null || (bool) array_intersect(explode('|', $modulo), $rol->modulos);
     }
 
     public function movimientos()

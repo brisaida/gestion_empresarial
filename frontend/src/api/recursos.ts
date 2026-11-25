@@ -8,6 +8,7 @@ import type {
   MetodoPagoCompra, PagoCompra, ResumenCxP, EstadoCuentaProveedor, NuevoPagoCompra,
   DevolucionVenta, DevolucionCompra, NuevaDevolucion,
   TarjetaCredito, MovimientoTarjeta, RequisicionConTarjeta,
+  CuentaBancaria, MovimientoBanco, CategoriaBanco, DefectosBanco, TarjetaResumen, Moneda,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -180,7 +181,7 @@ export const comprasApi = {
   recibir:  (id: number) => client.post<ApiResponse<Compra>>(`/compras/${id}/recibir`),
   cancelar: (id: number, motivo: string) => client.post<ApiResponse<Compra>>(`/compras/${id}/cancelar`, { motivo }),
   devolver: (id: number, data: NuevaDevolucion) => client.post<ApiResponse<DevolucionCompra>>(`/compras/${id}/devoluciones`, data),
-  cambiarCondicion: (id: number, data: { condicion: CondicionVenta; metodo_pago?: MetodoPagoCompra | null; dias_credito?: number | null; tarjeta_credito_id?: number | null; requisicion_id?: number | null }) =>
+  cambiarCondicion: (id: number, data: { condicion: CondicionVenta; metodo_pago?: MetodoPagoCompra | null; dias_credito?: number | null; tarjeta_credito_id?: number | null; requisicion_id?: number | null; cuenta_bancaria_id?: number | null }) =>
     client.patch<ApiResponse<Compra>>(`/compras/${id}/condicion`, data),
   escanear: (imagen: string, media_type: string) =>
     client.post<ApiResponse<FacturaEscaneada>>('/compras/escanear-factura', { imagen, media_type }),
@@ -307,6 +308,28 @@ export const tarjetasApi = {
   anularCargo: (cargoId: number) => client.post(`/cargos-tarjeta/${cargoId}/anular`),
   requisicionesPendientes: (empresa_id: number, proveedor_id?: number | null) =>
     client.get<ApiResponse<RequisicionConTarjeta[]>>('/requisiciones-con-tarjeta', { params: { empresa_id, proveedor_id: proveedor_id || undefined } }),
+}
+
+// ── Bancos ─────────────────────────────────────────────────────────────────
+export const bancosApi = {
+  cuentas:       (empresa_id: number, todas = false) =>
+    client.get<ApiResponse<{ cuentas: CuentaBancaria[]; totales: Partial<Record<Moneda, number>> }>>('/cuentas-bancarias', { params: { empresa_id, todas: todas ? 1 : undefined } }),
+  crear:         (data: unknown) => client.post<ApiResponse<CuentaBancaria>>('/cuentas-bancarias', data),
+  actualizar:    (id: number, data: unknown) => client.put<ApiResponse<CuentaBancaria>>(`/cuentas-bancarias/${id}`, data),
+  movimientos:   (id: number, params: Record<string, unknown>) =>
+    client.get<ApiResponse<{ cuenta: CuentaBancaria; saldo_inicial: number; movimientos: MovimientoBanco[]; sin_conciliar: { cantidad: number; neto: number } }>>(`/cuentas-bancarias/${id}/movimientos`, { params }),
+  movimiento:    (id: number, data: unknown) => client.post(`/cuentas-bancarias/${id}/movimientos`, data),
+  depositoCaja:  (id: number, data: unknown) => client.post(`/cuentas-bancarias/${id}/deposito-caja`, data),
+  transferir:    (data: unknown) => client.post('/bancos/transferencias', data),
+  anular:        (movId: number) => client.post(`/movimientos-banco/${movId}/anular`),
+  conciliar:     (movId: number, conciliado: boolean) => client.post(`/movimientos-banco/${movId}/conciliar`, { conciliado }),
+  configuracion: (empresa_id: number) =>
+    client.get<ApiResponse<{ defectos: DefectosBanco; categorias: CategoriaBanco[] }>>('/bancos/configuracion', { params: { empresa_id } }),
+  guardarDefectos: (data: unknown) => client.put('/bancos/configuracion', data),
+  guardarCategoria: (data: unknown, id?: number) => id ? client.put(`/bancos/categorias/${id}`, data) : client.post('/bancos/categorias', data),
+  opciones:      (empresa_id: number, todasMonedas = false) =>
+    client.get<ApiResponse<{ cuentas: { id: number; etiqueta: string; moneda: Moneda }[]; defectos: DefectosBanco }>>('/opciones/cuentas-bancarias', { params: { empresa_id, todas_monedas: todasMonedas ? 1 : undefined } }),
+  opcionesTarjetas: (empresa_id: number) => client.get<ApiResponse<TarjetaResumen[]>>('/opciones/tarjetas', { params: { empresa_id } }),
 }
 
 // ── Devoluciones ──────────────────────────────────────────────────────────

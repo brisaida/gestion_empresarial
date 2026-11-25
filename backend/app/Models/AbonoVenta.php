@@ -11,6 +11,7 @@ class AbonoVenta extends Model
     protected $fillable = [
         'empresa_id', 'venta_id', 'cliente_id', 'usuario_id', 'fecha', 'monto',
         'metodo_pago', 'referencia', 'observaciones', 'anulado', 'anulado_por', 'anulado_at',
+        'cuenta_bancaria_id',
     ];
 
     protected function casts(): array

@@ -175,7 +175,7 @@ class TarjetaService
     public function registrarPago(TarjetaCredito $t, array $datos, int $usuarioId): PagoTarjeta
     {
         $metodo = $datos['metodo_pago'] ?? 'transferencia';
-        return PagoTarjeta::create([
+        $pago = PagoTarjeta::create([
             'empresa_id'         => $t->empresa_id,
             'tarjeta_credito_id' => $t->id,
             'usuario_id'         => $usuarioId,
@@ -186,12 +186,15 @@ class TarjetaService
             'referencia'         => $datos['referencia'] ?? null,
             'observaciones'      => $datos['observaciones'] ?? null,
         ]);
+        app(BancoService::class)->registrarPagoTarjeta($pago, $datos['cuenta_bancaria_id'] ?? null, $usuarioId);
+        return $pago;
     }
 
     public function anularPago(PagoTarjeta $p, int $usuarioId): void
     {
         if ($p->anulado) throw new DomainException('El pago ya está anulado.');
         $p->update(['anulado' => true, 'anulado_por' => $usuarioId, 'anulado_at' => now()]);
+        app(BancoService::class)->anularPor('pago_tarjeta_id', $p->id);
     }
 
     public function cargoManual(TarjetaCredito $t, array $datos, int $usuarioId): CargoTarjeta

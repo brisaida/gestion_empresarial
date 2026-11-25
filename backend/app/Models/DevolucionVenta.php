@@ -11,6 +11,7 @@ class DevolucionVenta extends Model
     protected $fillable = [
         'empresa_id', 'venta_id', 'cliente_id', 'bodega_id', 'usuario_id', 'numero', 'fecha', 'motivo',
         'subtotal', 'impuesto', 'total', 'aplicado_a_saldo', 'reembolsado', 'reembolso_metodo', 'desde_caja',
+        'cuenta_bancaria_id',
     ];
 
     protected function casts(): array

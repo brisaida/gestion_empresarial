@@ -94,10 +94,15 @@ class TarjetaCreditoController extends ApiController
             'fecha'         => ['nullable', 'date', 'before_or_equal:today'],
             'metodo_pago'   => ['required', 'string', 'in:transferencia,efectivo,debito,cheque'],
             'desde_caja'    => ['nullable', 'boolean'],
+            'cuenta_bancaria_id' => ['nullable', 'integer'],
             'referencia'    => ['nullable', 'string', 'max:100'],
             'observaciones' => ['nullable', 'string', 'max:500'],
         ]);
-        DB::transaction(fn() => $this->tarjetas->registrarPago($tarjeta, $datos, $request->user()->id));
+        try {
+            DB::transaction(fn() => $this->tarjetas->registrarPago($tarjeta, $datos, $request->user()->id));
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
         return $this->created($this->conSaldos($tarjeta->fresh()), 'Pago registrado.');
     }
 
@@ -115,7 +120,7 @@ class TarjetaCreditoController extends ApiController
 
     public function anularPago(Request $request, PagoTarjeta $pago): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($pago->empresa_id, 'compras'), 404);
+        abort_unless($request->user()->tienePermiso($pago->empresa_id, 'finanzas'), 404);
         try {
             DB::transaction(fn() => $this->tarjetas->anularPago($pago, $request->user()->id));
         } catch (\DomainException $e) {
@@ -126,7 +131,7 @@ class TarjetaCreditoController extends ApiController
 
     public function anularCargo(Request $request, CargoTarjeta $cargo): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($cargo->empresa_id, 'compras'), 404);
+        abort_unless($request->user()->tienePermiso($cargo->empresa_id, 'finanzas'), 404);
         try {
             DB::transaction(fn() => $this->tarjetas->anularCargo($cargo));
         } catch (\DomainException $e) {
@@ -138,7 +143,7 @@ class TarjetaCreditoController extends ApiController
     /* ── Helpers ──────────────────────────────────────────────────── */
     private function verificar(Request $request, TarjetaCredito $t): void
     {
-        abort_unless($request->user()->tienePermiso($t->empresa_id, 'compras'), 404);
+        abort_unless($request->user()->tienePermiso($t->empresa_id, 'finanzas'), 404);
     }
 
     private function validarTarjeta(Request $request): array

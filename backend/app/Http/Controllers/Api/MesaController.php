@@ -190,6 +190,7 @@ class MesaController extends ApiController
 
                 $venta->load(['detalles', 'detalles.receta.ingredientes']);
                 $this->inventario->procesarVenta($venta, $request->user()->id);
+                app(\App\Services\BancoService::class)->registrarVenta($venta, null, $request->user()->id);
 
                 $comandasListas->each(fn($c) => $c->update(['estado' => 'cancelado']));
 

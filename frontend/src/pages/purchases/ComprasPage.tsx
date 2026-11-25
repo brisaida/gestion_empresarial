@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { comprasApi, proveedoresApi, bodegasApi, productosApi, empresaApi, tarjetasApi } from '@/api/recursos'
 import TarjetaSelect from '@/components/tarjetas/TarjetaSelect'
+import CuentaSelect from '@/components/tarjetas/CuentaSelect'
 import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
 import type { FacturaEscaneada } from '@/api/recursos'
 import Button from '@/components/ui/Button'
@@ -376,6 +377,8 @@ export default function ComprasPage() {
   const [diasManual, setDiasManual] = useState<string | null>(null)   // null = plazo del proveedor/empresa
   const [tarjetaId, setTarjetaId]   = useState('')
   const [requisicionId, setRequisicionId] = useState('')
+  const [cuentaId, setCuentaId]     = useState('')
+  const pagaPorBanco = condicion === 'contado' && ['debito', 'transferencia', 'cheque'].includes(metodoPago)
 
   // Modales de creación rápida
   const [modalProv, setModalProv] = useState(false)
@@ -415,7 +418,7 @@ export default function ComprasPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['compras'] })
       setForm({ proveedor_id: '', bodega_id: '', fecha_compra: todayISO(), numero_factura: '', descuento: '', impuesto: '', costo_envio: '' })
-      setCondicion('contado'); setMetodoPago('efectivo'); setDiasManual(null); setTarjetaId(''); setRequisicionId('')
+      setCondicion('contado'); setMetodoPago('efectivo'); setDiasManual(null); setTarjetaId(''); setRequisicionId(''); setCuentaId('')
       qc.invalidateQueries({ queryKey: ['tarjetas'] })
       qc.invalidateQueries({ queryKey: ['requisiciones-tarjeta'] })
       qc.invalidateQueries({ queryKey: ['cxp'] })
@@ -529,6 +532,7 @@ export default function ComprasPage() {
         metodo_pago:  condicion === 'contado' ? metodoPago : null,
         tarjeta_credito_id: pagaConTarjeta ? Number(tarjetaId) : null,
         requisicion_id:     pagaConTarjeta && requisicionId ? Number(requisicionId) : null,
+        cuenta_bancaria_id: pagaPorBanco && cuentaId ? Number(cuentaId) : null,
         dias_credito: condicion === 'credito' ? diasNum : null,
         detalles: lineas.map(l => ({
           producto_id: Number(l.producto_id), cantidad: Number(l.cantidad), costo_unitario: Number(l.costo_unitario),
@@ -632,6 +636,11 @@ export default function ComprasPage() {
           </div>
           {condicion === 'credito' && (
             <p className="mt-2 text-xs text-[#5F6B7A]">Quedará en <strong>Cuentas por pagar</strong> hasta que registres el pago al proveedor.</p>
+          )}
+          {pagaPorBanco && (
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <CuentaSelect empresaId={empresaId} value={cuentaId} onChange={setCuentaId} uso="cuenta_pagos_id" label="Cuenta de donde sale el pago" />
+            </div>
           )}
           {pagaConTarjeta && (
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">

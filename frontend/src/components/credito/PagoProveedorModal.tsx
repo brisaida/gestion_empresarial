@@ -9,6 +9,7 @@ import { formatCurrency, formatDate, getAxiosError, todayISO } from '@/lib/utils
 import { METODO_COMPRA_LABEL } from '@/lib/metodosPago'
 import { useAuth } from '@/stores/authStore'
 import TarjetaSelect from '@/components/tarjetas/TarjetaSelect'
+import CuentaSelect from '@/components/tarjetas/CuentaSelect'
 import type { MetodoPagoCompra, PagoCompra } from '@/types'
 
 
@@ -55,6 +56,7 @@ function PagoForm({ destino, onClose, onSaved }: Props & { destino: PagoDestino 
   const [observaciones, setObs]   = useState('')
   const [error, setError]         = useState('')
   const [tarjetaId, setTarjetaId] = useState('')
+  const [cuentaId, setCuentaId]   = useState('')
   const empresaId = useAuth().state.empresaActiva?.id ?? 0
 
   const montoNum = Number(monto) || 0
@@ -66,6 +68,7 @@ function PagoForm({ destino, onClose, onSaved }: Props & { destino: PagoDestino 
         monto: montoNum, fecha, metodo_pago: metodo,
         desde_caja: metodo === 'efectivo' && desdeCaja,
         tarjeta_credito_id: metodo === 'tarjeta' && tarjetaId ? Number(tarjetaId) : null,
+        cuenta_bancaria_id: ['debito', 'transferencia', 'cheque'].includes(metodo) && cuentaId ? Number(cuentaId) : null,
         referencia: referencia.trim() || null, observaciones: observaciones.trim() || null,
       }
       if (destino.compraId) return [(await cxpApi.pagar(destino.compraId, data)).data.data]
@@ -77,6 +80,7 @@ function PagoForm({ destino, onClose, onSaved }: Props & { destino: PagoDestino 
       qc.invalidateQueries({ queryKey: ['proveedores'] })
       qc.invalidateQueries({ queryKey: ['caja-actual'] })
       qc.invalidateQueries({ queryKey: ['tarjetas'] })
+      qc.invalidateQueries({ queryKey: ['cuentas-banco'] })
       toast.success(`Pago de ${formatCurrency(montoNum)} registrado.`)
       onSaved?.(pagos)
       onClose()
@@ -135,6 +139,9 @@ function PagoForm({ destino, onClose, onSaved }: Props & { destino: PagoDestino 
           </label>
         )}
         {metodo === 'tarjeta' && <TarjetaSelect empresaId={empresaId} value={tarjetaId} onChange={setTarjetaId} className="mt-3" />}
+        {['debito', 'transferencia', 'cheque'].includes(metodo) && (
+          <CuentaSelect empresaId={empresaId} value={cuentaId} onChange={setCuentaId} uso="cuenta_pagos_id" label="Cuenta de donde sale el pago" className="mt-3" />
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

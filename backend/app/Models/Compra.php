@@ -16,6 +16,7 @@ class Compra extends Model
         'condicion', 'metodo_pago', 'dias_credito', 'fecha_vencimiento', 'saldo_pendiente',
         'monto_devuelto', 'devuelto_a_saldo', 'cancelada_por', 'cancelada_at', 'motivo_cancelacion',
         'tarjeta_credito_id', 'requisicion_id',
+        'cuenta_bancaria_id',
     ];
 
     protected function casts(): array

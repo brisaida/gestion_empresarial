@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
 import { cxcApi, empresaApi } from '@/api/recursos'
 import { printReciboAbono } from '@/lib/printCredito'
+import CuentaSelect from '@/components/tarjetas/CuentaSelect'
 import { formatCurrency, formatDate, getAxiosError, todayISO } from '@/lib/utils'
 import type { AbonoVenta, MetodoAbono } from '@/types'
 
@@ -58,13 +59,17 @@ function AbonoForm({ destino, empresaId, onClose, onSaved }: Props & { destino: 
   const [observaciones, setObs] = useState('')
   const [imprimir, setImprimir] = useState(true)
   const [error, setError]       = useState('')
+  const [cuentaId, setCuentaId] = useState('')
 
   const montoNum = Number(monto) || 0
   const restante = Math.max(0, destino.saldo - montoNum)
 
   const guardar = useMutation({
     mutationFn: async () => {
-      const data = { monto: montoNum, fecha, metodo_pago: metodo, referencia: referencia.trim() || null, observaciones: observaciones.trim() || null }
+      const data = {
+        monto: montoNum, fecha, metodo_pago: metodo, referencia: referencia.trim() || null, observaciones: observaciones.trim() || null,
+        cuenta_bancaria_id: metodo !== 'efectivo' && cuentaId ? Number(cuentaId) : null,
+      }
       if (destino.ventaId) return [(await cxcApi.abonar(destino.ventaId, data)).data.data]
       return (await cxcApi.abonarCliente(destino.clienteId!, data)).data.data
     },
@@ -74,6 +79,7 @@ function AbonoForm({ destino, empresaId, onClose, onSaved }: Props & { destino: 
       qc.invalidateQueries({ queryKey: ['clientes'] })
       qc.invalidateQueries({ queryKey: ['clientes-all'] })
       qc.invalidateQueries({ queryKey: ['caja-actual'] })
+      qc.invalidateQueries({ queryKey: ['cuentas-banco'] })
       toast.success(`Abono de ${formatCurrency(montoNum)} registrado.`)
       onSaved?.(abonos)
       onClose()
@@ -153,6 +159,10 @@ function AbonoForm({ destino, empresaId, onClose, onSaved }: Props & { destino: 
 
           {metodo === 'efectivo' && (
             <p className="text-xs text-[#5F6B7A] -mt-2 px-1">Los abonos en efectivo se suman al efectivo esperado de la caja abierta.</p>
+          )}
+          {metodo !== 'efectivo' && (
+            <CuentaSelect empresaId={empresaId} value={cuentaId} onChange={setCuentaId}
+              uso={metodo === 'tarjeta' ? 'cuenta_tarjeta_id' : 'cuenta_transferencia_id'} label="Cuenta donde cae el abono" />
           )}
 
           {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}

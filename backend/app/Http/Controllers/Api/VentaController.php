@@ -167,6 +167,7 @@ class VentaController extends ApiController
 
                 $venta->load(['detalles', 'detalles.receta.ingredientes']);
                 $this->inventario->procesarVenta($venta, $request->user()->id);
+                app(\App\Services\BancoService::class)->registrarVenta($venta, $validated['cuenta_bancaria_id'] ?? null, $request->user()->id);
 
                 return $venta;
             });
@@ -223,6 +224,7 @@ class VentaController extends ApiController
 
                 // Lo vendido vuelve a la bodega de donde salió
                 $this->inventario->revertirVenta($venta, $request->user()->id);
+                app(\App\Services\BancoService::class)->anularPor('venta_id', $venta->id);
             });
             $venta->refresh();
         } catch (\DomainException $e) {

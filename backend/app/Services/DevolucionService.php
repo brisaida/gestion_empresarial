@@ -131,6 +131,8 @@ class DevolucionService
             ], $entradas);
         }
 
+        app(BancoService::class)->registrarDevolucionVenta($devolucion, $datos['cuenta_bancaria_id'] ?? null, $usuarioId);
+
         $venta->update([
             'monto_devuelto'   => round((float) $venta->monto_devuelto + $total, 4),
             'devuelto_a_saldo' => round((float) $venta->devuelto_a_saldo + $aplicado, 4),
@@ -237,6 +239,8 @@ class DevolucionService
         } catch (DomainException) {
             throw new DomainException('No hay suficiente stock en la bodega para devolver esa cantidad al proveedor.');
         }
+
+        app(BancoService::class)->registrarDevolucionCompra($devolucion, $datos['cuenta_bancaria_id'] ?? null, $usuarioId);
 
         $compra->update([
             'monto_devuelto'   => round((float) $compra->monto_devuelto + $total, 4),

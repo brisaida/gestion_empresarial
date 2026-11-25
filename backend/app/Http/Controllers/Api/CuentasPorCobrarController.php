@@ -53,7 +53,7 @@ class CuentasPorCobrarController extends ApiController
     /* ── Estado de cuenta de un cliente ───────────────────────────── */
     public function estadoCuenta(Request $request, Cliente $cliente): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($cliente->empresa_id, 'ventas'), 404);
+        abort_unless($request->user()->tienePermiso($cliente->empresa_id, 'finanzas'), 404);
 
         $pendientes = Venta::where('cliente_id', $cliente->id)
             ->creditoPendiente()
@@ -106,7 +106,7 @@ class CuentasPorCobrarController extends ApiController
     /* ── Abono a una factura ──────────────────────────────────────── */
     public function abonar(Request $request, Venta $venta): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($venta->empresa_id, 'ventas'), 404);
+        abort_unless($request->user()->tienePermiso($venta->empresa_id, 'ventas|finanzas'), 404);
         $datos = $this->validarAbono($request);
 
         try {
@@ -125,7 +125,7 @@ class CuentasPorCobrarController extends ApiController
      */
     public function abonarCliente(Request $request, Cliente $cliente): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($cliente->empresa_id, 'ventas'), 404);
+        abort_unless($request->user()->tienePermiso($cliente->empresa_id, 'ventas|finanzas'), 404);
         $datos = $this->validarAbono($request);
 
         try {
@@ -162,7 +162,7 @@ class CuentasPorCobrarController extends ApiController
 
     public function anular(Request $request, AbonoVenta $abono): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($abono->empresa_id, 'ventas'), 404);
+        abort_unless($request->user()->tienePermiso($abono->empresa_id, 'finanzas'), 404);
 
         try {
             $abono = DB::transaction(fn() => $this->credito->anularAbono($abono, $request->user()->id));
@@ -181,6 +181,7 @@ class CuentasPorCobrarController extends ApiController
             'monto'         => ['required', 'numeric', 'min:0.01'],
             'fecha'         => ['nullable', 'date', 'before_or_equal:today'],
             'metodo_pago'   => ['required', 'string', 'in:efectivo,tarjeta,transferencia,cheque'],
+            'cuenta_bancaria_id' => ['nullable', 'integer'],
             'referencia'    => ['nullable', 'string', 'max:100'],
             'observaciones' => ['nullable', 'string', 'max:500'],
         ]);

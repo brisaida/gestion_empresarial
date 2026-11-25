@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
 import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi, recetasApi, comandasApi, sesionCajaApi } from '@/api/recursos'
 import { printVenta } from '@/lib/printVenta'
+import CuentaSelect from '@/components/tarjetas/CuentaSelect'
 import type { Venta, Receta } from '@/types'
 import Button from '@/components/ui/Button'
 import CantidadInput from '@/components/ui/CantidadInput'
@@ -52,6 +53,7 @@ export default function VentasPage() {
 
   const [metodoPago, setMetodoPago] = useState<'efectivo'|'tarjeta'|'transferencia'|'mixto'>('efectivo')
   const [condicion, setCondicion]   = useState<'contado'|'credito'>('contado')
+  const [cuentaId, setCuentaId]     = useState('')
   const [diasManual, setDiasManual] = useState<string | null>(null)   // null = plazo del cliente/empresa
 
   const [search, setSearch]         = useState('')
@@ -233,7 +235,7 @@ export default function VentasPage() {
     setClienteId(''); setBodegaId(''); setFecha(todayISO())
     setDescuento(0); setCobraEnvio(false); setCostoEnvio(0); setAplicarISV(true); setLineas([])
     setExonerado(false); setExoneracion({ orden_compra_exenta: '', constancia_exonerado: '', registro_sag: '' })
-    setMetodoPago('efectivo'); setCondicion('contado'); setDiasManual(null); setSearch('')
+    setMetodoPago('efectivo'); setCondicion('contado'); setDiasManual(null); setCuentaId(''); setSearch('')
   }
 
   const addProduct = (p: Producto) => {
@@ -276,6 +278,7 @@ export default function VentasPage() {
     costo_envio:    cobraEnvio ? costoEnvio : 0,
     impuesto:       Math.round(isv * 10000) / 10000,
     metodo_pago:    esCredito ? null : metodoPago,
+    cuenta_bancaria_id: !esCredito && (metodoPago === 'tarjeta' || metodoPago === 'transferencia') && cuentaId ? Number(cuentaId) : null,
     condicion,
     dias_credito:   esCredito ? diasNum : null,
     exonerado,
@@ -624,6 +627,10 @@ export default function VentasPage() {
                     ]}
                   />
                 </div>
+                {(metodoPago === 'tarjeta' || metodoPago === 'transferencia') && (
+                  <CuentaSelect empresaId={empresaId} value={cuentaId} onChange={setCuentaId} className="md:col-span-2"
+                    uso={metodoPago === 'tarjeta' ? 'cuenta_tarjeta_id' : 'cuenta_transferencia_id'} label="Cuenta donde cae el pago" />
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-start">

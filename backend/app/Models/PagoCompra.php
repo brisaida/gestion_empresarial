@@ -12,6 +12,7 @@ class PagoCompra extends Model
         'empresa_id', 'compra_id', 'proveedor_id', 'usuario_id', 'fecha', 'monto', 'metodo_pago',
         'desde_caja', 'referencia', 'observaciones', 'anulado', 'anulado_por', 'anulado_at',
         'tarjeta_credito_id',
+        'cuenta_bancaria_id',
     ];
 
     protected function casts(): array

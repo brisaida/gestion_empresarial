@@ -57,7 +57,7 @@ class CuentasPorPagarController extends ApiController
     /* ── Estado de cuenta con un proveedor ────────────────────────── */
     public function estadoCuenta(Request $request, Proveedor $proveedor): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($proveedor->empresa_id, 'compras'), 404);
+        abort_unless($request->user()->tienePermiso($proveedor->empresa_id, 'finanzas'), 404);
 
         $pendientes = Compra::where('proveedor_id', $proveedor->id)
             ->creditoPendiente()
@@ -106,7 +106,7 @@ class CuentasPorPagarController extends ApiController
     /* ── Pago a una factura ───────────────────────────────────────── */
     public function pagar(Request $request, Compra $compra): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($compra->empresa_id, 'compras'), 404);
+        abort_unless($request->user()->tienePermiso($compra->empresa_id, 'compras|finanzas'), 404);
         $datos = $this->validarPago($request);
 
         try {
@@ -122,7 +122,7 @@ class CuentasPorPagarController extends ApiController
     /** Pago general a un proveedor: se reparte desde la factura que vence primero. */
     public function pagarProveedor(Request $request, Proveedor $proveedor): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($proveedor->empresa_id, 'compras'), 404);
+        abort_unless($request->user()->tienePermiso($proveedor->empresa_id, 'compras|finanzas'), 404);
         $datos = $this->validarPago($request);
 
         try {
@@ -159,7 +159,7 @@ class CuentasPorPagarController extends ApiController
 
     public function anular(Request $request, PagoCompra $pago): JsonResponse
     {
-        abort_unless($request->user()->tienePermiso($pago->empresa_id, 'compras'), 404);
+        abort_unless($request->user()->tienePermiso($pago->empresa_id, 'finanzas'), 404);
 
         try {
             $pago = DB::transaction(fn() => $this->cxp->anularPago($pago, $request->user()->id));
@@ -180,6 +180,7 @@ class CuentasPorPagarController extends ApiController
             'metodo_pago'   => ['required', 'string', 'in:' . implode(',', CuentasPorPagarService::METODOS_PAGO)],
             'desde_caja'    => ['nullable', 'boolean'],
             'tarjeta_credito_id' => ['nullable', 'integer'],
+            'cuenta_bancaria_id' => ['nullable', 'integer'],
             'referencia'    => ['nullable', 'string', 'max:100'],
             'observaciones' => ['nullable', 'string', 'max:500'],
         ]);

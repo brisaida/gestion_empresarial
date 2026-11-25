@@ -303,6 +303,43 @@ export interface MovimientoTarjeta {
   saldo: number
 }
 
+// ── Bancos ───────────────────────────────────────────────────────────────
+export type Moneda = 'HNL' | 'USD'
+
+export interface CuentaBancaria {
+  id: number
+  banco: string
+  nombre: string
+  tipo: 'corriente' | 'ahorro'
+  ultimos4: string
+  moneda: Moneda
+  etiqueta: string
+  saldo_inicial: number
+  fecha_saldo_inicial: string | null
+  comision_pos_pct: number | null
+  activo: boolean
+  saldo: number
+}
+
+export interface MovimientoBanco {
+  id: number
+  fecha: string
+  tipo: 'entrada' | 'salida'
+  monto: number
+  descripcion: string
+  origen: string
+  referencia?: string | null
+  categoria?: string | null
+  conciliado: boolean
+  anulado: boolean
+  usuario?: string | null
+  saldo: number
+}
+
+export interface CategoriaBanco { id: number; nombre: string; tipo: 'entrada' | 'salida' | 'ambos'; activo: boolean }
+
+export interface DefectosBanco { cuenta_tarjeta_id?: number; cuenta_transferencia_id?: number; cuenta_pagos_id?: number }
+
 export interface RequisicionConTarjeta {
   id: number
   numero_requisicion: string
@@ -357,6 +394,7 @@ export interface NuevaDevolucion {
   fecha?: string
   reembolso_metodo?: ReembolsoMetodo | null
   desde_caja?: boolean
+  cuenta_bancaria_id?: number | null
   lineas: { detalle_id: number; cantidad: number }[]
 }
 
@@ -409,6 +447,7 @@ export interface NuevoPagoCompra {
   metodo_pago: MetodoPagoCompra
   desde_caja?: boolean
   tarjeta_credito_id?: number | null
+  cuenta_bancaria_id?: number | null
   referencia?: string | null
   observaciones?: string | null
 }
@@ -681,6 +720,7 @@ export interface NuevoAbono {
   metodo_pago: MetodoAbono
   referencia?: string | null
   observaciones?: string | null
+  cuenta_bancaria_id?: number | null
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
@@ -856,6 +896,7 @@ export interface SesionCaja {
     pagos_proveedores?: { total: number; cantidad: number }
     reembolsos?: { clientes: number; proveedores: number }
     pagos_tarjetas?: number
+    depositos_banco?: number
     efectivo_esperado: number
   }
 }

@@ -14,6 +14,7 @@ export const MODULOS: ModuloDefinicion[] = [
   { key: 'catalogos',     label: 'Catálogos',           descripcion: 'Gestionar productos, clientes, proveedores, bodegas…' },
   { key: 'configuracion', label: 'Configuración',       descripcion: 'Datos fiscales, logo e ISV de la empresa' },
   { key: 'ver_costos',    label: 'Ver precios de costo', descripcion: 'Mostrar precio de costo en productos y compras' },
+  { key: 'finanzas',      label: 'Finanzas',             descripcion: 'Cuentas por cobrar y por pagar, tarjetas de crédito y bancos' },
   { key: 'reportes',      label: 'Reportes',             descripcion: 'Ver reportes de ingresos y productos más vendidos' },
   { key: 'firmar',        label: 'Autorizar documentos', descripcion: 'Firmar y sellar requisiciones y cotizaciones con PIN' },
 ]

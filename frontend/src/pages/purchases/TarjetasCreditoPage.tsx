@@ -9,6 +9,7 @@ import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
 import { useToast } from '@/components/ui/Toast'
 import { formatCurrency, formatDate, getAxiosError, todayISO, cn } from '@/lib/utils'
+import CuentaSelect from '@/components/tarjetas/CuentaSelect'
 import type { TarjetaCredito } from '@/types'
 
 const ORIGEN: Record<string, string> = {
@@ -148,6 +149,7 @@ function useRefrescar() {
     qc.invalidateQueries({ queryKey: ['tarjetas'] })
     qc.invalidateQueries({ queryKey: ['tarjeta-movs'] })
     qc.invalidateQueries({ queryKey: ['caja-actual'] })
+    qc.invalidateQueries({ queryKey: ['cuentas-banco'] })
   }
 }
 
@@ -209,9 +211,12 @@ function FormPago({ tarjeta, onClose }: { tarjeta: TarjetaCredito; onClose: () =
   const [ref, setRef]       = useState('')
   const [obs, setObs]       = useState('')
   const [error, setError]   = useState('')
+  const [cuentaId, setCuentaId] = useState('')
+  const empresaId = useAuth().state.empresaActiva?.id ?? 0
 
   const guardar = useMutation({
     mutationFn: () => tarjetasApi.pagar(tarjeta.id, {
+      cuenta_bancaria_id: metodo !== 'efectivo' && cuentaId ? Number(cuentaId) : null,
       monto: Number(monto), fecha, metodo_pago: metodo, desde_caja: metodo === 'efectivo' && caja,
       referencia: ref.trim() || null, observaciones: obs.trim() || null,
     }),
@@ -244,6 +249,9 @@ function FormPago({ tarjeta, onClose }: { tarjeta: TarjetaCredito; onClose: () =
             <input type="checkbox" checked={caja} onChange={e => setCaja(e.target.checked)} className="rounded accent-[var(--cp)]" />
             Sale del efectivo de la caja (se resta en el cierre)
           </label>
+        )}
+        {metodo !== 'efectivo' && (
+          <CuentaSelect empresaId={empresaId} value={cuentaId} onChange={setCuentaId} uso="cuenta_pagos_id" label="Cuenta de donde sale el pago" className="mt-3" />
         )}
       </div>
       <div className="grid grid-cols-2 gap-4">

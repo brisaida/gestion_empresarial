@@ -44,10 +44,11 @@ class TienePermiso
             return $next($request);
         }
 
-        if (! in_array($modulo, $rol->modulos)) {
+        // "ventas|finanzas" = basta con tener uno de los módulos
+        if (! array_intersect(explode('|', $modulo), $rol->modulos)) {
             return response()->json([
                 'success' => false,
-                'message' => "Sin permiso para acceder al módulo '{$modulo}'.",
+                'message' => "Sin permiso para acceder al módulo '" . str_replace('|', "' o '", $modulo) . "'.",
             ], 403);
         }
 

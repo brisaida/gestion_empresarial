@@ -115,6 +115,7 @@ class CreditoService
         ]);
 
         $venta->update(['saldo_pendiente' => max(0, round((float) $venta->saldo_pendiente - $monto, 4))]);
+        app(BancoService::class)->registrarAbono($abono, $datos['cuenta_bancaria_id'] ?? null, $usuarioId);
 
         return $abono;
     }
@@ -133,6 +134,7 @@ class CreditoService
         }
 
         $abono->update(['anulado' => true, 'anulado_por' => $usuarioId, 'anulado_at' => now()]);
+        app(BancoService::class)->anularPor('abono_venta_id', $abono->id);
         $tope = (float) $venta->total - (float) $venta->devuelto_a_saldo;
         $venta->update(['saldo_pendiente' => min($tope, round((float) $venta->saldo_pendiente + (float) $abono->monto, 4))]);
 

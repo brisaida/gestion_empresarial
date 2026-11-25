@@ -11,6 +11,7 @@ class PagoTarjeta extends Model
     protected $fillable = [
         'empresa_id', 'tarjeta_credito_id', 'usuario_id', 'fecha', 'monto', 'metodo_pago', 'desde_caja',
         'referencia', 'observaciones', 'anulado', 'anulado_por', 'anulado_at',
+        'cuenta_bancaria_id',
     ];
 
     protected function casts(): array

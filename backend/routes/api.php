@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BancoController;
 use App\Http\Controllers\Api\BodegaController;
 use App\Http\Controllers\Api\SuperAdmin\DashboardAdminController;
 use App\Http\Controllers\Api\SuperAdmin\EmpresaAdminController;
@@ -102,29 +103,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('compras/{compra}/cancelar', [CompraController::class, 'cancelar']);
         Route::patch('compras/{compra}/condicion', [CompraController::class, 'cambiarCondicion']);
 
-        // Tarjetas de crédito de la empresa
         Route::get('requisiciones-con-tarjeta',             [CompraController::class, 'requisicionesConTarjeta']);
-        Route::get('tarjetas-credito',                      [TarjetaCreditoController::class, 'index']);
-        Route::post('tarjetas-credito',                     [TarjetaCreditoController::class, 'store']);
-        Route::put('tarjetas-credito/{tarjeta}',            [TarjetaCreditoController::class, 'update']);
-        Route::get('tarjetas-credito/{tarjeta}/movimientos', [TarjetaCreditoController::class, 'movimientos']);
-        Route::post('tarjetas-credito/{tarjeta}/pagos',     [TarjetaCreditoController::class, 'pagar']);
-        Route::post('tarjetas-credito/{tarjeta}/cargos',    [TarjetaCreditoController::class, 'cargo']);
-        Route::post('pagos-tarjeta/{pago}/anular',          [TarjetaCreditoController::class, 'anularPago']);
-        Route::post('cargos-tarjeta/{cargo}/anular',        [TarjetaCreditoController::class, 'anularCargo']);
 
         // Devoluciones a proveedores
         Route::post('compras/{compra}/devoluciones',        [DevolucionController::class, 'devolverCompra']);
         Route::get('devoluciones-compra',                   [DevolucionController::class, 'indexCompra']);
         Route::get('devoluciones-compra/{devolucion}',      [DevolucionController::class, 'showCompra']);
-
-        // Compras al crédito: cuentas por pagar y pagos a proveedores
-        Route::get('cuentas-por-pagar',                          [CuentasPorPagarController::class, 'resumen']);
-        Route::get('cuentas-por-pagar/proveedores/{proveedor}',  [CuentasPorPagarController::class, 'estadoCuenta']);
-        Route::post('cuentas-por-pagar/proveedores/{proveedor}/pagos', [CuentasPorPagarController::class, 'pagarProveedor']);
-        Route::get('pagos-compra',                               [CuentasPorPagarController::class, 'pagos']);
-        Route::post('compras/{compra}/pagos',                    [CuentasPorPagarController::class, 'pagar']);
-        Route::post('pagos-compra/{pago}/anular',                [CuentasPorPagarController::class, 'anular']);
 
         // Requisiciones (pedido a proveedor, solo documento)
         Route::get('requisiciones/siguiente-numero', [RequisicionController::class, 'siguienteNumero']);
@@ -160,14 +144,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('devoluciones-venta',                    [DevolucionController::class, 'indexVenta']);
         Route::get('devoluciones-venta/{devolucion}',       [DevolucionController::class, 'showVenta']);
 
-        // Ventas al crédito: cuentas por cobrar y abonos
-        Route::get('cuentas-por-cobrar',                    [CuentasPorCobrarController::class, 'resumen']);
-        Route::get('cuentas-por-cobrar/clientes/{cliente}', [CuentasPorCobrarController::class, 'estadoCuenta']);
-        Route::post('cuentas-por-cobrar/clientes/{cliente}/abonos', [CuentasPorCobrarController::class, 'abonarCliente']);
-        Route::get('abonos',                                [CuentasPorCobrarController::class, 'abonos']);
-        Route::post('ventas/{venta}/abonos',                [CuentasPorCobrarController::class, 'abonar']);
-        Route::post('abonos/{abono}/anular',                [CuentasPorCobrarController::class, 'anular']);
-
         Route::get('comandas/siguiente-numero',                      [ComandaController::class, 'siguienteNumero']);
         Route::get('comandas',                                        [ComandaController::class, 'index']);
         Route::post('comandas',                                       [ComandaController::class, 'store']);
@@ -185,6 +161,57 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('caja/{sesion}/cerrar',    [SesionCajaController::class, 'cerrar']);
         Route::get('caja',                     [SesionCajaController::class, 'index']);
         Route::get('caja/{sesion}',            [SesionCajaController::class, 'show']);
+    });
+
+    // ── Finanzas: cuentas por cobrar y por pagar, tarjetas y bancos ─────────
+    Route::middleware('permiso:finanzas')->group(function () {
+        Route::get('cuentas-por-cobrar',                    [CuentasPorCobrarController::class, 'resumen']);
+        Route::get('cuentas-por-cobrar/clientes/{cliente}', [CuentasPorCobrarController::class, 'estadoCuenta']);
+        Route::get('abonos',                                [CuentasPorCobrarController::class, 'abonos']);
+        Route::post('abonos/{abono}/anular',                [CuentasPorCobrarController::class, 'anular']);
+
+        Route::get('cuentas-por-pagar',                          [CuentasPorPagarController::class, 'resumen']);
+        Route::get('cuentas-por-pagar/proveedores/{proveedor}',  [CuentasPorPagarController::class, 'estadoCuenta']);
+        Route::get('pagos-compra',                               [CuentasPorPagarController::class, 'pagos']);
+        Route::post('pagos-compra/{pago}/anular',                [CuentasPorPagarController::class, 'anular']);
+
+        Route::get('tarjetas-credito',                      [TarjetaCreditoController::class, 'index']);
+        Route::post('tarjetas-credito',                     [TarjetaCreditoController::class, 'store']);
+        Route::put('tarjetas-credito/{tarjeta}',            [TarjetaCreditoController::class, 'update']);
+        Route::get('tarjetas-credito/{tarjeta}/movimientos', [TarjetaCreditoController::class, 'movimientos']);
+        Route::post('tarjetas-credito/{tarjeta}/pagos',     [TarjetaCreditoController::class, 'pagar']);
+        Route::post('tarjetas-credito/{tarjeta}/cargos',    [TarjetaCreditoController::class, 'cargo']);
+        Route::post('pagos-tarjeta/{pago}/anular',          [TarjetaCreditoController::class, 'anularPago']);
+        Route::post('cargos-tarjeta/{cargo}/anular',        [TarjetaCreditoController::class, 'anularCargo']);
+
+        Route::get('bancos/configuracion',                  [BancoController::class, 'configuracion']);
+        Route::put('bancos/configuracion',                  [BancoController::class, 'guardarConfiguracion']);
+        Route::post('bancos/categorias',                    [BancoController::class, 'guardarCategoria']);
+        Route::put('bancos/categorias/{categoria}',         [BancoController::class, 'guardarCategoria']);
+        Route::post('bancos/transferencias',                [BancoController::class, 'transferencia']);
+        Route::get('cuentas-bancarias',                     [BancoController::class, 'index']);
+        Route::post('cuentas-bancarias',                    [BancoController::class, 'store']);
+        Route::put('cuentas-bancarias/{cuenta}',            [BancoController::class, 'update']);
+        Route::get('cuentas-bancarias/{cuenta}/movimientos', [BancoController::class, 'movimientos']);
+        Route::post('cuentas-bancarias/{cuenta}/movimientos', [BancoController::class, 'movimiento']);
+        Route::post('cuentas-bancarias/{cuenta}/deposito-caja', [BancoController::class, 'depositoCaja']);
+        Route::post('movimientos-banco/{movimiento}/anular',    [BancoController::class, 'anular']);
+        Route::post('movimientos-banco/{movimiento}/conciliar', [BancoController::class, 'conciliar']);
+    });
+
+    // Cobrar abonos lo puede hacer quien vende o quien lleva finanzas; pagar a proveedores, quien compra o finanzas
+    Route::middleware('permiso:ventas|finanzas')->group(function () {
+        Route::post('ventas/{venta}/abonos',                [CuentasPorCobrarController::class, 'abonar']);
+        Route::post('cuentas-por-cobrar/clientes/{cliente}/abonos', [CuentasPorCobrarController::class, 'abonarCliente']);
+    });
+    Route::middleware('permiso:compras|finanzas')->group(function () {
+        Route::post('compras/{compra}/pagos',                    [CuentasPorPagarController::class, 'pagar']);
+        Route::post('cuentas-por-pagar/proveedores/{proveedor}/pagos', [CuentasPorPagarController::class, 'pagarProveedor']);
+    });
+    // Listas para los selectores (sin saldos)
+    Route::middleware('permiso:ventas|compras|finanzas')->group(function () {
+        Route::get('opciones/cuentas-bancarias', [BancoController::class, 'opcionesCuentas']);
+        Route::get('opciones/tarjetas',          [BancoController::class, 'opcionesTarjetas']);
     });
 
     // Traslados

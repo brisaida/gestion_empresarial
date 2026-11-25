@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
 import { comprasApi, empresaApi, ventasApi } from '@/api/recursos'
 import { printDevolucion } from '@/lib/printCredito'
+import CuentaSelect from '@/components/tarjetas/CuentaSelect'
 import { formatoNumeroFactura } from '@/lib/printVenta'
 import { formatCurrency, getAxiosError, todayISO, cn } from '@/lib/utils'
 import type { Compra, DevolucionCompra, DevolucionVenta, ReembolsoMetodo, Venta } from '@/types'
@@ -72,6 +73,7 @@ function Formulario({ tipo, doc, empresaId, onClose }: { tipo: 'venta' | 'compra
   const [metodo, setMetodo]   = useState<ReembolsoMetodo | ''>('')
   const [desdeCaja, setCaja]  = useState(true)
   const [imprimir, setImp]    = useState(true)
+  const [cuentaId, setCuenta] = useState('')
   const [error, setError]     = useState('')
 
   // Vista previa: mismo cálculo proporcional que el servidor
@@ -91,6 +93,7 @@ function Formulario({ tipo, doc, empresaId, onClose }: { tipo: 'venta' | 'compra
         motivo: motivo.trim(), fecha,
         reembolso_metodo: necesitaMetodo ? (metodo || null) : null,
         desde_caja: metodo === 'efectivo' && desdeCaja,
+        cuenta_bancaria_id: (metodo === 'transferencia' || (esVenta && metodo === 'tarjeta')) && cuentaId ? Number(cuentaId) : null,
         lineas: lineas.filter(l => (Number(cant[l.id]) || 0) > 0).map(l => ({ detalle_id: l.id, cantidad: Number(cant[l.id]) })),
       }
       return esVenta
@@ -98,7 +101,7 @@ function Formulario({ tipo, doc, empresaId, onClose }: { tipo: 'venta' | 'compra
         : comprasApi.devolver(doc.id, payload).then(r => r.data.data)
     },
     onSuccess: async (dev) => {
-      for (const k of ['ventas', 'compras', 'existencias', 'productos', 'productos-all', 'cxc', 'cxp', 'clientes-all', 'caja-actual', 'devoluciones', 'dashboard', 'tarjetas']) {
+      for (const k of ['ventas', 'compras', 'existencias', 'productos', 'productos-all', 'cxc', 'cxp', 'clientes-all', 'caja-actual', 'devoluciones', 'dashboard', 'tarjetas', 'cuentas-banco']) {
         qc.invalidateQueries({ queryKey: [k] })
       }
       toast.success(`Devolución ${dev.numero} registrada.`)
@@ -224,6 +227,11 @@ function Formulario({ tipo, doc, empresaId, onClose }: { tipo: 'venta' | 'compra
               <input type="checkbox" checked={desdeCaja} onChange={e => setCaja(e.target.checked)} className="rounded accent-[var(--cp)]" />
               {esVenta ? 'Sale del efectivo de la caja (se resta en el cierre)' : 'Entra al efectivo de la caja (se suma en el cierre)'}
             </label>
+          )}
+          {(metodo === 'transferencia' || (esVenta && metodo === 'tarjeta')) && (
+            <CuentaSelect empresaId={empresaId} value={cuentaId} onChange={setCuenta} className="mt-3"
+              uso={esVenta && metodo === 'tarjeta' ? 'cuenta_tarjeta_id' : 'cuenta_pagos_id'}
+              label={esVenta ? 'Cuenta de donde sale el reembolso' : 'Cuenta donde entra el reembolso'} />
           )}
         </div>
       )}
