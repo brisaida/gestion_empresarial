@@ -454,8 +454,8 @@ export default function HistorialCotizacionesPage() {
               ]}
             />
             {metodoPago === 'credito' && (
-              <p className={`mt-1.5 text-xs ${convertirCot?.cliente_id ? 'text-[#5F6B7A]' : 'text-red-600'}`}>
-                {convertirCot?.cliente_id
+              <p className={`mt-1.5 text-xs ${(convertirCot?.cliente_id ?? convertirCot?.cliente?.id) ? 'text-[#5F6B7A]' : 'text-red-600'}`}>
+                {(convertirCot?.cliente_id ?? convertirCot?.cliente?.id)
                   ? 'Se usa el plazo de crédito del cliente (o el de la empresa).'
                   : 'Esta cotización no tiene cliente: no se puede vender al crédito.'}
               </p>
@@ -465,7 +465,7 @@ export default function HistorialCotizacionesPage() {
         {convertirError && <p className="mb-4 text-sm text-red-600">{convertirError}</p>}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setConvertirCot(null)}>Cancelar</Button>
-          <Button loading={convertir.isPending} disabled={!bodegaId || (metodoPago === 'credito' && !convertirCot?.cliente_id)} icon={<ArrowRightCircle size={15} />}
+          <Button loading={convertir.isPending} disabled={!bodegaId || (metodoPago === 'credito' && !(convertirCot?.cliente_id ?? convertirCot?.cliente?.id))} icon={<ArrowRightCircle size={15} />}
             onClick={() => convertirCot && convertir.mutate({ id: convertirCot.id, bodega_id: Number(bodegaId), metodo_pago: metodoPago })}>
             Convertir a venta
           </Button>
