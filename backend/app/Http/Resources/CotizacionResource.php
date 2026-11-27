@@ -20,6 +20,7 @@ class CotizacionResource extends JsonResource
             'impuesto'           => (float) $this->impuesto,
             'total'              => (float) $this->total,
             'estado'             => $this->estado,
+            'cliente_id'         => $this->cliente_id,
             'cliente'            => $this->whenLoaded('cliente', fn() => ['id' => $this->cliente->id, 'nombre' => $this->cliente->nombre]),
             'venta_id'           => $this->venta_id,
             'autorizado'         => (bool) $this->autorizado_at,
