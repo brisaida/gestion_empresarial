@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Navigate, useNavigate } from 'react-router-dom'
-import { Building2, Users, ArrowLeft, ShieldCheck, ShieldEllipsis, LayoutDashboard } from 'lucide-react'
+import { Building2, Users, ArrowLeft, ShieldCheck, ShieldEllipsis, LayoutDashboard, History } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 
@@ -8,6 +8,7 @@ const nav = [
   { to: '/super-admin/empresas',  label: 'Empresas',  icon: Building2       },
   { to: '/super-admin/usuarios',  label: 'Usuarios',  icon: Users           },
   { to: '/super-admin/roles',     label: 'Roles',     icon: ShieldEllipsis  },
+  { to: '/super-admin/bitacora',  label: 'Bitácora',  icon: History         },
 ]
 
 export default function SuperAdminLayout() {

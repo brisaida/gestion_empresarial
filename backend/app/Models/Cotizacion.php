@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class Cotizacion extends Model
 {
+    use Auditable;
     protected $table = 'cotizaciones';
 
     protected $fillable = [

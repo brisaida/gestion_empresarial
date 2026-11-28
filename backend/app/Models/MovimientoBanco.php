@@ -2,10 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class MovimientoBanco extends Model
 {
+    use Auditable;
+
+    /** Bitácora: solo los movimientos hechos a mano (los demás vienen de ventas, compras o pagos) */
+    public function bitacoraDebeRegistrar(string $evento): bool
+    {
+        return in_array($this->origen, ['manual', 'deposito_caja', 'transferencia'], true);
+    }
+
     protected $table = 'movimientos_banco';
 
     protected $fillable = [

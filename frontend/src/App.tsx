@@ -41,6 +41,7 @@ import ReportesProductosPage     from '@/pages/reports/ReportesProductosPage'
 import ReportesExportarPage      from '@/pages/reports/ReportesExportarPage'
 import RequisicionPage           from '@/pages/requisitions/RequisicionPage'
 import HistorialRequisicionesPage from '@/pages/requisitions/HistorialRequisicionesPage'
+import BitacoraPage              from '@/pages/settings/BitacoraPage'
 import SuperAdminLayout         from '@/pages/super-admin/SuperAdminLayout'
 import DashboardSAPage          from '@/pages/super-admin/DashboardSAPage'
 import EmpresasAdminPage        from '@/pages/super-admin/EmpresasAdminPage'
@@ -114,6 +115,7 @@ export default function App() {
               <Route path="reportes/productos"     element={<Guard perm="reportes"><ReportesProductosPage /></Guard>} />
               <Route path="reportes/exportar"      element={<Guard perm="reportes"><ReportesExportarPage /></Guard>} />
               <Route path="configuracion"          element={<Guard perm="configuracion"><ConfiguracionPage /></Guard>} />
+              <Route path="bitacora"               element={<Guard perm="configuracion"><BitacoraPage /></Guard>} />
             </Route>
 
             <Route element={<SuperAdminLayout />}>
@@ -122,6 +124,7 @@ export default function App() {
               <Route path="super-admin/empresas"  element={<EmpresasAdminPage />} />
               <Route path="super-admin/usuarios"  element={<UsuariosAdminPage />} />
               <Route path="super-admin/roles"     element={<RolesAdminPage />} />
+              <Route path="super-admin/bitacora"  element={<BitacoraPage key="global" global />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

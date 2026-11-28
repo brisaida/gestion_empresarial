@@ -7,6 +7,7 @@ use App\Http\Requests\Product\UpdateProductoRequest;
 use App\Http\Resources\ProductoResource;
 use App\Models\Existencia;
 use App\Models\Producto;
+use App\Services\BitacoraService;
 use App\Services\InventarioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -168,7 +169,9 @@ class ProductoController extends ApiController
         $destino = Producto::findOrFail($validated['destino_id']);
 
         try {
-            $resultado = $this->inventario->unirProductos($producto, $destino, $request->user()->id);
+            $resultado = BitacoraService::pausar(fn() => $this->inventario->unirProductos($producto, $destino, $request->user()->id));
+            app(BitacoraService::class)->registrar($producto->empresa_id, 'catalogos', 'unir',
+                BitacoraService::describir($producto) . ' se unió en ' . BitacoraService::describir($destino->refresh()), [], [], $destino);
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         }
@@ -232,6 +235,14 @@ class ProductoController extends ApiController
             });
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
+        }
+
+        // El borrado es masivo (no dispara eventos): una fila por producto
+        $bitacora = app(BitacoraService::class);
+        foreach ($productos as $p) {
+            $conStock = $existencias->where('producto_id', $p->id)->sum('cantidad');
+            $bitacora->registrar($p->empresa_id, 'catalogos', 'eliminar', BitacoraService::describir($p)
+                . ($conStock > 0 ? " (se descartaron {$conStock} unidades en inventario)" : ''), ['activo' => true], ['activo' => false], $p);
         }
 
         $total = $productos->count();

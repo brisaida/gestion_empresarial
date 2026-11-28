@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse, Bookmark,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen, ClipboardPen, ClipboardCheck, HandCoins, Wallet, Undo2, CreditCard, Landmark,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen, ClipboardPen, ClipboardCheck, HandCoins, Wallet, Undo2, CreditCard, Landmark, History,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
@@ -64,6 +64,7 @@ const nav = [
   ]},
   { group: 'Sistema', items: [
     { to: '/configuracion',          label: 'Configuración',       icon: Settings,        end: true,  permiso: 'configuracion' },
+    { to: '/bitacora',               label: 'Bitácora',            icon: History,         end: true,  permiso: 'configuracion' },
   ]},
 ]
 

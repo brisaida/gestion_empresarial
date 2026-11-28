@@ -918,3 +918,25 @@ export interface PaginatedResponse<T> {
     last_page: number
   }
 }
+
+// ── Bitácora ────────────────────────────────────────────────────────────────
+export interface CambioBitacora {
+  campo: string
+  etiqueta: string
+  antes: unknown
+  despues: unknown
+}
+
+export interface Bitacora {
+  id: number
+  fecha: string
+  usuario: { id: number; nombre: string } | null
+  empresa?: { id: number; nombre: string } | null
+  modulo: string
+  accion: string
+  descripcion: string | null
+  entidad_tipo: string | null
+  entidad_id: number | null
+  ip: string | null
+  cambios: CambioBitacora[]
+}

@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Marca extends Model
 {
+    use Auditable;
     use HasFactory;
 
     protected $fillable = ['empresa_id', 'nombre', 'activo'];

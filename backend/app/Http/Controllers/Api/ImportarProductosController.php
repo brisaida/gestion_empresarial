@@ -9,6 +9,7 @@ use App\Models\Existencia;
 use App\Models\Marca;
 use App\Models\Producto;
 use App\Models\UnidadMedida;
+use App\Services\BitacoraService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -95,6 +96,18 @@ class ImportarProductosController extends ApiController
     }
 
     public function importar(Request $request): JsonResponse
+    {
+        // Una sola fila en la bitácora con el resumen, en vez de una por cada producto
+        $respuesta = BitacoraService::pausar(fn() => $this->procesarImportacion($request));
+        $datos = $respuesta->getData(true)['data'] ?? [];
+        if (($datos['creados'] ?? 0) > 0) {
+            app(BitacoraService::class)->registrar($request->integer('empresa_id'), 'catalogos', 'importar',
+                "Importó {$datos['creados']} producto(s) desde " . $request->file('archivo')?->getClientOriginalName(), [], $datos);
+        }
+        return $respuesta;
+    }
+
+    private function procesarImportacion(Request $request): JsonResponse
     {
         $request->validate([
             'empresa_id' => 'required|integer|exists:empresas,id',

@@ -2,10 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class PagoCompra extends Model
 {
+    use Auditable;
+
+    public function bitacoraDescripcion(): string
+    {
+        $factura = Compra::whereKey($this->compra_id)->value('numero_factura') ?? "#{$this->compra_id}";
+        return 'Pago a proveedor L ' . number_format((float) $this->monto, 2) . " · compra {$factura}";
+    }
     protected $table = 'pagos_compra';
 
     protected $fillable = [

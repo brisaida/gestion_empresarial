@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class DevolucionVenta extends Model
 {
+    use Auditable;
     protected $table = 'devoluciones_venta';
 
     protected $fillable = [

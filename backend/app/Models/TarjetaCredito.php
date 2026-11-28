@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class TarjetaCredito extends Model
 {
+    use Auditable;
     protected $table = 'tarjetas_credito';
 
     protected $fillable = ['empresa_id', 'nombre', 'banco', 'ultimos4', 'dia_corte', 'dia_pago', 'limite', 'activo'];

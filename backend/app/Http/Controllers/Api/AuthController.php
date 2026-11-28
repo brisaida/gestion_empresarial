@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UsuarioResource;
 use App\Models\Rol;
+use App\Models\User;
+use App\Services\BitacoraService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,9 +14,13 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends ApiController
 {
+    public function __construct(private readonly BitacoraService $bitacora) {}
+
     public function login(LoginRequest $request): JsonResponse
     {
         if (!Auth::attempt(['correo' => $request->correo, 'password' => $request->password])) {
+            $this->bitacora->registrar(null, 'sesion', 'login_fallido', "Intento fallido con el correo {$request->correo}",
+                usuarioId: User::where('correo', $request->correo)->value('id'));
             return $this->error('Credenciales incorrectas.', 401);
         }
 
@@ -26,6 +32,7 @@ class AuthController extends ApiController
         }
 
         $token = $user->createToken('api-token')->plainTextToken;
+        $this->bitacora->registrar(null, 'sesion', 'login', "{$user->nombre} inició sesión", usuarioId: $user->id);
 
         $empresasCollection = $user->empresas()
             ->where('usuarios_empresas.activo', true)
@@ -83,6 +90,7 @@ class AuthController extends ApiController
 
     public function logout(Request $request): JsonResponse
     {
+        $this->bitacora->registrar(null, 'sesion', 'logout', "{$request->user()->nombre} cerró sesión");
         $request->user()->currentAccessToken()->delete();
         return $this->noContent('Sesión cerrada correctamente.');
     }

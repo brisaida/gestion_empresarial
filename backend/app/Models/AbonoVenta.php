@@ -2,10 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class AbonoVenta extends Model
 {
+    use Auditable;
+
+    public function bitacoraDescripcion(): string
+    {
+        $factura = Venta::whereKey($this->venta_id)->value('numero_factura') ?? "#{$this->venta_id}";
+        return 'Abono L ' . number_format((float) $this->monto, 2) . " a factura {$factura}";
+    }
     protected $table = 'abonos_venta';
 
     protected $fillable = [

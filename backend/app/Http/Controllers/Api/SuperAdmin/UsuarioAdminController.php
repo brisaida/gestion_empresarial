@@ -155,6 +155,7 @@ class UsuarioAdminController extends ApiController
 
         UsuarioEmpresa::where('usuario_id', $usuario->id)
             ->where('empresa_id', $empresa->id)
+            ->firstOrFail()
             ->update(['rol_id' => $validated['rol_id']]);
 
         return response()->json(['success' => true, 'message' => 'Rol actualizado.']);
@@ -164,7 +165,8 @@ class UsuarioAdminController extends ApiController
     {
         UsuarioEmpresa::where('usuario_id', $usuario->id)
             ->where('empresa_id', $empresa->id)
-            ->delete();
+            ->first()
+            ?->delete();
 
         return $this->noContent('Acceso removido correctamente.');
     }

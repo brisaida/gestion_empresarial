@@ -11,7 +11,7 @@ class Bitacora extends Model
     protected $table = 'bitacora';
 
     protected $fillable = [
-        'empresa_id', 'usuario_id', 'modulo', 'accion',
+        'empresa_id', 'usuario_id', 'modulo', 'accion', 'entidad_tipo', 'entidad_id',
         'descripcion', 'valores_anteriores', 'valores_nuevos',
         'ip', 'fecha',
     ];

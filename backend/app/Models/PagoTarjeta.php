@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class PagoTarjeta extends Model
 {
+    use Auditable;
     protected $table = 'pagos_tarjeta';
 
     protected $fillable = [

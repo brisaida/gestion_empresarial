@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BancoController;
+use App\Http\Controllers\Api\BitacoraController;
 use App\Http\Controllers\Api\BodegaController;
 use App\Http\Controllers\Api\SuperAdmin\DashboardAdminController;
 use App\Http\Controllers\Api\SuperAdmin\EmpresaAdminController;
@@ -55,6 +56,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('empresa',         [EmpresaController::class, 'update']);
         Route::post('empresa/logo',   [EmpresaController::class, 'uploadLogo']);
         Route::delete('empresa/logo', [EmpresaController::class, 'deleteLogo']);
+        Route::get('bitacora',          [BitacoraController::class, 'index']);
+        Route::get('bitacora/opciones', [BitacoraController::class, 'opciones']);
         Route::get('empresa/firma-sello',       [EmpresaController::class, 'firmaSello']);
         Route::post('empresa/{tipo}/imagen',    [EmpresaController::class, 'uploadFirmaSello'])->whereIn('tipo', ['firma', 'sello']);
         Route::delete('empresa/{tipo}/imagen',  [EmpresaController::class, 'deleteFirmaSello'])->whereIn('tipo', ['firma', 'sello']);
@@ -250,6 +253,9 @@ Route::middleware(['auth:sanctum', 'super.admin'])->prefix('sa')->group(function
     Route::post('usuarios/{usuario}/empresas',                [UsuarioAdminController::class, 'asignarEmpresa']);
     Route::patch('usuarios/{usuario}/empresas/{empresa}/rol', [UsuarioAdminController::class, 'cambiarRol']);
     Route::delete('usuarios/{usuario}/empresas/{empresa}',    [UsuarioAdminController::class, 'quitarEmpresa']);
+
+    Route::get('bitacora',          [BitacoraController::class, 'indexGlobal']);
+    Route::get('bitacora/opciones', [BitacoraController::class, 'opcionesGlobal']);
 
     Route::get('roles',             [RolAdminController::class, 'index']);
     Route::post('roles',            [RolAdminController::class, 'store']);

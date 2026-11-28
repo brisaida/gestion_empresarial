@@ -9,6 +9,7 @@ import type {
   DevolucionVenta, DevolucionCompra, NuevaDevolucion,
   TarjetaCredito, MovimientoTarjeta, RequisicionConTarjeta,
   CuentaBancaria, MovimientoBanco, CategoriaBanco, DefectosBanco, TarjetaResumen, Moneda,
+  Bitacora,
 } from '@/types'
 
 const list = <T>(url: string, params?: Record<string, unknown>) =>
@@ -369,4 +370,12 @@ export const recetasApi = {
   create: (data: unknown) => create<Receta>('/recetas', data),
   update: (id: number, data: unknown) => update<Receta>(`/recetas/${id}`, data),
   delete: (id: number) => remove(`/recetas/${id}`),
+}
+
+// ── Bitácora ────────────────────────────────────────────────────────────────
+// global = true: vista del super admin (/sa), incluye roles, usuarios y todas las empresas
+export const bitacoraApi = {
+  list:     (params: Record<string, unknown>, global = false) => list<Bitacora>(global ? '/sa/bitacora' : '/bitacora', params),
+  opciones: (empresa_id: number | undefined, global = false) =>
+    client.get<ApiResponse<{ usuarios: { id: number; nombre: string }[] }>>(global ? '/sa/bitacora/opciones' : '/bitacora/opciones', { params: { empresa_id } }),
 }

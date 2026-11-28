@@ -2,11 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MovimientoInventario extends Model
 {
+    use Auditable;
+
+    /** Bitácora: solo los ajustes hechos a mano (las ventas, compras y traslados ya se registran en su documento) */
+    public function bitacoraDebeRegistrar(string $evento): bool
+    {
+        return ($this->tipo_referencia ?? 'ajuste_manual') === 'ajuste_manual';
+    }
     use HasFactory;
 
     protected $table = 'movimientos_inventario';

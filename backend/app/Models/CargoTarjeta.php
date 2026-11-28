@@ -2,10 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class CargoTarjeta extends Model
 {
+    use Auditable;
+
+    /** Bitácora: solo los cargos manuales (los demás vienen de requisiciones, compras o pagos) */
+    public function bitacoraDebeRegistrar(string $evento): bool
+    {
+        return $this->origen === 'manual';
+    }
+
     protected $table = 'cargos_tarjeta';
 
     protected $fillable = [

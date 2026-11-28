@@ -176,7 +176,7 @@ class BancoController extends ApiController
             return $this->error($e->getMessage(), 422);
         }
 
-        Empresa::whereKey($empresaId)->update(['config_bancos' => json_encode(array_filter($datos))]);
+        Empresa::findOrFail($empresaId)->update(['config_bancos' => array_filter($datos)]);
         return $this->success(array_filter($datos), 'Cuentas por defecto guardadas.');
     }
 

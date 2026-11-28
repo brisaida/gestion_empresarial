@@ -31,17 +31,21 @@ npx tsc --noEmit # Type-check without build
 ```
 
 **Ports:** Backend 8000 · Frontend 5173  
-**DB:** PostgreSQL 16, database `inventario_db`, user `brisa` (macOS Homebrew superuser, no password)
+**DB:** PostgreSQL 16, database `inventario_db`, user `brisa` (macOS Homebrew superuser, no password)  
+**Tests:** `php artisan test` runs on in-memory SQLite — avoid Postgres-only SQL (`ilike`, `::casts`) in code paths covered by tests; use `lower(x) like ?`.  
+**Production:** Railway. Pushing to `main` auto-deploys; migrations run in `docker-entrypoint-prod.sh`. Never commit/push/deploy without the owner's explicit OK. User-facing changes go in `CHANGELOG.md`.
 
 ## Architecture
 
-### Multi-empresa system
+### Multi-empresa system (a product sold to many companies)
+The system is sold to different companies: build features generic and configurable per empresa (settings in `empresas` columns/JSON like `config_bancos`, `config_cotizacion`), never hard-coded for one client. Optional modules must stay invisible/no-op for companies that don't use them.
+
 Every data record is scoped by `empresa_id`. Users belong to multiple companies with different roles per company. The frontend stores `state.empresaActiva` (current company) and every API request includes `empresa_id` as a parameter.
 
 ### Permission system (módulos)
-Each role has a `modulos` JSON array: `null` = full access, otherwise an allowlist of strings (`ventas`, `compras`, `inventario`, `catalogos`, `cotizaciones`, `traslados`, `reportes`, `configuracion`, `ver_costos`, `dashboard`).
+Each role has a `modulos` JSON array: `null` = full access, otherwise an allowlist of strings (`ventas`, `compras`, `inventario`, `catalogos`, `cotizaciones`, `traslados`, `reportes`, `configuracion`, `finanzas`, `ver_costos`, `dashboard`). Roles are global (not per empresa) and managed by the super admin; the role is assigned per empresa in `usuarios_empresas`. The list of modules lives in `frontend/src/lib/modulos.ts`.
 
-- **Backend:** `middleware('permiso:modulo')` → `TienePermiso.php` enforces it  
+- **Backend:** `middleware('permiso:modulo')` → `TienePermiso.php` enforces it. OR syntax: `permiso:ventas|finanzas`. Inside controllers: `$request->user()->tienePermiso($empresaId, 'ventas|finanzas')`  
 - **Frontend:** `usePermisos().hasPerm('modulo')` → `<Guard perm="modulo">` wraps routes  
 - **Super admin:** `users.es_super_admin = true` bypasses all checks; has `/super-admin/*` routes
 
@@ -86,6 +90,23 @@ When a sale includes a recipe line (`receta_id`), `InventarioService::procesarVe
 3. When all items done → comanda auto-sets to `listo`  
 4. Cashier bills the table → `POST /api/comandas/{id}/facturar` → creates `Venta`, deducts stock, marks comanda `cancelado`
 
+### Credit, payments and money flows
+All ledgers follow the same rules: amounts are recalculated from their rows, and documents are **annulled** (`anulado`, `anulado_por`, `anulado_at`), never deleted. Services throw `DomainException` → 422.
+
+- **Ventas al crédito / CxC** — `CreditoService`. `ventas.condicion = credito`, `saldo_pendiente`, `fecha_vencimiento` (days: cliente → empresa default). Abonos in `abonos_venta` (per factura, or a general abono split oldest-due first). Cash abonos add to the open caja.
+- **Compras al crédito / CxP** — `CuentasPorPagarService`, `pagos_compra`.
+- **Devoluciones** — `DevolucionService`: `devoluciones_venta` (DEV-) and `devoluciones_compra` (DPV-), proportional amounts, stock returns, refund to cash/saldo/card/bank. Cancelling a sale or purchase requires a `motivo`.
+- **Tarjetas de crédito de la empresa** — `TarjetaService`: `cargos_tarjeta` generated from requisiciones/compras/supplier payments paid with `metodo_pago = tarjeta`; a compra linked to an already-charged requisición reuses that charge (no double charge). `pagos_tarjeta` = payments to the bank.
+- **Bancos** — `BancoService`: `cuentas_bancarias` (HNL or USD), `movimientos_banco` with running balance. Sales/abonos/compras/pagos with tarjeta/transferencia/cheque create movements automatically on the selected account or the empresa default (`empresas.config_bancos`). POS commission per account. Documents are in lempiras, so only HNL accounts link to documents; USD accounts move by manual entries and transfers (`monto_destino`). Cash deposits subtract from the caja's expected cash (`SesionCajaController::calcularResumen`).
+- **Reports** — margin is computed without ISV and net of returns (`DashboardController::devueltoPorLinea()`).
+
+### Bitácora (audit log)
+`BitacoraService` + trait `App\Models\Concerns\Auditable`. Models with the trait (listed in `BitacoraService::MODELOS`) are logged automatically on create/update/delete with before/after values; hidden fields (password, PIN, signature images) are masked. The update right after a create in the same request is merged into the "crear" row.
+- **Add a new auditable model:** `use Auditable;` + add it to `BitacoraService::MODELOS` (module + readable name). Optional `bitacoraDebeRegistrar($evento)` to filter (e.g. only manual bank movements) and `bitacoraDescripcion()` for a custom label.
+- **Mass updates** (`Model::where()->update()`) don't fire events: log them explicitly with `app(BitacoraService::class)->registrar(...)`. Bulk jobs (imports) run inside `BitacoraService::pausar()` and log one summary row.
+- Logins/logouts/failed logins are logged with `empresa_id = null`, module `sesion`. Role/user changes are global too (only the super admin sees them).
+- Screens: `/bitacora` (permiso `configuracion`, scoped to the empresa) and `/super-admin/bitacora` (everything).
+
 ### Key files
 | File | Purpose |
 |------|---------|
@@ -97,3 +118,7 @@ When a sale includes a recipe line (`receta_id`), `InventarioService::procesarVe
 | `frontend/src/hooks/useCrud.ts` | Reusable CRUD hook |
 | `frontend/src/api/recursos.ts` | All API endpoint wrappers |
 | `frontend/src/types/index.ts` | All TypeScript interfaces |
+| `backend/app/Services/CreditoService.php` · `CuentasPorPagarService.php` · `DevolucionService.php` · `TarjetaService.php` · `BancoService.php` | Money ledgers (see above) |
+| `backend/app/Services/BitacoraService.php` | Audit log |
+| `frontend/src/lib/modulos.ts` | Permission modules shown in the role editor |
+| `CHANGELOG.md` | User-facing change history (update it with every feature) |

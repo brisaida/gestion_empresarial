@@ -2,10 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class UsuarioEmpresa extends Model
 {
+    use Auditable;
+
+    public function bitacoraDescripcion(): string
+    {
+        $usuario = User::find($this->usuario_id)?->nombre ?? "usuario #{$this->usuario_id}";
+        $rol     = Rol::find($this->rol_id)?->nombre ?? "#{$this->rol_id}";
+        return "Acceso de {$usuario} · rol {$rol}";
+    }
     protected $table = 'usuarios_empresas';
 
     protected $fillable = [
