@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, ChevronDown, LogOut, PanelLeftClose, PanelLeft, ShieldCheck, KeyRound } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, PanelLeftClose, PanelLeft, ShieldCheck, KeyRound, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/stores/authStore'
 import { authApi } from '@/api/auth'
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function Navbar({ collapsed, onToggle }: Props) {
-  const { state, logout } = useAuth()
+  const { state, logout, salirEmpresa } = useAuth()
   const navigate = useNavigate()
   const [userMenu, setUserMenu] = useState(false)
   const [pinOpen, setPinOpen]   = useState(false)
@@ -43,6 +43,13 @@ export default function Navbar({ collapsed, onToggle }: Props) {
               {state.empresaActiva.nombre}
             </span>
           </div>
+        )}
+        {esSuperAdmin && state.empresaActiva && (
+          <button onClick={() => { salirEmpresa(); navigate('/super-admin/empresas') }}
+            title="Estás viendo esta empresa como super admin"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold hover:bg-purple-100 transition-colors">
+            <ArrowLeft size={13} /> Soporte · volver al panel
+          </button>
         )}
       </div>
 
@@ -81,11 +88,11 @@ export default function Navbar({ collapsed, onToggle }: Props) {
                 {esSuperAdmin && (
                   <>
                     <button
-                      onClick={() => { setUserMenu(false); navigate('/super-admin') }}
+                      onClick={() => { setUserMenu(false); salirEmpresa(); navigate('/super-admin') }}
                       className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-purple-600 hover:bg-purple-50 transition-colors font-medium"
                     >
                       <ShieldCheck size={15} />
-                      Panel Super Admin
+                      Volver al panel de administración
                     </button>
                     <div className="border-t border-gray-100 my-1" />
                   </>

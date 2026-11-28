@@ -47,7 +47,7 @@ Each role has a `modulos` JSON array: `null` = full access, otherwise an allowli
 
 - **Backend:** `middleware('permiso:modulo')` → `TienePermiso.php` enforces it. OR syntax: `permiso:ventas|finanzas`. Inside controllers: `$request->user()->tienePermiso($empresaId, 'ventas|finanzas')`  
 - **Frontend:** `usePermisos().hasPerm('modulo')` → `<Guard perm="modulo">` wraps routes  
-- **Super admin:** `users.es_super_admin = true` bypasses all checks; has `/super-admin/*` routes
+- **Super admin:** `users.es_super_admin = true` bypasses all checks. On login they land in the admin panel (`/super-admin/*`, API `/api/sa/*`) with no `empresaActiva`; `AppLayout` redirects them there. From Empresas → "Entrar" they open any company in support mode (`setEmpresa` with `modulos: null`) and return with `salirEmpresa()`. Creating an empresa can also create its first admin user (`admin_*` fields; existing email just gets access).
 
 ### Rubro system
 `empresa.rubro` (`tienda`, `distribuidora`, `farmacia`, `ferreteria`) is informational; no feature is gated by it today.

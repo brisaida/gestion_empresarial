@@ -69,6 +69,8 @@ export default function AppLayout() {
   useIdleLogout({ onLogout: handleLogout, onWarn: handleWarn, minutes: timeoutMinutes, warnMinutesBefore: 1 })
 
   if (!state.token) return <Navigate to="/login" replace />
+  // El super admin solo ve una empresa cuando entra a ella desde el panel
+  if (state.usuario?.es_super_admin && !state.empresaActiva) return <Navigate to="/super-admin" replace />
 
   const handleToggle = () => {
     if (isMobile) setMobileOpen(v => !v)

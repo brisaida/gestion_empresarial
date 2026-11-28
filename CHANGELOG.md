@@ -7,6 +7,7 @@ Cada versión se publica en producción al subirla a `main` (Railway despliega s
 
 - **Bitácora de auditoría** (Sistema → Bitácora): registra quién crea, edita, cancela, anula o elimina productos, clientes, proveedores, ventas, compras, cotizaciones, requisiciones, traslados, ajustes de inventario, abonos, pagos, tarjetas, bancos y configuración, con los valores de antes y después. También los inicios de sesión (y los intentos fallidos). Se puede filtrar por usuario, módulo, acción y fechas, y ver el historial completo de un registro.
 - El super admin tiene su propia bitácora con todas las empresas, roles y usuarios.
+- **Panel de administración del sistema**: el super admin entra directo al panel (empresas, usuarios, roles, bitácora) sin pasar por ninguna empresa. Desde Empresas puede **entrar** a cualquiera para dar soporte y volver al panel con un clic. Al crear una empresa se puede crear también su primer administrador.
 - **Se quitó el módulo de restaurante** (mesas, comandas, pantalla de cocina, recetas e ingredientes) para desarrollarlo aparte. Nueva venta queda con la vista lista y mosaico de siempre. Ya no existe el "tipo" de producto (venta/ingrediente).
 
 ## Noviembre 2026

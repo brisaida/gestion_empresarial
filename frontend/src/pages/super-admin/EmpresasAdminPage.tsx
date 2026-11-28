@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Plus, Pencil, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, Pencil, ToggleLeft, ToggleRight, LogIn, UserPlus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/stores/authStore'
+import { useToast } from '@/components/ui/Toast'
 import { useForm, Controller } from 'react-hook-form'
 import ComboBox from '@/components/ui/ComboBox'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { saEmpresasApi } from '@/api/superAdmin'
+import { saEmpresasApi, saRolesApi } from '@/api/superAdmin'
 import { Table, Pagination, type Column } from '@/components/ui/Table'
 import { StatusBadge } from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -30,11 +33,21 @@ const schema = z.object({
   telefono:     z.string().max(30, 'El teléfono es demasiado largo').optional().or(z.literal('')),
   direccion:    z.string().max(500).optional().or(z.literal('')),
   rubro:        z.enum(['tienda', 'distribuidora', 'farmacia', 'ferreteria']).or(z.literal('')).optional(),
-})
+  // Primer administrador (solo al crear; opcional)
+  admin_nombre:   z.string().max(255).optional().or(z.literal('')),
+  admin_correo:   z.string().email('Ingresa un correo válido').optional().or(z.literal('')),
+  admin_password: z.string().optional().or(z.literal('')),
+  admin_rol_id:   z.string().optional(),
+}).refine(v => !v.admin_correo || !!v.admin_nombre?.trim(), { path: ['admin_nombre'], message: 'Escribe el nombre del administrador' })
+  .refine(v => !v.admin_nombre?.trim() || !!v.admin_correo, { path: ['admin_correo'], message: 'Escribe el correo del administrador' })
+  .refine(v => !v.admin_password || v.admin_password.length >= 8, { path: ['admin_password'], message: 'Mínimo 8 caracteres' })
 type FormValues = z.infer<typeof schema>
 
 export default function EmpresasAdminPage() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
+  const toast = useToast()
+  const { setEmpresa } = useAuth()
   const [page, setPage]     = useState(1)
   const [search, setSearch] = useState('')
   const [modal, setModal]   = useState<'create' | 'edit' | null>(null)
@@ -52,9 +65,28 @@ export default function EmpresasAdminPage() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['sa-empresas'] })
 
+  const { data: roles } = useQuery({
+    queryKey: ['sa-roles'],
+    queryFn:  () => saRolesApi.list().then(r => r.data.data),
+    enabled:  modal === 'create',
+  })
+
+  // Soporte: abrir la empresa como super admin (acceso total)
+  const entrar = (e: EmpresaAdmin) => {
+    qc.clear()
+    setEmpresa({ id: e.id, nombre: e.nombre, rol: 0, logo_url: e.logo_url ?? null, modulos: null, rubro: e.rubro ?? null })
+    navigate('/dashboard')
+  }
+
   const createMut = useMutation({
     mutationFn: saEmpresasApi.create,
-    onSuccess:  () => { invalidate(); closeModal() },
+    onSuccess:  (res) => {
+      invalidate(); closeModal()
+      const admin = res.data.data.admin
+      toast.success(admin
+        ? `Empresa creada. ${admin.nombre} (${admin.correo}) ${admin.existente ? 'ya tenía cuenta y ahora tiene acceso' : 'ya puede iniciar sesión'}.`
+        : 'Empresa creada. Asígnale usuarios desde Usuarios.')
+    },
     onError:    (e) => setError(getAxiosError(e)),
   })
 
@@ -70,7 +102,7 @@ export default function EmpresasAdminPage() {
   })
 
   const openCreate = () => {
-    reset({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', rubro: '' })
+    reset({ nombre: '', nombre_legal: '', rtn: '', correo: '', telefono: '', direccion: '', rubro: '', admin_nombre: '', admin_correo: '', admin_password: '', admin_rol_id: '' })
     setError('')
     setModal('create')
   }
@@ -85,9 +117,17 @@ export default function EmpresasAdminPage() {
   const closeModal = () => { setModal(null); setSelected(null); setError('') }
 
   const onSubmit = async (values: FormValues) => {
-    const data = { ...values, rubro: values.rubro || null }
-    if (modal === 'create') await createMut.mutateAsync(data)
-    else if (selected)      await updateMut.mutateAsync({ id: selected.id, data })
+    const { admin_nombre, admin_correo, admin_password, admin_rol_id, ...empresa } = values
+    const data = { ...empresa, rubro: values.rubro || null }
+    if (modal === 'create') {
+      await createMut.mutateAsync({
+        ...data,
+        ...(admin_correo ? {
+          admin_nombre: admin_nombre?.trim(), admin_correo,
+          admin_password: admin_password || undefined, admin_rol_id: admin_rol_id ? Number(admin_rol_id) : undefined,
+        } : {}),
+      })
+    } else if (selected) await updateMut.mutateAsync({ id: selected.id, data })
   }
 
   const columns: Column<EmpresaAdmin>[] = [
@@ -105,9 +145,14 @@ export default function EmpresasAdminPage() {
       cell: r => <span className="text-sm font-medium text-purple-700 bg-purple-50 rounded-full px-2.5 py-0.5">{r.usuarios_count}</span> },
     { key: 'activo', header: 'Estado', align: 'center', width: '90px', cell: r => <StatusBadge activo={r.activo} /> },
     {
-      key: 'acciones', header: 'Acciones', align: 'right', width: '100px',
+      key: 'acciones', header: 'Acciones', align: 'right', width: '170px',
       cell: r => (
         <div className="flex items-center justify-end gap-1">
+          <button onClick={() => entrar(r)} disabled={!r.activo}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+            title={r.activo ? 'Abrir esta empresa para dar soporte' : 'Empresa desactivada'}>
+            <LogIn size={14} /> Entrar
+          </button>
           <button onClick={() => openEdit(r)} className="p-1.5 rounded text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors" title="Editar">
             <Pencil size={15} />
           </button>
@@ -174,6 +219,27 @@ export default function EmpresasAdminPage() {
               />
             )}
           />
+          {modal === 'create' && (
+            <div className="pt-4 border-t border-gray-100 space-y-3">
+              <div className="flex items-center gap-2">
+                <UserPlus size={15} className="text-purple-600" />
+                <p className="text-sm font-semibold text-[#072B5A]">Primer administrador</p>
+                <span className="text-xs text-[#5F6B7A]">— opcional; quien va a manejar esta empresa</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Nombre" error={errors.admin_nombre?.message} {...register('admin_nombre')} />
+                <Input label="Correo (usuario)" type="email" error={errors.admin_correo?.message} {...register('admin_correo')} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Contraseña" type="password" autoComplete="new-password" error={errors.admin_password?.message}
+                  placeholder="Si el correo ya existe, déjala vacía" {...register('admin_password')} />
+                <Controller name="admin_rol_id" control={control} render={({ field }) => (
+                  <ComboBox label="Rol" placeholder="Acceso total (por defecto)" value={field.value ?? ''} onChange={v => field.onChange(String(v))}
+                    options={roles?.map(r => ({ value: r.id, label: r.nombre })) ?? []} />
+                )} />
+              </div>
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={closeModal}>Cancelar</Button>
             <Button type="submit" loading={isSubmitting}>{modal === 'create' ? 'Crear' : 'Guardar'}</Button>

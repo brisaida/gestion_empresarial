@@ -1,5 +1,6 @@
-import { NavLink, Outlet, Navigate, useNavigate } from 'react-router-dom'
-import { Building2, Users, ArrowLeft, ShieldCheck, ShieldEllipsis, LayoutDashboard, History } from 'lucide-react'
+import { NavLink, Outlet, Navigate } from 'react-router-dom'
+import { Building2, Users, LogOut, ShieldCheck, ShieldEllipsis, LayoutDashboard, History } from 'lucide-react'
+import { authApi } from '@/api/auth'
 import { useAuth } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 
@@ -12,8 +13,12 @@ const nav = [
 ]
 
 export default function SuperAdminLayout() {
-  const { state } = useAuth()
-  const navigate = useNavigate()
+  const { state, logout } = useAuth()
+
+  const cerrarSesion = async () => {
+    try { await authApi.logout() } catch { /* el token puede haber vencido */ }
+    logout()
+  }
 
   if (!state.token) return <Navigate to="/login" replace />
   if (!state.usuario?.es_super_admin) return <Navigate to="/dashboard" replace />
@@ -31,8 +36,8 @@ export default function SuperAdminLayout() {
             <ShieldCheck size={16} className="text-white" />
           </div>
           <div>
-            <p className="font-bold text-white text-sm leading-tight">Super Admin</p>
-            <p className="text-[10px] text-[#38D6D4] font-medium tracking-widest uppercase leading-tight">Panel global</p>
+            <p className="font-bold text-white text-sm leading-tight">Administración</p>
+            <p className="text-[10px] text-[#38D6D4] font-medium tracking-widest uppercase leading-tight">Panel del sistema</p>
           </div>
         </div>
 
@@ -55,18 +60,18 @@ export default function SuperAdminLayout() {
           ))}
         </nav>
 
-        {/* Volver */}
-        {state.empresaActiva && (
-          <div className="p-3 border-t border-white/8">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-white/55 hover:text-white hover:bg-white/8 transition-colors"
-            >
-              <ArrowLeft size={16} />
-              Volver a la app
-            </button>
+        {/* Usuario y salida */}
+        <div className="p-3 border-t border-white/8">
+          <div className="px-3 pb-2">
+            <p className="text-sm font-semibold text-white truncate">{state.usuario?.nombre}</p>
+            <p className="text-[11px] text-white/45 truncate">{state.usuario?.correo}</p>
           </div>
-        )}
+          <button onClick={cerrarSesion}
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-white/55 hover:text-white hover:bg-white/8 transition-colors">
+            <LogOut size={16} />
+            Cerrar sesión
+          </button>
+        </div>
       </aside>
 
       {/* Contenido */}

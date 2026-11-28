@@ -4,6 +4,7 @@ import type { AuthState, EmpresaResumen, Usuario } from '@/types'
 type Action =
   | { type: 'LOGIN'; token: string; usuario: Usuario; empresas: EmpresaResumen[] }
   | { type: 'SET_EMPRESA'; empresa: EmpresaResumen }
+  | { type: 'SALIR_EMPRESA' }
   | { type: 'SET_USUARIO'; usuario: Usuario }
   | { type: 'LOGOUT' }
 
@@ -20,11 +21,14 @@ function getInitialState(): AuthState {
 function reducer(state: AuthState, action: Action): AuthState {
   switch (action.type) {
     case 'LOGIN': {
-      const empresaActiva = action.empresas[0] ?? null
+      // El super admin entra al panel de administración, no a una empresa
+      const empresaActiva = action.usuario.es_super_admin ? null : (action.empresas[0] ?? null)
       return { token: action.token, usuario: action.usuario, empresas: action.empresas, empresaActiva }
     }
     case 'SET_EMPRESA':
       return { ...state, empresaActiva: action.empresa }
+    case 'SALIR_EMPRESA':
+      return { ...state, empresaActiva: null }
     case 'SET_USUARIO':
       return { ...state, usuario: action.usuario }
     case 'LOGOUT':
@@ -36,6 +40,7 @@ interface AuthContextValue {
   state: AuthState
   login: (token: string, usuario: Usuario, empresas: EmpresaResumen[]) => void
   setEmpresa: (empresa: EmpresaResumen) => void
+  salirEmpresa: () => void
   setUsuario: (usuario: Usuario) => void
   logout: () => void
 }
@@ -61,12 +66,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setEmpresa = (empresa: EmpresaResumen) =>
     dispatch({ type: 'SET_EMPRESA', empresa })
 
+  const salirEmpresa = () => dispatch({ type: 'SALIR_EMPRESA' })
+
   const setUsuario = (usuario: Usuario) =>
     dispatch({ type: 'SET_USUARIO', usuario })
 
   const logout = () => dispatch({ type: 'LOGOUT' })
 
-  return <AuthContext value={{ state, login, setEmpresa, setUsuario, logout }}>{children}</AuthContext>
+  return <AuthContext value={{ state, login, setEmpresa, salirEmpresa, setUsuario, logout }}>{children}</AuthContext>
 }
 
 export function useAuth() {

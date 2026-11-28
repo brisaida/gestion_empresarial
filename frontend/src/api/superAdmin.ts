@@ -11,8 +11,9 @@ export const saEmpresasApi = {
   list: (params?: Record<string, unknown>) =>
     client.get<PaginatedResponse<EmpresaAdmin>>('/sa/empresas', { params }),
 
-  create: (data: Partial<EmpresaAdmin>) =>
-    client.post<ApiResponse<EmpresaAdmin>>('/sa/empresas', data),
+  // Acepta admin_nombre / admin_correo / admin_password / admin_rol_id para crear su primer administrador
+  create: (data: Partial<EmpresaAdmin> & Record<string, unknown>) =>
+    client.post<ApiResponse<EmpresaAdmin & { admin: { nombre: string; correo: string; existente: boolean } | null }>>('/sa/empresas', data),
 
   update: (id: number, data: Partial<EmpresaAdmin>) =>
     client.put<ApiResponse<EmpresaAdmin>>(`/sa/empresas/${id}`, data),

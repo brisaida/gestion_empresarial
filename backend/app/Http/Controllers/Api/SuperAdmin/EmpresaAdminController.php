@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Empresa;
+use App\Models\Rol;
 use App\Models\UnidadMedida;
+use App\Models\User;
+use App\Models\UsuarioEmpresa;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class EmpresaAdminController extends ApiController
 {
@@ -35,6 +39,7 @@ class EmpresaAdminController extends ApiController
                 'telefono'       => $e->telefono,
                 'direccion'      => $e->direccion,
                 'rubro'          => $e->rubro,
+                'logo_url'       => $e->logo ? '/' . ltrim($e->logo, '/') : null,
                 'activo'         => $e->activo,
                 'usuarios_count' => $e->usuarios_count,
                 'created_at'     => $e->created_at?->toDateString(),
@@ -58,17 +63,48 @@ class EmpresaAdminController extends ApiController
             'telefono'     => ['nullable', 'string', 'max:30'],
             'direccion'    => ['nullable', 'string', 'max:500'],
             'rubro'        => ['nullable', 'string', 'in:tienda,distribuidora,farmacia,ferreteria'],
+            // Primer usuario administrador (opcional): si el correo ya existe, se le da acceso a la nueva empresa
+            'admin_nombre'   => ['nullable', 'required_with:admin_correo', 'string', 'max:255'],
+            'admin_correo'   => ['nullable', 'required_with:admin_nombre', 'email', 'max:255'],
+            'admin_password' => ['nullable', 'string', 'min:8'],
+            'admin_rol_id'   => ['nullable', 'integer', 'exists:roles,id'],
         ]);
 
-        $empresa = Empresa::create(array_merge($validated, ['activo' => true]));
+        $admin = null;
+        if (! empty($validated['admin_correo'])) {
+            $admin = User::where('correo', $validated['admin_correo'])->first();
+            if (! $admin && empty($validated['admin_password'])) {
+                return $this->error('Escribe una contraseña de al menos 8 caracteres para el administrador.', 422);
+            }
+        }
 
-        $this->crearUnidadesDefault($empresa->id);
+        $empresa = DB::transaction(function () use ($validated, &$admin) {
+            $empresa = Empresa::create(array_merge(
+                collect($validated)->except(['admin_nombre', 'admin_correo', 'admin_password', 'admin_rol_id'])->all(),
+                ['activo' => true],
+            ));
+            $this->crearUnidadesDefault($empresa->id);
+
+            if (! empty($validated['admin_correo'])) {
+                $admin ??= User::create([
+                    'nombre'   => $validated['admin_nombre'],
+                    'correo'   => $validated['admin_correo'],
+                    'password' => Hash::make($validated['admin_password']),
+                    'activo'   => true,
+                ]);
+                // Rol elegido, o el que tiene acceso total (modulos = null)
+                $rolId = $validated['admin_rol_id'] ?? Rol::whereNull('modulos')->orderBy('id')->value('id');
+                UsuarioEmpresa::create(['usuario_id' => $admin->id, 'empresa_id' => $empresa->id, 'rol_id' => $rolId, 'activo' => true]);
+            }
+            return $empresa;
+        });
 
         return $this->created([
             'id'           => $empresa->id,
             'nombre'       => $empresa->nombre,
             'nombre_legal' => $empresa->nombre_legal,
             'activo'       => $empresa->activo,
+            'admin'        => $admin ? ['id' => $admin->id, 'nombre' => $admin->nombre, 'correo' => $admin->correo, 'existente' => ! $admin->wasRecentlyCreated] : null,
         ], 'Empresa creada correctamente.');
     }
 

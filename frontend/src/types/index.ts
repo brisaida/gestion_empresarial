@@ -766,6 +766,7 @@ export interface EmpresaAdmin {
   telefono?: string
   direccion?: string
   rubro?: Rubro | null
+  logo_url?: string | null
   activo: boolean
   usuarios_count: number
   created_at: string

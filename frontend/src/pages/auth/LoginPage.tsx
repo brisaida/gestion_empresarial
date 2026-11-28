@@ -24,7 +24,7 @@ export default function LoginPage() {
     resolver: zodResolver(schema),
   })
 
-  if (state.token) return <Navigate to="/dashboard" replace />
+  if (state.token) return <Navigate to={state.usuario?.es_super_admin && !state.empresaActiva ? '/super-admin' : '/dashboard'} replace />
 
   const onSubmit = async (values: FormValues) => {
     setServerError('')
