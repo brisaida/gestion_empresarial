@@ -123,7 +123,7 @@ class DevolucionController extends ApiController
 
     private function cargarVenta(DevolucionVenta $d): DevolucionVenta
     {
-        return $d->load(['venta:id,numero_factura', 'cliente:id,nombre,rtn', 'bodega:id,nombre', 'usuario:id,nombre', 'detalles.producto:id,nombre,codigo', 'detalles.receta:id,nombre']);
+        return $d->load(['venta:id,numero_factura', 'cliente:id,nombre,rtn', 'bodega:id,nombre', 'usuario:id,nombre', 'detalles.producto:id,nombre,codigo']);
     }
 
     private function cargarCompra(DevolucionCompra $d): DevolucionCompra

@@ -31,7 +31,7 @@ class EmpresaController extends ApiController
             'telefono'     => ['nullable', 'string', 'max:30'],
             'direccion'    => ['nullable', 'string', 'max:500'],
             'isv_rate'     => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'rubro'        => ['nullable', 'string', 'in:tienda,distribuidora,farmacia,ferreteria,restaurante'],
+            'rubro'        => ['nullable', 'string', 'in:tienda,distribuidora,farmacia,ferreteria'],
             'config_cotizacion'                          => ['nullable', 'array'],
             'config_cotizacion.mostrar_descripcion'      => ['boolean'],
             'config_cotizacion.mostrar_foto'             => ['boolean'],

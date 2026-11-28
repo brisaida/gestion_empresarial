@@ -16,7 +16,7 @@ class Producto extends Model
         'codigo', 'codigo_barra', 'nombre', 'descripcion',
         'tamaño', 'peso', 'largo', 'ancho', 'alto',
         'costo', 'precio_venta', 'tasa_isv', 'precio_incluye_isv', 'stock_minimo',
-        'maneja_lote', 'maneja_vencimiento', 'maneja_serie', 'activo', 'tipo', 'imagen',
+        'maneja_lote', 'maneja_vencimiento', 'maneja_serie', 'activo', 'imagen',
     ];
 
     protected function casts(): array

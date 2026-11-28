@@ -6,7 +6,6 @@ use App\Exceptions\StockInsuficienteException;
 use App\Http\Requests\Inventory\StoreVentaRequest;
 use App\Http\Resources\VentaResource;
 use App\Models\Producto;
-use App\Models\Receta;
 use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Services\CreditoService;
@@ -133,39 +132,18 @@ class VentaController extends ApiController
                     ? Producto::whereIn('id', $productoIds)->pluck('costo', 'id')
                     : collect();
 
-                // Pre-cargar recetas con ingredientes para calcular costo
-                $recetaIds = collect($validated['detalles'])
-                    ->whereNotNull('receta_id')->pluck('receta_id')->unique();
-                $recetas = $recetaIds->isNotEmpty()
-                    ? Receta::with('ingredientes.producto')->whereIn('id', $recetaIds)->get()->keyBy('id')
-                    : collect();
-
                 foreach ($validated['detalles'] as $det) {
-                    $esReceta     = !empty($det['receta_id']);
-                    $costoUnitario = 0;
-
-                    if ($esReceta) {
-                        $receta = $recetas[$det['receta_id']] ?? null;
-                        if ($receta) {
-                            $costoUnitario = $receta->ingredientes
-                                ->sum(fn($i) => (float) $i->cantidad * (float) ($i->producto?->costo ?? 0));
-                        }
-                    } else {
-                        $costoUnitario = $costos[$det['producto_id']] ?? 0;
-                    }
-
                     DetalleVenta::create([
                         'venta_id'        => $venta->id,
-                        'producto_id'     => $esReceta ? null : $det['producto_id'],
-                        'receta_id'       => $esReceta ? $det['receta_id'] : null,
+                        'producto_id'     => $det['producto_id'],
                         'cantidad'        => $det['cantidad'],
                         'precio_unitario' => $det['precio_unitario'],
-                        'costo_unitario'  => $costoUnitario,
+                        'costo_unitario'  => $costos[$det['producto_id']] ?? 0,
                         'subtotal'        => $det['cantidad'] * $det['precio_unitario'],
                     ]);
                 }
 
-                $venta->load(['detalles', 'detalles.receta.ingredientes']);
+                $venta->load('detalles');
                 $this->inventario->procesarVenta($venta, $request->user()->id);
                 app(\App\Services\BancoService::class)->registrarVenta($venta, $validated['cuenta_bancaria_id'] ?? null, $request->user()->id);
 
@@ -191,7 +169,7 @@ class VentaController extends ApiController
         $venta->load([
             'cliente', 'bodega', 'usuario', 'canceladaPor', 'abonos.usuario',
             'detalles' => fn($q) => $q->withSum('devueltos as cantidad_devuelta', 'cantidad'),
-            'detalles.producto.unidadMedida', 'detalles.receta',
+            'detalles.producto.unidadMedida',
             'devoluciones' => fn($q) => $q->orderBy('id'), 'devoluciones.usuario',
         ]);
         return response()->json(['success' => true, 'data' => new VentaResource($venta)]);

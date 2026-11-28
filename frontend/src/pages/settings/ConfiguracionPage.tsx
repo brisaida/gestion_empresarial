@@ -378,7 +378,7 @@ export default function ConfiguracionPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-[var(--cs)]">Ticket 80mm</p>
-              <p className="text-xs text-[#5F6B7A] mt-0.5">Formato angosto estilo supermercado o restaurante. Ideal para impresoras térmicas de 80 mm.</p>
+              <p className="text-xs text-[#5F6B7A] mt-0.5">Formato angosto estilo supermercado. Ideal para impresoras térmicas de 80 mm.</p>
             </div>
           </button>
         </div>

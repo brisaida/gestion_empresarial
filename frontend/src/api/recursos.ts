@@ -3,7 +3,7 @@ import type {
   PaginatedResponse, ApiResponse,
   Categoria, Marca, UnidadMedida, Proveedor, Cliente, Bodega,
   Producto, Existencia, DashboardData, ProductoPendiente, Movimiento, Compra, Venta, Cotizacion,
-  Transferencia, EmpresaConfig, Receta, Comanda, Mesa, SesionCaja, Requisicion, DatosFirma, MetodoPago,
+  Transferencia, EmpresaConfig, SesionCaja, Requisicion, DatosFirma, MetodoPago,
   CondicionVenta, AbonoVenta, ResumenCxC, EstadoCuenta, NuevoAbono,
   MetodoPagoCompra, PagoCompra, ResumenCxP, EstadoCuentaProveedor, NuevoPagoCompra,
   DevolucionVenta, DevolucionCompra, NuevaDevolucion,
@@ -339,37 +339,6 @@ export const devolucionesApi = {
   venta:       (id: number) => get<DevolucionVenta>(`/devoluciones-venta/${id}`),
   compras:     (params: Record<string, unknown>) => list<DevolucionCompra>('/devoluciones-compra', params),
   compra:      (id: number) => get<DevolucionCompra>(`/devoluciones-compra/${id}`),
-}
-
-// ── Comandas ───────────────────────────────────────────────────────────────
-export const comandasApi = {
-  list:             (params: Record<string, unknown>) => client.get<ApiResponse<Comanda[]>>('/comandas', { params }),
-  create:           (data: unknown) => client.post<ApiResponse<Comanda>>('/comandas', data),
-  actualizarEstado: (id: number, estado: string) => client.patch(`/comandas/${id}/estado`, { estado }),
-  marcarItemListo:  (comandaId: number, detalleId: number, listo: boolean) =>
-    client.patch<ApiResponse<Comanda>>(`/comandas/${comandaId}/detalles/${detalleId}/listo`, { listo }),
-  facturar:         (id: number, data: unknown) => client.post(`/comandas/${id}/facturar`, data),
-  siguienteNumero:  (empresaId: number) =>
-    client.get<ApiResponse<{ numero_comanda: string }>>('/comandas/siguiente-numero', { params: { empresa_id: empresaId } }),
-}
-
-// ── Mesas ─────────────────────────────────────────────────────────────────
-export const mesasApi = {
-  list:     (params: Record<string, unknown>) => client.get<ApiResponse<Mesa[]>>('/mesas', { params }),
-  create:   (data: unknown) => create<Mesa>('/mesas', data),
-  update:   (id: number, data: unknown) => update<Mesa>(`/mesas/${id}`, data),
-  delete:   (id: number) => remove(`/mesas/${id}`),
-  comandas: (id: number) => client.get<ApiResponse<Comanda[]>>(`/mesas/${id}/comandas`),
-  facturar: (id: number, data: unknown) => client.post<ApiResponse<Venta>>(`/mesas/${id}/facturar`, data),
-}
-
-// ── Recetas ────────────────────────────────────────────────────────────────
-export const recetasApi = {
-  list:   (params: Record<string, unknown>) => list<Receta>('/recetas', params),
-  get:    (id: number) => get<Receta>(`/recetas/${id}`),
-  create: (data: unknown) => create<Receta>('/recetas', data),
-  update: (id: number, data: unknown) => update<Receta>(`/recetas/${id}`, data),
-  delete: (id: number) => remove(`/recetas/${id}`),
 }
 
 // ── Bitácora ────────────────────────────────────────────────────────────────

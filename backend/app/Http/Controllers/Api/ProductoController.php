@@ -45,10 +45,6 @@ class ProductoController extends ApiController
             $query->where('activo', true);
         }
 
-        if ($request->filled('tipo')) {
-            $query->where('tipo', $request->string('tipo'));
-        }
-
         $data = $query->orderBy('nombre')->paginate($request->integer('per_page', 15));
 
         return response()->json([

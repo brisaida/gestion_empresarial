@@ -57,7 +57,7 @@ class DevolucionService
             }
             $disponible = round((float) $det->cantidad - (float) ($yaDevuelto[$det->id] ?? 0), 4);
             if ($cantidad > $disponible + 0.00005) {
-                $nombre = $det->producto?->nombre ?? $det->receta?->nombre ?? $det->descripcion ?? 'producto';
+                $nombre = $det->producto?->nombre ?? $det->descripcion ?? 'producto';
                 throw new DomainException("De {$nombre} solo se pueden devolver " . rtrim(rtrim(number_format($disponible, 4, '.', ''), '0'), '.') . '.');
             }
 
@@ -99,13 +99,12 @@ class DevolucionService
 
         $entradas = [];
         foreach ($items as [$det, $cantidad, $sub]) {
-            // Los platos (recetas) ya preparados no vuelven al inventario
+            // Los artículos libres (sin producto) no vuelven al inventario
             $regresa = (bool) $det->producto_id;
             DetalleDevolucionVenta::create([
                 'devolucion_venta_id' => $devolucion->id,
                 'detalle_venta_id'    => $det->id,
                 'producto_id'         => $det->producto_id,
-                'receta_id'           => $det->receta_id,
                 'descripcion'         => $det->descripcion,
                 'cantidad'            => $cantidad,
                 'precio_unitario'     => $det->precio_unitario,

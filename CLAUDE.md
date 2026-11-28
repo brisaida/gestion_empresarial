@@ -50,7 +50,9 @@ Each role has a `modulos` JSON array: `null` = full access, otherwise an allowli
 - **Super admin:** `users.es_super_admin = true` bypasses all checks; has `/super-admin/*` routes
 
 ### Rubro system
-`empresa.rubro === 'restaurante'` gates restaurant-specific features. In the sidebar, nav items with `rubro: 'restaurante'` only appear for restaurant companies. In `VentasPage`, a tablet POS layout appears on `md:` screens when `esRestaurante`. Recipe-based selling, comandas (kitchen orders), and the `/cocina` screen are restaurant-only.
+`empresa.rubro` (`tienda`, `distribuidora`, `farmacia`, `ferreteria`) is informational; no feature is gated by it today.
+
+The restaurant module (mesas, comandas, kitchen screen, recipes/ingredients, product `tipo`) was **removed** on 2026-11-28 (migration `quitar_modulo_restaurante`) to be developed separately. Its last full version is the git tag `restaurante-respaldo`. Don't re-add restaurant logic to this codebase.
 
 ### Authentication flow
 1. `POST /api/auth/login` → `{ token, usuario, empresas }`  
@@ -71,7 +73,7 @@ Each role has a `modulos` JSON array: `null` = full access, otherwise an allowli
 
 **`useCrud(api, { queryKey, empresaId, extraParams? })`** — standard hook for list/create/update/delete pages. Returns `{ data, meta, loading, page, setPage, search, setSearch, create, update, remove, error, setError }`. All mutations auto-invalidate the query.
 
-**`recursos.ts`** — all API wrappers live here, grouped by resource (e.g. `productosApi`, `ventasApi`, `comandasApi`). The `list()` helper returns `PaginatedResponse<T>`, `get()` returns `ApiResponse<T>`.
+**`recursos.ts`** — all API wrappers live here, grouped by resource (e.g. `productosApi`, `ventasApi`, `bancosApi`). The `list()` helper returns `PaginatedResponse<T>`, `get()` returns `ApiResponse<T>`.
 
 **`types/index.ts`** — single source of truth for all TypeScript interfaces. Add new types here.
 
@@ -81,14 +83,8 @@ Each role has a `modulos` JSON array: `null` = full access, otherwise an allowli
 
 **Modals:** Use the `Modal` component with `open`, `onClose`, `title`, `size` props.
 
-### Inventory / recipe deduction flow
-When a sale includes a recipe line (`receta_id`), `InventarioService::procesarVenta()` explodes each ingredient × quantity and deducts stock. Before writing, `validarStockDisponible()` aggregates all required amounts and throws `DomainException` with a human-readable list of shortfalls if any ingredient is insufficient.
-
-### Comanda / KDS flow
-1. Mesero sends order → `POST /api/comandas` (no stock deduction yet)  
-2. Kitchen marks items done → `PATCH /api/comandas/{id}/detalles/{det}/listo`  
-3. When all items done → comanda auto-sets to `listo`  
-4. Cashier bills the table → `POST /api/comandas/{id}/facturar` → creates `Venta`, deducts stock, marks comanda `cancelado`
+### Inventory deduction on sales
+`InventarioService::procesarVenta()` deducts stock for every line with `producto_id` (free-text lines from quotations don't move stock). Before writing, `validarStockDisponible()` aggregates required amounts and throws `StockInsuficienteException` listing shortfalls and other warehouses with stock. Cancelling a sale calls `revertirVenta()`, which replays the exact exits as entries.
 
 ### Credit, payments and money flows
 All ledgers follow the same rules: amounts are recalculated from their rows, and documents are **annulled** (`anulado`, `anulado_por`, `anulado_at`), never deleted. Services throw `DomainException` → 422.

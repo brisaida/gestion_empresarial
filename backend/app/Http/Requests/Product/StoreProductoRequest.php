@@ -45,7 +45,6 @@ class StoreProductoRequest extends FormRequest
             'maneja_vencimiento' => ['boolean'],
             'maneja_serie'       => ['boolean'],
             'activo'             => ['boolean'],
-            'tipo'               => ['nullable', 'in:venta,ingrediente'],
             'stock_inicial'      => ['nullable', 'numeric', 'min:0'],
             // Stock inicial nunca queda "sin asignar": exige bodega de la misma empresa
             'bodega_id'          => [

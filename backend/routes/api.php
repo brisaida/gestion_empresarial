@@ -23,13 +23,10 @@ use App\Http\Controllers\Api\UnidadMedidaController;
 use App\Http\Controllers\Api\CotizacionController;
 use App\Http\Controllers\Api\CuentasPorCobrarController;
 use App\Http\Controllers\Api\CuentasPorPagarController;
-use App\Http\Controllers\Api\ComandaController;
-use App\Http\Controllers\Api\MesaController;
 use App\Http\Controllers\Api\EmpresaController;
 use App\Http\Controllers\Api\VentaController;
 use App\Http\Controllers\Api\ImportarCategoriasController;
 use App\Http\Controllers\Api\ImportarProductosController;
-use App\Http\Controllers\Api\RecetaController;
 use App\Http\Controllers\Api\ReporteController;
 use App\Http\Controllers\Api\RequisicionController;
 use App\Http\Controllers\Api\SesionCajaController;
@@ -136,7 +133,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('cotizaciones/{cotizacion}/autorizar', [CotizacionController::class, 'autorizar'])->middleware('throttle:5,1');
     });
 
-    // Ventas + Comandas + Mesas (restaurante)
+    // Ventas, devoluciones de clientes y caja
     Route::middleware('permiso:ventas')->group(function () {
         Route::get('ventas/siguiente-numero', [VentaController::class, 'siguienteNumero']);
         Route::apiResource('ventas', VentaController::class)->only(['index', 'store', 'show']);
@@ -146,17 +143,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('ventas/{venta}/devoluciones',          [DevolucionController::class, 'devolverVenta']);
         Route::get('devoluciones-venta',                    [DevolucionController::class, 'indexVenta']);
         Route::get('devoluciones-venta/{devolucion}',       [DevolucionController::class, 'showVenta']);
-
-        Route::get('comandas/siguiente-numero',                      [ComandaController::class, 'siguienteNumero']);
-        Route::get('comandas',                                        [ComandaController::class, 'index']);
-        Route::post('comandas',                                       [ComandaController::class, 'store']);
-        Route::patch('comandas/{comanda}/estado',                     [ComandaController::class, 'actualizarEstado']);
-        Route::patch('comandas/{comanda}/detalles/{detalle}/listo',   [ComandaController::class, 'marcarItemListo']);
-        Route::post('comandas/{comanda}/facturar',                    [ComandaController::class, 'facturar']);
-
-        Route::get('mesas/{mesa}/comandas',  [MesaController::class, 'comandas']);
-        Route::post('mesas/{mesa}/facturar', [MesaController::class, 'facturar']);
-        Route::apiResource('mesas', MesaController::class)->only(['index', 'store', 'update', 'destroy']);
 
         // Sesiones de caja
         Route::get('caja/actual',              [SesionCajaController::class, 'actual']);
@@ -220,11 +206,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Traslados
     Route::middleware('permiso:traslados')->group(function () {
         Route::apiResource('transferencias', TransferenciaController::class)->only(['index', 'store', 'show']);
-    });
-
-    // Recetas (solo restaurante, permiso ventas)
-    Route::middleware('permiso:ventas')->group(function () {
-        Route::apiResource('recetas', RecetaController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     });
 
     // Reportes

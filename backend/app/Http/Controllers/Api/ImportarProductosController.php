@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Bodega;
 use App\Models\Categoria;
-use App\Models\Empresa;
 use App\Models\Existencia;
 use App\Models\Marca;
 use App\Models\Producto;
@@ -22,12 +21,6 @@ class ImportarProductosController extends ApiController
 {
     public function plantilla(Request $request): StreamedResponse
     {
-        $esRestaurante = false;
-        if ($request->filled('empresa_id')) {
-            $empresa = Empresa::find($request->integer('empresa_id'));
-            $esRestaurante = $empresa?->rubro === 'restaurante';
-        }
-
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Productos');
@@ -45,36 +38,18 @@ class ImportarProductosController extends ApiController
             'J1' => 'precio_incluye_isv (si/no)',
             'K1' => 'tasa_isv (%, ej: 15)',
             'L1' => 'stock_minimo',
+            'M1' => 'stock_inicial',
         ];
-
-        if ($esRestaurante) {
-            $headers['M1'] = 'tipo (venta/ingrediente)';
-            $headers['N1'] = 'stock_inicial';
-        } else {
-            $headers['M1'] = 'stock_inicial';
-        }
 
         foreach ($headers as $cell => $value) {
             $sheet->setCellValue($cell, $value);
         }
 
-        if ($esRestaurante) {
-            $sheet->fromArray([
-                'Cerveza Heineken 6-Pack', 'HEIN6PK', '7501054800083', 'Six pack botellas de vidrio 355ml',
-                'Bebidas', 'Heineken', 'CJA', 198.00, 240.00, 'no', 15, 5, 'venta', 24,
-            ], null, 'A2');
-            $sheet->fromArray([
-                'Harina de trigo', null, null, 'Bolsa 1 kg',
-                'Ingredientes', null, 'KG', 32.00, 0, 'no', 0, 0, 'ingrediente', 10,
-            ], null, 'A3');
-            $lastCol = 'N';
-        } else {
-            $sheet->fromArray([
-                'Cerveza Heineken 6-Pack', 'HEIN6PK', '7501054800083', 'Six pack botellas de vidrio 355ml',
-                'Bebidas', 'Heineken', 'CJA', 198.00, 240.00, 'no', 15, 5, 24,
-            ], null, 'A2');
-            $lastCol = 'M';
-        }
+        $sheet->fromArray([
+            'Cerveza Heineken 6-Pack', 'HEIN6PK', '7501054800083', 'Six pack botellas de vidrio 355ml',
+            'Bebidas', 'Heineken', 'CJA', 198.00, 240.00, 'no', 15, 5, 24,
+        ], null, 'A2');
+        $lastCol = 'M';
 
         $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
@@ -143,7 +118,6 @@ class ImportarProductosController extends ApiController
             'precio_incluye_isv' => ['precio_incluye_isv', 'incluye_isv', 'precio incluye isv'],
             'tasa_isv'           => ['tasa_isv', 'isv', 'impuesto', 'tasa isv'],
             'stock_minimo'       => ['stock_minimo', 'stock minimo', 'stock mínimo', 'minimo'],
-            'tipo'               => ['tipo', 'type'],
             'stock_inicial'      => ['stock_inicial', 'stock inicial', 'existencia', 'cantidad'],
         ];
 
@@ -175,8 +149,6 @@ class ImportarProductosController extends ApiController
                 );
             }
         }
-
-        $esRestaurante = Empresa::find($empresaId)?->rubro === 'restaurante';
 
         // Pre-cargar catálogos
         $categorias = Categoria::where('empresa_id', $empresaId)->get()->keyBy(fn($c) => strtolower(trim($c->nombre)));
@@ -260,8 +232,6 @@ class ImportarProductosController extends ApiController
             $stockMinimo = $get($row, 'stock_minimo');
             $stockInicial = self::parseNumero($get($row, 'stock_inicial')) ?? 0.0;
 
-            $rawTipo = strtolower(trim((string) $get($row, 'tipo')));
-            $tipo    = ($esRestaurante && in_array($rawTipo, ['ingrediente', 'ingredient'])) ? 'ingrediente' : 'venta';
 
             // Resolver relaciones — crear si no existe
             $categoriaId = null;
@@ -305,7 +275,7 @@ class ImportarProductosController extends ApiController
                 DB::transaction(function () use (
                     $empresaId, $nombre, $codigo, $codigoBarra, $descripcion,
                     $categoriaId, $marcaId, $unidadId, $costo, $precioVenta,
-                    $tasaIsv, $stockMinimo, $tipo, $stockInicial,
+                    $tasaIsv, $stockMinimo, $stockInicial,
                     $bodegaPredeterminada, &$creados, &$nombresExistentes
                 ) {
                     $producto = Producto::create([
@@ -320,7 +290,6 @@ class ImportarProductosController extends ApiController
                         'precio_venta'       => $precioVenta,
                         'tasa_isv'           => $isvRate,
                         'stock_minimo'       => is_numeric($stockMinimo) ? (float) $stockMinimo : 0,
-                        'tipo'               => $tipo,
                         'maneja_lote'        => false,
                         'maneja_vencimiento' => false,
                         'maneja_serie'       => false,

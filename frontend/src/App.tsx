@@ -33,9 +33,6 @@ import DevolucionesPage         from '@/pages/sales/DevolucionesPage'
 import TrasladosPage             from '@/pages/transfers/TrasladosPage'
 import HistorialTrasladosPage   from '@/pages/transfers/HistorialTrasladosPage'
 import ConfiguracionPage         from '@/pages/settings/ConfiguracionPage'
-import RecetasPage               from '@/pages/recipes/RecetasPage'
-import CocinaPage                from '@/pages/kitchen/CocinaPage'
-import RestaurantePage           from '@/pages/restaurant/RestaurantePage'
 import ReportesIngresosPage      from '@/pages/reports/ReportesIngresosPage'
 import ReportesProductosPage     from '@/pages/reports/ReportesProductosPage'
 import ReportesExportarPage      from '@/pages/reports/ReportesExportarPage'
@@ -108,9 +105,6 @@ export default function App() {
               <Route path="caja"                   element={<Guard perm="ventas"><CierreCajaPage /></Guard>} />
               <Route path="cuentas-por-cobrar"     element={<Guard perm="finanzas"><CuentasPorCobrarPage /></Guard>} />
               <Route path="ventas/devoluciones"    element={<Guard perm="ventas"><DevolucionesPage key="clientes" tipo="clientes" /></Guard>} />
-              <Route path="restaurante"             element={<Guard perm="ventas"><RestaurantePage /></Guard>} />
-              <Route path="recetas"                element={<Guard perm="ventas"><RecetasPage /></Guard>} />
-              <Route path="cocina"                 element={<Guard perm="ventas"><CocinaPage /></Guard>} />
               <Route path="reportes/ingresos"      element={<Guard perm="reportes"><ReportesIngresosPage /></Guard>} />
               <Route path="reportes/productos"     element={<Guard perm="reportes"><ReportesProductosPage /></Guard>} />
               <Route path="reportes/exportar"      element={<Guard perm="reportes"><ReportesExportarPage /></Guard>} />

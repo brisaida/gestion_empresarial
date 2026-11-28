@@ -160,7 +160,7 @@ class DashboardController extends ApiController
 
     /**
      * Productos activos con información pendiente: sin código (o sin letras/números), sin categoría,
-     * sin costo, sin precio de venta (excepto ingredientes) o nombre duplicado.
+     * sin costo, sin precio de venta o nombre duplicado.
      */
     public function productosPendientes(Request $request): JsonResponse
     {
@@ -171,7 +171,7 @@ class DashboardController extends ApiController
             ->withCount('categorias')
             ->withSum('existencias', 'cantidad')
             ->orderBy('nombre')
-            ->get(['id', 'codigo', 'nombre', 'costo', 'precio_venta', 'tipo', 'created_at']);
+            ->get(['id', 'codigo', 'nombre', 'costo', 'precio_venta', 'created_at']);
 
         $normalizar = fn(string $t) => preg_replace('/[^a-z0-9]/', '', mb_strtolower(Str::ascii($t)));
         $repetidos  = $productos->countBy(fn($p) => $normalizar($p->nombre))->filter(fn($n) => $n > 1);
@@ -181,7 +181,7 @@ class DashboardController extends ApiController
             if (! preg_match('/[a-z0-9]/i', (string) $p->codigo))            $pendientes[] = 'Sin código';
             if ($p->categorias_count === 0)                                  $pendientes[] = 'Sin categoría';
             if ((float) $p->costo <= 0)                                      $pendientes[] = 'Sin costo';
-            if ($p->tipo !== 'ingrediente' && (float) $p->precio_venta <= 0) $pendientes[] = 'Sin precio de venta';
+            if ((float) $p->precio_venta <= 0) $pendientes[] = 'Sin precio de venta';
             if ($repetidos->has($normalizar($p->nombre)))                    $pendientes[] = 'Nombre duplicado';
 
             return [

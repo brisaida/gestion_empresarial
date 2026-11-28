@@ -38,7 +38,6 @@ const schema = z.object({
   maneja_vencimiento: z.boolean().default(false),
   maneja_serie:       z.boolean().default(false),
   activo:             z.boolean().default(true),
-  tipo:               z.enum(['venta', 'ingrediente']).default('venta'),
   stock_inicial:      z.coerce.number().min(0).default(0),
   bodega_id:          z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -60,7 +59,6 @@ export default function ProductoFormPage() {
   const qc = useQueryClient()
   const { state } = useAuth()
   const empresaId: number = state.empresaActiva?.id ?? 0
-  const esRestaurante = state.empresaActiva?.rubro === 'restaurante'
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [imageFile, setImageFile]       = useState<File | null>(null)
@@ -124,7 +122,6 @@ export default function ProductoFormPage() {
         maneja_vencimiento: producto.maneja_vencimiento,
         maneja_serie:       producto.maneja_serie,
         activo:             producto.activo,
-        tipo:               producto.tipo ?? 'venta',
       })
       setImagePreview(producto.imagen_url ?? null)
     }
@@ -556,26 +553,6 @@ export default function ProductoFormPage() {
             {/* Estado y opciones */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
               <p className="text-xs font-semibold text-[var(--cs)] uppercase tracking-wide">Estado y opciones</p>
-
-              {esRestaurante && (
-                <div>
-                  <p className="text-xs font-medium text-gray-500 mb-2">Tipo de producto</p>
-                  <div className="space-y-2">
-                    {([
-                      { value: 'venta',       label: 'Para venta',  desc: 'Aparece en el punto de venta' },
-                      { value: 'ingrediente', label: 'Ingrediente', desc: 'Solo se usa en recetas'        },
-                    ] as const).map(opt => (
-                      <label key={opt.value} className={`flex items-start gap-2.5 p-3 rounded-lg border-2 cursor-pointer transition-all ${watch('tipo') === opt.value ? 'border-[var(--cp)] bg-[var(--cp)]/5' : 'border-gray-200 hover:border-gray-300'}`}>
-                        <input type="radio" value={opt.value} {...register('tipo')} className="mt-0.5 accent-[var(--cp)]" />
-                        <div>
-                          <p className="text-sm font-semibold text-[var(--cs)]">{opt.label}</p>
-                          <p className="text-xs text-[#5F6B7A]">{opt.desc}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-sm text-[#5F6B7A] cursor-pointer">

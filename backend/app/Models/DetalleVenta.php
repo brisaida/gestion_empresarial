@@ -9,7 +9,7 @@ class DetalleVenta extends Model
     protected $table = 'detalle_ventas';
 
     protected $fillable = [
-        'venta_id', 'producto_id', 'receta_id', 'descripcion',
+        'venta_id', 'producto_id', 'descripcion',
         'cantidad', 'precio_unitario', 'costo_unitario', 'subtotal',
     ];
 
@@ -33,10 +33,6 @@ class DetalleVenta extends Model
         return $this->belongsTo(Producto::class);
     }
 
-    public function receta()
-    {
-        return $this->belongsTo(Receta::class);
-    }
 
     public function devueltos()
     {

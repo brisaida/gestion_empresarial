@@ -9,7 +9,7 @@ class DetalleDevolucionVenta extends Model
     protected $table = 'detalle_devoluciones_venta';
 
     protected $fillable = [
-        'devolucion_venta_id', 'detalle_venta_id', 'producto_id', 'receta_id', 'descripcion',
+        'devolucion_venta_id', 'detalle_venta_id', 'producto_id', 'descripcion',
         'cantidad', 'precio_unitario', 'subtotal', 'regresa_a_stock',
     ];
 
@@ -28,8 +28,4 @@ class DetalleDevolucionVenta extends Model
         return $this->belongsTo(Producto::class);
     }
 
-    public function receta()
-    {
-        return $this->belongsTo(Receta::class);
-    }
 }

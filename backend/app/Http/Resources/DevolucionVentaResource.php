@@ -29,7 +29,7 @@ class DevolucionVentaResource extends JsonResource
             'detalles'         => $this->whenLoaded('detalles', fn() => $this->detalles->map(fn($d) => [
                 'id'          => $d->id,
                 'producto_id' => $d->producto_id,
-                'nombre'      => $d->producto?->nombre ?? $d->receta?->nombre ?? $d->descripcion,
+                'nombre'      => $d->producto?->nombre ?? $d->descripcion,
                 'codigo'      => $d->producto?->codigo,
                 'cantidad'    => (float) $d->cantidad,
                 'precio'      => (float) $d->precio_unitario,

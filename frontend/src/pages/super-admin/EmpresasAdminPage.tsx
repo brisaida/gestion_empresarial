@@ -20,7 +20,6 @@ const RUBROS: { value: Rubro; label: string }[] = [
   { value: 'distribuidora', label: 'Distribuidora / Mayorista' },
   { value: 'farmacia',      label: 'Farmacia / Salud' },
   { value: 'ferreteria',    label: 'Ferretería / Construcción' },
-  { value: 'restaurante',   label: 'Restaurante / Cafetería' },
 ]
 
 const schema = z.object({
@@ -30,7 +29,7 @@ const schema = z.object({
   correo:       z.string().email('Ingresa un correo electrónico válido').optional().or(z.literal('')),
   telefono:     z.string().max(30, 'El teléfono es demasiado largo').optional().or(z.literal('')),
   direccion:    z.string().max(500).optional().or(z.literal('')),
-  rubro:        z.enum(['tienda', 'distribuidora', 'farmacia', 'ferreteria', 'restaurante']).or(z.literal('')).optional(),
+  rubro:        z.enum(['tienda', 'distribuidora', 'farmacia', 'ferreteria']).or(z.literal('')).optional(),
 })
 type FormValues = z.infer<typeof schema>
 

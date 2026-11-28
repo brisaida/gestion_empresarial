@@ -161,18 +161,6 @@ export default function ProductosPage() {
         </div>
       ),
     },
-    {
-      key: 'tipo', header: 'Tipo', align: 'center', width: '110px',
-      cell: (r) => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-          r.tipo === 'ingrediente'
-            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-            : 'bg-[var(--cp)]/8 text-[var(--cp)] border border-[var(--cp)]/20'
-        }`}>
-          {r.tipo === 'ingrediente' ? 'Ingrediente' : 'Venta'}
-        </span>
-      ),
-    },
     { key: 'activo', header: 'Estado', cell: (r) => <StatusBadge activo={r.activo} />, align: 'center', width: '90px' },
     {
       key: 'acciones', header: '', align: 'right', width: '80px',

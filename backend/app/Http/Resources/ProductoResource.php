@@ -31,7 +31,6 @@ class ProductoResource extends JsonResource
             'maneja_vencimiento' => $this->maneja_vencimiento,
             'maneja_serie'       => $this->maneja_serie,
             'activo'             => $this->activo,
-            'tipo'               => $this->tipo ?? 'venta',
             'imagen_url'         => $this->imagen ? '/storage/' . $this->imagen : null,
             // relaciones opcionales
             'categorias'         => $this->whenLoaded('categorias', fn() => $this->categorias->map(fn($c) => ['id' => $c->id, 'nombre' => $c->nombre])->values()),

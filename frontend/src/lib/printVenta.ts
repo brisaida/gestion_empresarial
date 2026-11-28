@@ -62,7 +62,7 @@ export function printVenta(v: Venta, empresa: PrintEmpresa, logoSrc?: string): v
     return `
       <tr>
         <td class="c">${cant}${d.unidad ? ` <span class="und">${esc(d.unidad)}</span>` : ''}</td>
-        <td>${d.codigo ? `<span class="cod">${esc(d.codigo)}</span> ` : ''}${esc(d.producto ?? d.receta ?? 'Producto')}</td>
+        <td>${d.codigo ? `<span class="cod">${esc(d.codigo)}</span> ` : ''}${esc(d.producto ?? d.descripcion ?? 'Producto')}</td>
         <td class="r">${num(d.precio_unitario)}</td>
         <td class="r">${num(desc)}</td>
         <td class="r">${num(neto)}</td>

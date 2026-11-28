@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import type React from 'react'
 import {
   LayoutDashboard, Package, Tags, Truck, Warehouse, Bookmark,
-  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, ChefHat, UtensilsCrossed, LayoutGrid, LockOpen, ClipboardPen, ClipboardCheck, HandCoins, Wallet, Undo2, CreditCard, Landmark, History,
+  Users, BarChart3, ArrowLeftRight, ShoppingCart, Receipt, ClipboardList, FileText, Settings, MoveRight, AlertTriangle, TrendingUp, Star, FileDown, LockOpen, ClipboardPen, ClipboardCheck, HandCoins, Wallet, Undo2, CreditCard, Landmark, History,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
@@ -17,13 +17,10 @@ const nav = [
     { to: '/dashboard',              label: 'Dashboard',           icon: LayoutDashboard, end: true,  permiso: 'dashboard'     },
   ]},
   { group: 'Ventas', items: [
-    { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas',       rubro: null },
-    { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas',       rubro: null },
-    { to: '/ventas/devoluciones',    label: 'Devoluciones',        icon: Undo2,           end: true,  permiso: 'ventas',       rubro: null },
-    { to: '/caja',                   label: 'Cierre de caja',      icon: LockOpen,        end: true,  permiso: 'ventas',       rubro: null },
-    { to: '/restaurante',            label: 'Salón / Mesas',       icon: LayoutGrid,      end: true,  permiso: 'ventas',       rubro: 'restaurante' },
-    { to: '/recetas',                label: 'Recetas / Platos',    icon: ChefHat,         end: false, permiso: 'ventas',       rubro: 'restaurante' },
-    { to: '/cocina',                 label: 'Pantalla Cocina',     icon: UtensilsCrossed, end: false, permiso: 'ventas',       rubro: 'restaurante' },
+    { to: '/ventas',                 label: 'Nueva venta',         icon: Receipt,         end: true,  permiso: 'ventas' },
+    { to: '/ventas/historial',       label: 'Historial',           icon: ClipboardList,   end: true,  permiso: 'ventas' },
+    { to: '/ventas/devoluciones',    label: 'Devoluciones',        icon: Undo2,           end: true,  permiso: 'ventas' },
+    { to: '/caja',                   label: 'Cierre de caja',      icon: LockOpen,        end: true,  permiso: 'ventas' },
   ]},
   { group: 'Cotizaciones', items: [
     { to: '/cotizaciones',           label: 'Nueva cotización',    icon: FileText,        end: true,  permiso: 'cotizaciones'  },
@@ -68,7 +65,7 @@ const nav = [
   ]},
 ]
 
-interface NavItem { to: string; label: string; icon: React.ElementType; end: boolean; permiso: string; rubro?: string | null }
+interface NavItem { to: string; label: string; icon: React.ElementType; end: boolean; permiso: string }
 interface Props { collapsed: boolean; mobileOpen: boolean }
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
@@ -78,7 +75,6 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
   const { hasPerm } = usePermisos()
   const empresaId = state.empresaActiva?.id ?? 0
 
-  const rubro = state.empresaActiva?.rubro ?? null
 
   const { data: empresaConfig } = useQuery({
     queryKey: ['empresa', empresaId],
@@ -142,9 +138,7 @@ export default function Sidebar({ collapsed, mobileOpen }: Props) {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto scrollbar-dark py-3 space-y-4 px-2">
         {nav.map((group) => {
-          const visibles = (group.items as NavItem[]).filter(i =>
-            hasPerm(i.permiso) && (i.rubro === undefined || i.rubro === null || i.rubro === rubro)
-          )
+          const visibles = (group.items as NavItem[]).filter(i => hasPerm(i.permiso))
           if (visibles.length === 0) return null
           return (
           <div key={group.group}>

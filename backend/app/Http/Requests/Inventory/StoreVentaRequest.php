@@ -28,8 +28,7 @@ class StoreVentaRequest extends FormRequest
             'constancia_exonerado' => ['nullable', 'string', 'max:60'],
             'registro_sag'         => ['nullable', 'string', 'max:60'],
             'detalles'       => ['required', 'array', 'min:1'],
-            'detalles.*.producto_id'      => ['nullable', 'integer', 'exists:productos,id'],
-            'detalles.*.receta_id'        => ['nullable', 'integer', 'exists:recetas,id'],
+            'detalles.*.producto_id'      => ['required', 'integer', 'exists:productos,id'],
             'detalles.*.cantidad'         => ['required', 'numeric', 'min:0.0001'],
             'detalles.*.precio_unitario'  => ['required', 'numeric', 'min:0'],
         ];

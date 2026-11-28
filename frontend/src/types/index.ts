@@ -8,7 +8,7 @@ export interface Usuario {
   tiene_pin?: boolean
 }
 
-export type Rubro = 'tienda' | 'distribuidora' | 'farmacia' | 'ferreteria' | 'restaurante'
+export type Rubro = 'tienda' | 'distribuidora' | 'farmacia' | 'ferreteria'
 
 export type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto'
 
@@ -161,7 +161,6 @@ export interface Producto {
   maneja_vencimiento: boolean
   maneja_serie: boolean
   activo: boolean
-  tipo: 'venta' | 'ingrediente'
   imagen_url?: string | null
   categorias?: { id: number; nombre: string }[]
   marca?: { id: number; nombre: string }
@@ -494,7 +493,6 @@ export type EstadoVenta = 'completada' | 'cancelada'
 export interface DetalleVenta {
   id: number
   producto_id?: number | null
-  receta_id?: number | null
   cantidad: number
   precio_unitario: number
   subtotal: number
@@ -502,7 +500,6 @@ export interface DetalleVenta {
   codigo?: string | null
   unidad?: string | null
   tasa_isv?: number | null
-  receta?: string | null
   descripcion?: string | null
   cantidad_devuelta?: number
 }
@@ -554,64 +551,6 @@ export interface Requisicion {
   proveedor?: { id: number; nombre: string; rtn?: string | null; telefono?: string | null; correo?: string | null; direccion?: string | null } | null
   detalles?: DetalleRequisicion[]
   created_at?: string
-}
-
-// ── Recetas ───────────────────────────────────────────────────────────────
-export interface RecetaIngrediente {
-  id: number
-  producto_id: number
-  producto?: string
-  unidad?: string | null
-  cantidad: number
-  costo_unit: number
-}
-
-export interface Receta {
-  id: number
-  empresa_id: number
-  nombre: string
-  descripcion?: string | null
-  precio_venta: number
-  activo: boolean
-  ingredientes: RecetaIngrediente[]
-  costo_total?: number | null
-}
-
-// ── Mesas ─────────────────────────────────────────────────────────────────
-export interface Mesa {
-  id: number
-  empresa_id: number
-  nombre: string
-  capacidad?: number | null
-  activo: boolean
-  estado: 'libre' | 'ocupada' | 'lista'
-  comandas_activas: number
-  comandas_listas: number
-}
-
-// ── Comandas ──────────────────────────────────────────────────────────────
-export interface DetalleComanda {
-  id: number
-  producto_id?: number | null
-  receta_id?: number | null
-  nombre_item: string
-  cantidad: number
-  precio_unitario: number
-  notas?: string | null
-  listo: boolean
-}
-
-export interface Comanda {
-  id: number
-  empresa_id: number
-  bodega_id: number
-  mesa_id?: number | null
-  numero_comanda: string
-  mesa?: string | null
-  estado: 'pendiente' | 'en_preparacion' | 'listo' | 'cancelado'
-  observaciones?: string | null
-  created_at: string
-  detalles: DetalleComanda[]
 }
 
 export interface Venta {

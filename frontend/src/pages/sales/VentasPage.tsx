@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import ComboBox from '@/components/ui/ComboBox'
 import { Plus, XCircle, Search, Minus, Trash2, Receipt, User, Warehouse,
-         CalendarDays, Hash, Lock, ChefHat, Package, LayoutGrid, List, UtensilsCrossed, TableProperties, Banknote, AlertTriangle, Clock } from 'lucide-react'
+         CalendarDays, Hash, Lock, Package, LayoutGrid, List, Banknote, AlertTriangle, Clock } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/stores/authStore'
-import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi, recetasApi, comandasApi, sesionCajaApi } from '@/api/recursos'
+import { ventasApi, clientesApi, bodegasApi, productosApi, empresaApi, sesionCajaApi } from '@/api/recursos'
 import { printVenta } from '@/lib/printVenta'
 import CuentaSelect from '@/components/tarjetas/CuentaSelect'
-import type { Venta, Receta } from '@/types'
+import type { Venta } from '@/types'
 import Button from '@/components/ui/Button'
 import CantidadInput from '@/components/ui/CantidadInput'
 import Modal from '@/components/ui/Modal'
@@ -18,14 +18,10 @@ import { useNavigate } from 'react-router-dom'
 
 interface LineaVenta {
   _key: string
-  tipo: 'producto' | 'receta'
-  producto?: Producto
-  receta?: Receta
+  producto: Producto
   cantidad: number
   precio_unitario: number
 }
-
-type CategoriaTab = 'todos' | 'platos' | 'productos'
 
 export default function VentasPage() {
   const { state } = useAuth()
@@ -59,10 +55,8 @@ export default function VentasPage() {
   const [search, setSearch]         = useState('')
   const [showDrop, setShowDrop]     = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
-  const [mesa, setMesa]             = useState('')
 
-  // Tablet POS state
-  const [categoriaActiva, setCategoriaActiva] = useState<CategoriaTab>('todos')
+  // Vista mosaico
   const [tabletSearch, setTabletSearch]       = useState('')
   const [vistaProductos, setVistaProductos]   = useState<'lista' | 'mosaico'>('lista')
 
@@ -101,8 +95,6 @@ export default function VentasPage() {
     if (pred && !bodegaId) setBodegaId(String(pred.id))
   }, [bodegas])
   const { data: productos } = useQuery({ queryKey: ['productos-all', empresaId], queryFn: () => productosApi.list({ empresa_id: empresaId, per_page: 500, solo_activos: true }).then(r => r.data.data), enabled: empresaId > 0 })
-  const esRestaurante = state.empresaActiva?.rubro === 'restaurante'
-  const { data: recetas = [] } = useQuery({ queryKey: ['recetas', empresaId], queryFn: () => recetasApi.list({ empresa_id: empresaId, per_page: 200 }).then(r => (r.data as { data: Receta[] }).data), enabled: empresaId > 0 && esRestaurante })
 
   const { data: numData, refetch: refetchNum } = useQuery({
     queryKey: ['venta-siguiente-num', empresaId],
@@ -159,38 +151,25 @@ export default function VentasPage() {
 
   const filteredProducts = (productos ?? []).filter(p =>
     search.length > 0 &&
-    (esRestaurante || p.tipo !== 'ingrediente') &&
     (p.nombre.toLowerCase().includes(search.toLowerCase()) ||
      (p.codigo ?? '').toLowerCase().includes(search.toLowerCase()))
   ).slice(0, 6)
 
-  const filteredRecetas = esRestaurante ? recetas.filter(r =>
-    search.length > 0 && r.nombre.toLowerCase().includes(search.toLowerCase())
-  ).slice(0, 4) : []
+  const showDrop2 = showDrop && search.length > 0 && filteredProducts.length > 0
 
-  const showDrop2 = showDrop && search.length > 0 && (filteredProducts.length > 0 || filteredRecetas.length > 0)
+  // Vista mosaico: productos filtrados por búsqueda
+  const gridProductos = (productos ?? []).filter(p =>
+    !tabletSearch ||
+    p.nombre.toLowerCase().includes(tabletSearch.toLowerCase()) ||
+    (p.codigo ?? '').toLowerCase().includes(tabletSearch.toLowerCase()))
 
-  // Tablet POS: ítems filtrados por categoría y búsqueda
-  const gridRecetas = (esRestaurante && categoriaActiva !== 'productos')
-    ? recetas.filter(r => r.activo !== false &&
-        (!tabletSearch || r.nombre.toLowerCase().includes(tabletSearch.toLowerCase())))
-    : []
-  const gridProductos = categoriaActiva !== 'platos'
-    ? (productos ?? []).filter(p =>
-        (esRestaurante || p.tipo !== 'ingrediente') &&
-        (!tabletSearch ||
-         p.nombre.toLowerCase().includes(tabletSearch.toLowerCase()) ||
-         (p.codigo ?? '').toLowerCase().includes(tabletSearch.toLowerCase())))
-    : []
-
-  const getQtyReceta   = (id: number) => lineas.find(l => l.tipo === 'receta'   && l.receta?.id   === id)?.cantidad ?? 0
-  const getQtyProducto = (id: number) => lineas.find(l => l.tipo === 'producto' && l.producto?.id === id)?.cantidad ?? 0
+  const getQtyProducto = (id: number) => lineas.find(l => l.producto.id === id)?.cantidad ?? 0
   const totalItems = lineas.reduce((s, l) => s + l.cantidad, 0)
 
   const subtotal = lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0)
   const isv = aplicarISV && !exonerado && subtotal > 0
     ? lineas.reduce((sum, l) => {
-        const rate = (l.tipo === 'producto' && l.producto?.tasa_isv != null
+        const rate = (l.producto.tasa_isv != null
           ? l.producto.tasa_isv
           : (empresaConfig?.isv_rate ?? 15)) / 100
         const lineaBase = l.cantidad * l.precio_unitario
@@ -203,34 +182,6 @@ export default function VentasPage() {
   const disponible   = limiteCliente != null ? Math.max(0, limiteCliente - saldoCliente) : null
   const pasaLimite   = esCredito && disponible != null && total > disponible + 0.004
 
-  const enviarCocina = useMutation({
-    mutationFn: async () => {
-      if (!bodegaId) throw new Error('Selecciona una bodega.')
-      if (lineas.length === 0) throw new Error('Agrega al menos un ítem.')
-      const numRes = await comandasApi.siguienteNumero(empresaId)
-      const numero = (numRes.data as { data: { numero_comanda: string } }).data.numero_comanda
-      return comandasApi.create({
-        empresa_id:     empresaId,
-        bodega_id:      Number(bodegaId),
-        numero_comanda: numero,
-        mesa:           mesa || null,
-        detalles: lineas.map(l => ({
-          producto_id:     l.tipo === 'producto' ? l.producto!.id : null,
-          receta_id:       l.tipo === 'receta'   ? l.receta!.id   : null,
-          nombre_item:     l.tipo === 'receta'   ? l.receta!.nombre : l.producto!.nombre,
-          cantidad:        l.cantidad,
-          precio_unitario: l.precio_unitario,
-        })),
-      })
-    },
-    onSuccess: (res) => {
-      const c = (res.data as { data: { numero_comanda: string } }).data
-      resetForm(); setMesa('')
-      toast.info(`Pedido ${c.numero_comanda} enviado a cocina.`)
-    },
-    onError: (err) => toast.error(err instanceof Error ? err.message : getAxiosError(err)),
-  })
-
   const resetForm = () => {
     setClienteId(''); setBodegaId(''); setFecha(todayISO())
     setDescuento(0); setCobraEnvio(false); setCostoEnvio(0); setAplicarISV(true); setLineas([])
@@ -240,20 +191,11 @@ export default function VentasPage() {
 
   const addProduct = (p: Producto) => {
     setLineas(prev => {
-      const idx = prev.findIndex(l => l.tipo === 'producto' && l.producto?.id === p.id)
+      const idx = prev.findIndex(l => l.producto.id === p.id)
       if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, cantidad: l.cantidad + 1 } : l)
       const rate = (p.tasa_isv ?? (empresaConfig?.isv_rate ?? 15)) / 100
       const precioBase = p.precio_incluye_isv ? Number(p.precio_venta) / (1 + rate) : Number(p.precio_venta)
-      return [...prev, { _key: `p-${p.id}`, tipo: 'producto', producto: p, cantidad: 1, precio_unitario: precioBase }]
-    })
-    setSearch(''); setShowDrop(false)
-  }
-
-  const addReceta = (r: Receta) => {
-    setLineas(prev => {
-      const idx = prev.findIndex(l => l.tipo === 'receta' && l.receta?.id === r.id)
-      if (idx >= 0) return prev.map((l, i) => i === idx ? { ...l, cantidad: l.cantidad + 1 } : l)
-      return [...prev, { _key: `r-${r.id}`, tipo: 'receta', receta: r, cantidad: 1, precio_unitario: Number(r.precio_venta) }]
+      return [...prev, { _key: `p-${p.id}`, producto: p, cantidad: 1, precio_unitario: precioBase }]
     })
     setSearch(''); setShowDrop(false)
   }
@@ -286,8 +228,7 @@ export default function VentasPage() {
     constancia_exonerado: exonerado ? exoneracion.constancia_exonerado.trim() || null : null,
     registro_sag:         exonerado ? exoneracion.registro_sag.trim() || null : null,
     detalles: lineas.map(l => ({
-      producto_id:     l.tipo === 'producto' ? l.producto!.id : null,
-      receta_id:       l.tipo === 'receta'   ? l.receta!.id   : null,
+      producto_id:     l.producto.id,
       cantidad:        l.cantidad,
       precio_unitario: l.precio_unitario,
     })),
@@ -310,7 +251,7 @@ export default function VentasPage() {
   const selectCls = "w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-[var(--cs)] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
   const labelCls  = "block text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5"
 
-  // ── Panel de carrito (compartido entre tablet y móvil) ─────────────────
+  // ── Panel de totales (compartido entre lista y mosaico) ────────────────
   const CartTotals = ({ compact = false }: { compact?: boolean }) => (
     <div className={compact ? 'space-y-3' : 'space-y-4'}>
       <div className="flex items-center justify-between gap-2">
@@ -400,47 +341,11 @@ export default function VentasPage() {
       )}
 
 
-      {esRestaurante && (
-        <div>
-          <label className="text-xs font-semibold text-[#5F6B7A] uppercase tracking-wide mb-1.5 block">
-            <span className="flex items-center gap-1"><TableProperties size={11} /> Mesa / Cliente</span>
-          </label>
-          <input
-            type="text"
-            value={mesa}
-            onChange={e => setMesa(e.target.value)}
-            placeholder="Mesa 3, Juan..."
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-[var(--cs)] focus:outline-none focus:ring-2 focus:ring-[var(--cp)]/30 focus:border-[var(--cp)] transition-all"
-          />
-        </div>
-      )}
-
       <div className="space-y-2 pt-1">
-        {esRestaurante ? (
-          <>
-            <Button
-              type="button"
-              loading={enviarCocina.isPending}
-              icon={<UtensilsCrossed size={15} />}
-              disabled={lineas.length === 0 || !bodegaId || sinSesion}
-              onClick={() => enviarCocina.mutate()}
-              className="w-full justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--cs) 0%, var(--cp) 100%)' }}
-            >
-              Enviar a cocina
-            </Button>
-            <Button type="submit" loading={crear.isPending} icon={<Receipt size={15} />}
-              variant="secondary"
-              disabled={lineas.length === 0 || sinSesion} className="w-full justify-center">
-              Facturar directo
-            </Button>
-          </>
-        ) : (
           <Button type="submit" loading={crear.isPending} icon={<Receipt size={15} />}
             disabled={lineas.length === 0 || sinSesion} className="w-full justify-center">
             {esCredito ? 'Registrar venta al crédito' : 'Registrar venta'}
           </Button>
-        )}
         <button type="button" onClick={resetForm}
           className="w-full py-1.5 rounded-lg text-xs text-[#5F6B7A] hover:text-red-500 hover:bg-red-50 transition-colors font-medium text-center">
           Limpiar formulario
@@ -489,8 +394,7 @@ export default function VentasPage() {
           <h1 className="text-xl font-bold text-[var(--cs)]">Nueva Venta</h1>
           <p className="text-sm text-[#5F6B7A]">Registra una factura de venta</p>
         </div>
-        {!esRestaurante && (
-          <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg p-1 shadow-sm shrink-0">
+        <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg p-1 shadow-sm shrink-0">
             <button
               type="button"
               onClick={() => setVistaProductos('lista')}
@@ -508,7 +412,6 @@ export default function VentasPage() {
               <LayoutGrid size={16} />
             </button>
           </div>
-        )}
       </div>
 
       {numData?.aviso && (
@@ -708,220 +611,8 @@ export default function VentasPage() {
           </div>
         </div>
 
-        {/* ── TABLET POS: restaurante + md+ ─────────────────────────── */}
-        {esRestaurante && (
-          <div className="hidden md:flex gap-4" style={{ height: 'calc(100vh - 250px)', minHeight: 520 }}>
-
-            {/* Grilla de ítems */}
-            <div className="flex-1 flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-
-              {/* Tabs + buscador */}
-              <div className="px-4 pt-4 pb-3 border-b border-gray-100 shrink-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {([
-                    { key: 'todos' as const,    label: 'Todos',      icon: <LayoutGrid size={13} /> },
-                    { key: 'platos' as const,   label: 'Platos',     icon: <ChefHat size={13} />   },
-                    { key: 'productos' as const, label: 'Productos',  icon: <Package size={13} />   },
-                  ]).map(tab => (
-                    <button key={tab.key} type="button"
-                      onClick={() => setCategoriaActiva(tab.key)}
-                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                        categoriaActiva === tab.key
-                          ? 'bg-[var(--cp)] text-white shadow-sm'
-                          : 'text-[#5F6B7A] hover:bg-[#F4F7FA]'
-                      }`}>
-                      {tab.icon}{tab.label}
-                    </button>
-                  ))}
-
-                  <div className="flex-1" />
-
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-[#F4F7FA] border border-gray-200 rounded-lg w-44">
-                    <Search size={13} className="text-[#5F6B7A] shrink-0" />
-                    <input
-                      type="text"
-                      placeholder="Buscar..."
-                      value={tabletSearch}
-                      onChange={e => setTabletSearch(e.target.value)}
-                      className="flex-1 bg-transparent text-sm text-[var(--cs)] placeholder-gray-400 focus:outline-none min-w-0"
-                    />
-                    {tabletSearch && (
-                      <button type="button" onClick={() => setTabletSearch('')} className="text-gray-400">
-                        <XCircle size={13} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid scrollable */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {gridRecetas.length === 0 && gridProductos.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <p className="text-sm text-[#5F6B7A]">Sin ítems en esta categoría</p>
-                  </div>
-                )}
-
-                {gridRecetas.length > 0 && (
-                  <div>
-                    {categoriaActiva === 'todos' && (
-                      <p className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                        <ChefHat size={10} /> Platos / Recetas
-                      </p>
-                    )}
-                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                      {gridRecetas.map(r => {
-                        const qty = getQtyReceta(r.id)
-                        return (
-                          <button key={r.id} type="button" onClick={() => addReceta(r)}
-                            className={`relative text-left p-3.5 rounded-xl border transition-all active:scale-95 select-none ${
-                              qty > 0
-                                ? 'border-[var(--cp)] bg-[var(--cp)]/5 shadow-sm'
-                                : 'border-gray-100 bg-white hover:border-[var(--cp)]/40 hover:bg-[#F4F7FA]'
-                            }`}>
-                            <div className="w-9 h-9 rounded-lg bg-[var(--cp)]/10 border border-[var(--cp)]/20 flex items-center justify-center mb-2">
-                              <ChefHat size={16} className="text-[var(--cp)]" />
-                            </div>
-                            <p className="text-sm font-semibold text-[var(--cs)] leading-tight line-clamp-2">{r.nombre}</p>
-                            <p className="text-sm font-bold text-[var(--cp)] mt-1.5">{formatCurrency(r.precio_venta)}</p>
-                            {qty > 0 && (
-                              <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 bg-[var(--cp)] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                                {qty}
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {gridProductos.length > 0 && (
-                  <div>
-                    {categoriaActiva === 'todos' && gridRecetas.length > 0 && (
-                      <p className="text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                        <Package size={10} /> Productos
-                      </p>
-                    )}
-                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                      {gridProductos.map(p => {
-                        const qty = getQtyProducto(p.id)
-                        return (
-                          <button key={p.id} type="button" onClick={() => addProduct(p)}
-                            className={`relative text-left p-3.5 rounded-xl border transition-all active:scale-95 select-none ${
-                              qty > 0
-                                ? 'border-[var(--cp)] bg-[var(--cp)]/5 shadow-sm'
-                                : 'border-gray-100 bg-white hover:border-[var(--cp)]/40 hover:bg-[#F4F7FA]'
-                            }`}>
-                            {p.imagen_url
-                              ? <img src={imgUrl(p.imagen_url)!} className="w-9 h-9 rounded-lg object-cover border border-gray-100 mb-2" alt="" />
-                              : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-2">
-                                  <Package size={16} className="text-gray-300" />
-                                </div>
-                            }
-                            <p className="text-sm font-semibold text-[var(--cs)] leading-tight line-clamp-2">{p.nombre}</p>
-                            <p className="text-sm font-bold text-[var(--cp)] mt-1.5">{formatCurrency(p.precio_venta)}</p>
-                            {qty > 0 && (
-                              <span className="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 bg-[var(--cp)] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                                {qty}
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Panel de orden / carrito */}
-            <div className="w-72 flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden shrink-0">
-
-              {/* Header carrito */}
-              <div className="px-4 py-3 border-b border-gray-100 shrink-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-[var(--cs)]">Pedido actual</p>
-                  {totalItems > 0 && (
-                    <span className="text-xs font-bold text-[var(--cp)] bg-[var(--cp)]/10 px-2 py-0.5 rounded-full">
-                      {totalItems} ítem{totalItems !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Líneas scrollables */}
-              <div className="flex-1 overflow-y-auto">
-                {lineas.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
-                    <div className="w-12 h-12 rounded-xl bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-2">
-                      <Receipt size={20} className="text-gray-300" />
-                    </div>
-                    <p className="text-sm text-[#5F6B7A] font-medium">Pedido vacío</p>
-                    <p className="text-xs text-gray-400 mt-1">Toca un ítem para agregar</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-50">
-                    {lineas.map((l, i) => (
-                      <div key={l._key} className="px-4 py-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {l.tipo === 'receta'
-                              ? <div className="w-7 h-7 rounded-lg bg-[var(--cp)]/10 border border-[var(--cp)]/20 shrink-0 flex items-center justify-center">
-                                  <ChefHat size={12} className="text-[var(--cp)]" />
-                                </div>
-                              : <div className="w-7 h-7 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0 flex items-center justify-center overflow-hidden">
-                                  {l.producto?.imagen_url
-                                    ? <img src={imgUrl(l.producto.imagen_url)!} className="w-full h-full object-cover" alt="" />
-                                    : <Package size={12} className="text-gray-300" />
-                                  }
-                                </div>
-                            }
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-[var(--cs)] leading-tight truncate">
-                                {l.tipo === 'receta' ? l.receta!.nombre : l.producto!.nombre}
-                              </p>
-                              {l.tipo === 'producto' && l.producto?.tasa_isv === 0 && (
-                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">ISV exento</span>
-                              )}
-                            </div>
-                          </div>
-                          <button type="button" onClick={() => removeLinea(i)}
-                            className="text-gray-300 hover:text-red-500 transition-colors shrink-0 p-0.5">
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-1">
-                            <button type="button" onClick={() => updateCantidad(i, -1)}
-                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] active:scale-95 transition-all">
-                              <Minus size={11} />
-                            </button>
-                            <span className="w-8 text-center text-sm font-bold text-[var(--cs)]">{l.cantidad}</span>
-                            <button type="button" onClick={() => updateCantidad(i, +1)}
-                              className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-[#5F6B7A] hover:border-[var(--cp)] hover:text-[var(--cp)] active:scale-95 transition-all">
-                              <Plus size={11} />
-                            </button>
-                          </div>
-                          <span className="text-sm font-bold text-[var(--cs)]">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Totales + cobrar */}
-              <div className="border-t border-gray-100 p-4 shrink-0">
-                <CartTotals compact />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── VISTA ESTÁNDAR: mobile siempre; desktop solo si NO es restaurante ── */}
         {/* Mosaico: grid de productos + carrito lateral */}
-        {vistaProductos === 'mosaico' && !esRestaurante && (
+        {vistaProductos === 'mosaico' && (
           <div className="flex gap-4" style={{ height: 'calc(100vh - 280px)', minHeight: 500 }}>
 
             {/* Grilla de productos */}
@@ -1013,7 +704,7 @@ export default function VentasPage() {
                                 : <Package size={12} className="text-gray-300" />
                               }
                             </div>
-                            <p className="text-xs font-semibold text-[var(--cs)] leading-tight truncate">{l.producto!.nombre}</p>
+                            <p className="text-xs font-semibold text-[var(--cs)] leading-tight truncate">{l.producto.nombre}</p>
                           </div>
                           <button type="button" onClick={() => removeLinea(i)} className="text-gray-300 hover:text-red-500 transition-colors shrink-0 p-0.5">
                             <Trash2 size={13} />
@@ -1046,7 +737,7 @@ export default function VentasPage() {
           </div>
         )}
 
-        <div className={`flex flex-col sm:flex-row gap-4 items-start${esRestaurante ? ' md:hidden' : ''}${vistaProductos === 'mosaico' && !esRestaurante ? ' hidden' : ''}`}>
+        <div className={`flex flex-col sm:flex-row gap-4 items-start${vistaProductos === 'mosaico' ? ' hidden' : ''}`}>
 
           {/* Tabla de detalle */}
           <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-visible">
@@ -1058,7 +749,7 @@ export default function VentasPage() {
                   <Search size={16} className="text-[#5F6B7A] shrink-0" />
                   <input
                     type="text"
-                    placeholder={esRestaurante ? 'Buscar plato o ingrediente…' : 'Buscar producto por nombre o código...'}
+                    placeholder="Buscar producto por nombre o código..."
                     value={search}
                     onChange={e => { setSearch(e.target.value); setShowDrop(true) }}
                     onFocus={() => search && setShowDrop(true)}
@@ -1073,33 +764,8 @@ export default function VentasPage() {
 
                 {showDrop2 && (
                   <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-                    {filteredRecetas.length > 0 && (
-                      <>
-                        <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider flex items-center gap-1"><ChefHat size={10} /> Platos / Recetas</p>
-                        {filteredRecetas.map(r => (
-                          <button key={r.id} type="button" onClick={() => addReceta(r)}
-                            className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-[var(--cp)]/10 border border-[var(--cp)]/20 shrink-0 flex items-center justify-center">
-                                <ChefHat size={14} className="text-[var(--cp)]" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-semibold text-[var(--cs)] group-hover:text-[var(--cp)] transition-colors">{r.nombre}</p>
-                                <p className="text-xs text-gray-400">{r.ingredientes.length} ingredientes</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-sm font-bold text-[var(--cp)]">{formatCurrency(r.precio_venta)}</span>
-                              <span className="w-6 h-6 bg-[var(--cp)] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Plus size={13} /></span>
-                            </div>
-                          </button>
-                        ))}
-                      </>
-                    )}
                     {filteredProducts.length > 0 && (
                       <>
-                        {filteredRecetas.length > 0 && <div className="border-t border-gray-100 mt-1" />}
-                        {esRestaurante && <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider">Productos</p>}
                         {filteredProducts.map(p => (
                           <button key={p.id} type="button" onClick={() => addProduct(p)}
                             className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#F4F7FA] transition-colors text-left group">
@@ -1137,7 +803,7 @@ export default function VentasPage() {
             <div className="overflow-x-auto">
             {lineas.length > 0 && (
               <div className="grid grid-cols-12 gap-2 px-5 py-2 bg-[#F4F7FA]/70 text-[10px] font-bold text-[#5F6B7A] uppercase tracking-wider border-b border-gray-100 min-w-[420px]">
-                <div className="col-span-4">{esRestaurante ? 'Plato / Producto' : 'Producto'}</div>
+                <div className="col-span-4">Producto</div>
                 <div className="col-span-3 text-center">Cantidad</div>
                 <div className="col-span-2 text-right">Precio unit.</div>
                 <div className="col-span-2 text-right">Subtotal</div>
@@ -1150,8 +816,8 @@ export default function VentasPage() {
                 <div className="w-14 h-14 rounded-2xl bg-[#F4F7FA] border border-gray-100 flex items-center justify-center mb-3">
                   <Receipt size={24} className="text-gray-300" />
                 </div>
-                <p className="text-sm font-medium text-[#5F6B7A]">{esRestaurante ? 'Sin platos aún' : 'Sin productos aún'}</p>
-                <p className="text-xs text-gray-400 mt-1">Usa el buscador de arriba para {esRestaurante ? 'agregar platos o productos' : 'agregar productos'}</p>
+                <p className="text-sm font-medium text-[#5F6B7A]">Sin productos aún</p>
+                <p className="text-xs text-gray-400 mt-1">Usa el buscador de arriba para agregar productos</p>
               </div>
             )}
 
@@ -1160,23 +826,15 @@ export default function VentasPage() {
                 className={`grid grid-cols-12 gap-2 px-5 py-3 items-center border-b border-gray-50 last:border-0 min-w-[420px] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F4F7FA]/25'} hover:bg-[#F4F7FA]/60 transition-colors`}>
 
                 <div className="col-span-4 flex items-center gap-2.5">
-                  {l.tipo === 'receta'
-                    ? <div className="w-9 h-9 rounded-lg bg-[var(--cp)]/10 border border-[var(--cp)]/20 shrink-0 flex items-center justify-center">
-                        <ChefHat size={16} className="text-[var(--cp)]" />
-                      </div>
-                    : (l.producto?.imagen_url
-                        ? <img src={imgUrl(l.producto.imagen_url)!} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" alt="" />
-                        : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />)
-                  }
+                  {l.producto.imagen_url
+                    ? <img src={imgUrl(l.producto.imagen_url)!} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" alt="" />
+                    : <div className="w-9 h-9 rounded-lg bg-[#F4F7FA] border border-gray-100 shrink-0" />}
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-[var(--cs)] leading-tight truncate">
-                      {l.tipo === 'receta' ? l.receta!.nombre : l.producto!.nombre}
+                      {l.producto.nombre}
                     </p>
-                    {l.tipo === 'producto' && l.producto?.codigo && (
+                    {l.producto.codigo && (
                       <p className="text-xs text-gray-400 font-mono">{l.producto.codigo}</p>
-                    )}
-                    {l.tipo === 'receta' && (
-                      <p className="text-xs text-[var(--cp)]">{l.receta!.ingredientes.length} ingredientes</p>
                     )}
                   </div>
                 </div>

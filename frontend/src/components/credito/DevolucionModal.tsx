@@ -19,7 +19,7 @@ import type { Compra, DevolucionCompra, DevolucionVenta, ReembolsoMetodo, Venta 
  */
 export interface DevolucionDestino { tipo: 'venta' | 'compra'; id: number }
 
-interface Linea { id: number; nombre: string; codigo?: string | null; vendido: number; devuelto: number; precio: number; esReceta: boolean }
+interface Linea { id: number; nombre: string; codigo?: string | null; vendido: number; devuelto: number; precio: number }
 
 const METODOS: Record<'venta' | 'compra', { value: ReembolsoMetodo; label: string }[]> = {
   venta: [
@@ -59,12 +59,12 @@ function Formulario({ tipo, doc, empresaId, onClose }: { tipo: 'venta' | 'compra
 
   const lineas: Linea[] = esVenta
     ? ((doc as Venta).detalles ?? []).map(d => ({
-        id: d.id, nombre: d.producto ?? d.receta ?? d.descripcion ?? 'Producto', codigo: d.codigo,
-        vendido: d.cantidad, devuelto: d.cantidad_devuelta ?? 0, precio: d.precio_unitario, esReceta: !!d.receta_id,
+        id: d.id, nombre: d.producto ?? d.descripcion ?? 'Producto', codigo: d.codigo,
+        vendido: d.cantidad, devuelto: d.cantidad_devuelta ?? 0, precio: d.precio_unitario,
       }))
     : ((doc as Compra).detalles ?? []).map(d => ({
         id: d.id, nombre: d.producto?.nombre ?? 'Producto', codigo: d.producto?.codigo,
-        vendido: d.cantidad, devuelto: d.cantidad_devuelta ?? 0, precio: d.costo_unitario, esReceta: false,
+        vendido: d.cantidad, devuelto: d.cantidad_devuelta ?? 0, precio: d.costo_unitario,
       }))
 
   const [cant, setCant]       = useState<Record<number, string>>({})
@@ -162,7 +162,7 @@ function Formulario({ tipo, doc, empresaId, onClose }: { tipo: 'venta' | 'compra
                 <div className="col-span-5 min-w-0">
                   <p className="font-medium text-[var(--cs)] truncate">{l.nombre}</p>
                   <p className="text-[11px] text-[#5F6B7A]">
-                    {l.codigo ? `${l.codigo} · ` : ''}{formatCurrency(l.precio)} c/u{l.esReceta ? ' · plato, no regresa a inventario' : ''}
+                    {l.codigo ? `${l.codigo} · ` : ''}{formatCurrency(l.precio)} c/u
                   </p>
                 </div>
                 <div className="col-span-2 text-center text-[#5F6B7A]">{l.vendido}</div>

@@ -143,8 +143,7 @@ class InventarioService
     }
 
     /**
-     * Procesa una venta: crea movimiento de salida por cada línea.
-     * Para líneas de receta, descuenta cada ingrediente multiplicado por las porciones vendidas.
+     * Procesa una venta: crea movimiento de salida por cada línea con producto.
      */
     public function procesarVenta(\App\Models\Venta $venta, int $usuarioId): void
     {
@@ -152,17 +151,7 @@ class InventarioService
         $requeridos = []; // producto_id => cantidad total acumulada
 
         foreach ($venta->detalles as $d) {
-            if ($d->receta_id && $d->relationLoaded('receta') && $d->receta) {
-                foreach ($d->receta->ingredientes as $ing) {
-                    $qty = (float) $ing->cantidad * (float) $d->cantidad;
-                    $detalles[] = [
-                        'producto_id'    => $ing->producto_id,
-                        'cantidad'       => $qty,
-                        'costo_unitario' => (float) ($ing->producto?->costo ?? 0),
-                    ];
-                    $requeridos[$ing->producto_id] = ($requeridos[$ing->producto_id] ?? 0.0) + $qty;
-                }
-            } elseif ($d->producto_id) {
+            if ($d->producto_id) {
                 $qty = (float) $d->cantidad;
                 $detalles[] = [
                     'producto_id'    => $d->producto_id,
@@ -173,7 +162,7 @@ class InventarioService
             }
         }
 
-        // Artículos libres (sin producto ni receta) no mueven inventario
+        // Artículos libres (sin producto) no mueven inventario
         if (empty($detalles)) return;
 
         $this->validarStockDisponible($venta->empresa_id, $venta->bodega_id, $requeridos);
@@ -193,8 +182,8 @@ class InventarioService
 
     /**
      * Devuelve al inventario lo que despachó una venta (al cancelarla).
-     * Repite exactamente las salidas registradas: misma bodega, producto, lote y serie,
-     * incluidos los ingredientes de recetas. Si ya se devolvió, no hace nada.
+     * Repite exactamente las salidas registradas: misma bodega, producto, lote y serie.
+     * Si ya se devolvió, no hace nada.
      *
      * @return float unidades devueltas (0 si no había nada que devolver)
      */

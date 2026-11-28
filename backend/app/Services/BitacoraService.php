@@ -34,8 +34,6 @@ class BitacoraService
         \App\Models\Venta::class           => ['ventas', 'Venta'],
         \App\Models\DevolucionVenta::class => ['ventas', 'Devolución de cliente'],
         \App\Models\SesionCaja::class      => ['ventas', 'Caja'],
-        \App\Models\Mesa::class            => ['ventas', 'Mesa'],
-        \App\Models\Receta::class          => ['ventas', 'Receta'],
         \App\Models\Cotizacion::class      => ['cotizaciones', 'Cotización'],
         \App\Models\Compra::class          => ['compras', 'Compra'],
         \App\Models\Requisicion::class     => ['compras', 'Requisición'],

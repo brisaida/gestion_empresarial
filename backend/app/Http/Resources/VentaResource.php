@@ -60,8 +60,6 @@ class VentaResource extends JsonResource
                 'unidad'          => $d->producto?->unidadMedida?->abreviatura,
                 'tasa_isv'        => $d->producto?->tasa_isv !== null ? (float) $d->producto->tasa_isv : null,
                 'descripcion'     => $d->descripcion,
-                'receta_id'       => $d->receta_id,
-                'receta'          => $d->receta?->nombre,
                 'cantidad'        => (float) $d->cantidad,
                 'precio_unitario' => (float) $d->precio_unitario,
                 'subtotal'        => (float) $d->subtotal,
