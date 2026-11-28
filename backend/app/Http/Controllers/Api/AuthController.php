@@ -34,29 +34,42 @@ class AuthController extends ApiController
         $token = $user->createToken('api-token')->plainTextToken;
         $this->bitacora->registrar(null, 'sesion', 'login', "{$user->nombre} inició sesión", usuarioId: $user->id);
 
-        $empresasCollection = $user->empresas()
-            ->where('usuarios_empresas.activo', true)
-            ->get();
-
-        $rolIds = $empresasCollection->pluck('pivot.rol_id')->filter()->unique()->values()->toArray();
-        $roles  = Rol::whereIn('id', $rolIds)->get()->keyBy('id');
-
         return response()->json([
             'success' => true,
             'message' => 'Sesión iniciada correctamente.',
             'data'    => [
-                'token'   => $token,
-                'usuario' => new UsuarioResource($user),
-                'empresas' => $empresasCollection->map(fn($e) => [
-                    'id'      => $e->id,
-                    'nombre'  => $e->nombre,
-                    'rol'     => $e->pivot->rol_id,
-                    'logo_url'=> $e->logo ? '/' . ltrim($e->logo, '/') : null,
-                    'modulos' => $roles->get($e->pivot->rol_id)?->modulos ?? null,
-                    'rubro'   => $e->rubro,
-                ]),
+                'token'    => $token,
+                'usuario'  => new UsuarioResource($user),
+                'empresas' => $this->empresasDe($user),
             ],
         ]);
+    }
+
+    /** Empresas del usuario con su rol y permisos actuales (para el selector y para refrescar permisos). */
+    public function empresas(Request $request): JsonResponse
+    {
+        return $this->success($this->empresasDe($request->user()));
+    }
+
+    private function empresasDe(User $user): array
+    {
+        $empresas = $user->empresas()
+            ->where('usuarios_empresas.activo', true)
+            ->where('empresas.activo', true)
+            ->orderBy('empresas.nombre')
+            ->get();
+
+        $roles = Rol::whereIn('id', $empresas->pluck('pivot.rol_id')->filter()->unique())->get()->keyBy('id');
+
+        return $empresas->map(fn($e) => [
+            'id'       => $e->id,
+            'nombre'   => $e->nombre,
+            'rol'      => $e->pivot->rol_id,
+            'rol_nombre' => $roles->get($e->pivot->rol_id)?->nombre,
+            'logo_url' => $e->logo ? '/' . ltrim($e->logo, '/') : null,
+            'modulos'  => $roles->get($e->pivot->rol_id)?->modulos ?? null,
+            'rubro'    => $e->rubro,
+        ])->values()->all();
     }
 
     public function me(Request $request): JsonResponse

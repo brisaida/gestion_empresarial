@@ -5,6 +5,7 @@ import { useAuth } from '@/stores/authStore'
 import { authApi } from '@/api/auth'
 import { usePermisos } from '@/lib/permisos'
 import PinModal from './PinModal'
+import EmpresaSelector from './EmpresaSelector'
 
 interface Props {
   collapsed: boolean
@@ -27,7 +28,7 @@ export default function Navbar({ collapsed, onToggle }: Props) {
   return (
     <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 shrink-0 shadow-sm">
       {/* Left */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onToggle}
           className="p-1.5 rounded-lg text-[#5F6B7A] hover:text-[var(--cp)] hover:bg-white/10 transition-colors"
@@ -36,14 +37,7 @@ export default function Navbar({ collapsed, onToggle }: Props) {
           {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
         </button>
 
-        {state.empresaActiva && (
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--cp)]" />
-            <span className="text-sm font-semibold text-[var(--cs)]">
-              {state.empresaActiva.nombre}
-            </span>
-          </div>
-        )}
+        <EmpresaSelector />
         {esSuperAdmin && state.empresaActiva && (
           <button onClick={() => { salirEmpresa(); navigate('/super-admin/empresas') }}
             title="Estás viendo esta empresa como super admin"

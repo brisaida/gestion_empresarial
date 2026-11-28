@@ -16,6 +16,7 @@ export interface EmpresaResumen {
   id: number
   nombre: string
   rol: number
+  rol_nombre?: string | null
   logo_url?: string | null
   modulos: string[] | null  // null = acceso total; array = módulos permitidos
   rubro?: Rubro | null

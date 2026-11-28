@@ -43,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Auth
     Route::get('auth/me',      [AuthController::class, 'me']);
+    Route::get('auth/empresas', [AuthController::class, 'empresas']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::post('auth/pin',    [AuthController::class, 'guardarPin'])->middleware('throttle:5,1');
 

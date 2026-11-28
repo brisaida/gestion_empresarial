@@ -58,6 +58,7 @@ The restaurant module (mesas, comandas, kitchen screen, recipes/ingredients, pro
 1. `POST /api/auth/login` → `{ token, usuario, empresas }`  
 2. Token stored in localStorage; axios interceptor injects `Authorization: Bearer {token}` on every request  
 3. 401 response → clear token → redirect `/login`
+4. `AppLayout` refreshes `GET /api/auth/empresas` (companies + current role/modulos, only active ones) and `setEmpresas()` updates the store. Users with 2+ companies switch from `EmpresaSelector` in the navbar (clears the query cache); the last chosen one is remembered per user in localStorage.
 
 ### Backend patterns
 

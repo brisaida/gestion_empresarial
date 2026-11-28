@@ -6,6 +6,7 @@ import Navbar from './Navbar'
 import { useAuth } from '@/stores/authStore'
 import { useIdleLogout } from '@/hooks/useIdleLogout'
 import { empresaApi } from '@/api/recursos'
+import { authApi } from '@/api/auth'
 import { Clock } from 'lucide-react'
 
 function useIsMobile() {
@@ -32,8 +33,17 @@ function useCountdown(active: boolean) {
 }
 
 export default function AppLayout() {
-  const { state, logout } = useAuth()
+  const { state, logout, setEmpresas } = useAuth()
   const empresaId = state.empresaActiva?.id ?? 0
+
+  // Empresas y permisos actuales: si le cambian el rol o le dan otra empresa, se nota sin volver a iniciar sesión
+  const { data: misEmpresas } = useQuery({
+    queryKey: ['mis-empresas', state.usuario?.id],
+    queryFn:  () => authApi.empresas().then(r => r.data.data),
+    enabled:  !!state.token,
+    staleTime: 60_000,
+  })
+  useEffect(() => { if (misEmpresas) setEmpresas(misEmpresas) }, [misEmpresas])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: empresaConfig } = useQuery({
     queryKey: ['empresa', empresaId],
